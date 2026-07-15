@@ -30,7 +30,12 @@ Fishing App helps anglers make better decisions before, during and after a fishi
 
 ## Documentation
 
-Project documentation can be found in the `/docs` directory.
+- Project Charter
+- App Structure
+- Architecture
+- Database
+- Roadmap
+- Development Rules
 
 ## License
 
