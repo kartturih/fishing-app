@@ -30,6 +30,7 @@ Fishing App helps anglers make better decisions before, during and after a fishi
 
 ## Documentation
 
+- Project Status
 - Project Charter
 - App Structure
 - Architecture
