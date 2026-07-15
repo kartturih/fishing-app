@@ -1,8 +1,11 @@
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 
 // Temporary development-only data.
-// This will be replaced by repository-backed persistence once local
-// storage is introduced and must not be treated as permanent storage.
+// This list is the in-memory, session-only store of fishing spots: it
+// starts with these sample entries and grows with user-created spots for
+// the lifetime of the running app. It will be replaced by repository-backed
+// persistence once local storage is introduced and must not be treated as
+// permanent storage.
 final List<FishingSpot> sampleFishingSpots = [
   FishingSpot(
     id: 'sample-1',
