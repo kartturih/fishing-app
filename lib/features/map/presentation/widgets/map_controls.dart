@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:fishing_app/app/theme/app_spacing.dart';
 
 class MapControls extends StatelessWidget {
-  const MapControls({super.key});
+  const MapControls({super.key, required this.onLocationPressed});
+
+  final VoidCallback onLocationPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,7 @@ class MapControls extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               FloatingActionButton(
                 heroTag: 'currentLocationButton',
-                onPressed: () {},
+                onPressed: onLocationPressed,
                 child: const Icon(Icons.my_location),
               ),
             ],
