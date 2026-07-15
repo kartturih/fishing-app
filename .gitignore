@@ -1,3 +1,23 @@
-*.bak
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub/
+build/
+
+# Flutter generated
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# macOS
 .DS_Store
+
+# Windows
 Thumbs.db
+
+# Backup files
+*.bak
