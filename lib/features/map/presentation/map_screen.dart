@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart';
+
 class MapScreen extends StatelessWidget {
   const MapScreen({super.key});
 
@@ -15,9 +17,14 @@ class MapScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Fishing App'),
       ),
-      body: MapLibreMap(
-        initialCameraPosition: _initialCameraPosition,
-        styleString: 'https://demotiles.maplibre.org/style.json',
+      body: Stack(
+        children: [
+          MapLibreMap(
+            initialCameraPosition: _initialCameraPosition,
+            styleString: 'https://demotiles.maplibre.org/style.json',
+          ),
+          const MapControls(),
+        ],
       ),
     );
   }
