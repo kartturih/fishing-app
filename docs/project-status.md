@@ -8,9 +8,9 @@
 
 ## Current Phase
 
-The initial map foundation and map controls are complete.
+The application foundation and core map functionality are complete.
 
-The next development phase is the **User Location Feature**.
+The next development phase is **Fishing Spot Management**.
 
 ---
 
@@ -25,37 +25,71 @@ The next development phase is the **User Location Feature**.
 - Android development environment configured
 - Riverpod integrated
 - GoRouter integrated
-- Feature-first project structure created
-- Initial application theme created
-- Initial design tokens created
+- Feature-first project structure established
+- Material 3 theme implemented
+- Initial design token system created
 
-### Architecture and Specifications
+### Architecture
 
-- ADR-0001: Project Architecture accepted
-- ADR-0002: Map Technology accepted
-- MFS-001: Map Feature completed
-- MFS-002: Map Controls completed
+- ADR-0001: Project Architecture
+- ADR-0002: Map Technology
+- ADR-0003: Core Services
 
-### Map Feature
+### Feature Specifications
+
+- MFS-001: Map Feature
+- MFS-002: Map Controls
+- MFS-003: User Location
+
+### Technical Designs
+
+- TD-003: User Location Implementation
+
+### Implemented Features
+
+#### Map Foundation
 
 - MapLibre integrated
-- Initial interactive map screen implemented
-- Map screen configured as the initial application route
-- Initial camera position configured for Finland
-- Map panning verified
-- Map zooming verified
-- Map controls added above the map
-- Current location placeholder button added
-- Map settings placeholder button added
-- SafeArea support added for map controls
-- Map controls extracted into a reusable presentation widget
+- Interactive map implemented
+- Initial camera positioned over Finland
+- Map configured as the application start screen
+- Pan and zoom functionality verified
 
-### Validation
+#### Map Controls
 
-- Application tested on a physical Android device
-- Map rendering verified
-- Touch interaction verified
-- Map controls verified
+- Reusable MapControls widget
+- Material 3 Floating Action Buttons
+- SafeArea support
+- Current Location button
+- Map Settings placeholder button
+
+#### User Location
+
+- Core LocationService implemented
+- Foreground location permission handling
+- Location service availability detection
+- Current location retrieval
+- Camera centering on current location
+- User location layer enabled
+- Graceful handling of:
+  - Disabled location services
+  - Permission denied
+  - Permission denied forever
+  - Unavailable position
+
+---
+
+## Validation
+
+Verified on a physical Android device:
+
+- Application starts successfully
+- Map loads correctly
+- Pan and zoom work correctly
+- Map controls function correctly
+- Location permission flow verified
+- Camera centers on current location
+- Disabled location services handled correctly
 - `flutter analyze` passes without issues
 
 ---
@@ -71,7 +105,8 @@ The next development phase is the **User Location Feature**.
 
 - Offline-first
 - Feature-first
-- Repository Pattern planned
+- Core Services
+- Repository Pattern (planned)
 
 ### State Management
 
@@ -84,7 +119,11 @@ The next development phase is the **User Location Feature**.
 ### Maps
 
 - MapLibre GL
-- `maplibre_gl`
+- maplibre_gl
+
+### Location
+
+- geolocator
 
 ### UI
 
@@ -107,15 +146,19 @@ lib/
 │   ├── router/
 │   ├── theme/
 │   └── app.dart
+│
 ├── core/
+│   └── location/
+│       └── location_service.dart
+│
 ├── features/
 │   ├── home/
-│   │   └── presentation/
 │   └── map/
 │       └── presentation/
 │           ├── map_screen.dart
 │           └── widgets/
 │               └── map_controls.dart
+│
 └── main.dart
 ```
 
@@ -123,24 +166,27 @@ lib/
 
 ## Current Application State
 
-The application starts successfully on a physical Android device.
+The application currently provides:
 
-The current application includes:
+- Interactive map
+- Map controls
+- Current user location
+- Permission handling
+- Camera centering
+- Physical Android support
 
-- ProviderScope
-- MaterialApp.router
-- GoRouter
-- Centralized application theme
-- Design tokens
-- Interactive MapLibre map
-- Map pan and zoom interaction
-- Placeholder map controls
-
-The current map style uses the MapLibre demo tile service for development purposes only.
+The application is now ready for location-based fishing functionality.
 
 ---
 
-## Android Build Configuration
+## Android Configuration
+
+Foreground location permissions are configured:
+
+- ACCESS_FINE_LOCATION
+- ACCESS_COARSE_LOCATION
+
+Background location is intentionally **not** implemented.
 
 Kotlin incremental compilation is currently disabled:
 
@@ -148,61 +194,64 @@ Kotlin incremental compilation is currently disabled:
 kotlin.incremental=false
 ```
 
-This was required because the Kotlin compiler failed when the project and the Dart package cache were located on different Windows drives.
-
-The current `maplibre_gl` package also produces a warning concerning future Flutter Built-in Kotlin compatibility. The warning does not currently prevent the application from building or running, but package compatibility must be reviewed during future dependency upgrades.
+This workaround is currently required because of a Kotlin incremental compilation issue when the project and the Pub cache are located on different Windows drives.
 
 ---
 
 ## Development Workflow
 
-1. ChatGPT acts as Software Architect and Technical Lead.
-2. A feature specification or architectural decision is created when required.
-3. Claude Code implements one scoped task at a time.
-4. Claude runs `flutter analyze`.
-5. The implementation is reviewed.
-6. The feature is tested on a physical Android device.
-7. One logical change is committed at a time.
+1. Architectural decision (ADR) when required
+2. Feature specification (MFS)
+3. Technical design (TD)
+4. Claude Code implementation
+5. flutter analyze
+6. Architecture review
+7. Physical Android testing
+8. Git commit
+9. Project status update
 
-Rules:
+Project rules:
 
-- No architectural changes without discussion.
-- No new dependencies without justification.
-- No changes outside the assigned task.
+- Architecture decisions require an ADR.
+- Features require an MFS.
+- Complex implementations require a TD.
+- Device features must be tested on physical hardware.
+- No architectural shortcuts.
+- No unnecessary abstractions.
 - Keep commits small and focused.
-- Do not implement postponed functionality early.
-- Test device-dependent functionality on physical hardware.
 
 ---
 
 ## Next Planned Task
 
-Define the **User Location Feature**.
+### Fishing Spot Foundation
+
+The next feature is expected to establish the foundation for fishing spots.
+
+Planning includes:
+
+- Fishing Spot data model
+- Marker architecture
+- Marker rendering
+- Spot creation workflow
+- Map interaction
+- Repository design
+- Local persistence strategy
 
 Before implementation:
 
-1. Define the exact MVP scope.
-2. Compare suitable Flutter location packages.
-3. Decide how permissions and location services are handled.
-4. Define state-management responsibilities.
-5. Document the feature as MFS-003.
-6. Implement only the approved scope.
+1. Define the architecture.
+2. Write ADRs if required.
+3. Create MFS.
+4. Create TD.
+5. Implement a minimal MVP.
 
-The initial User Location Feature is expected to include:
+Future features remain postponed:
 
-- Foreground location permission handling
-- Detection of disabled location services
-- Displaying the user's current location on the map
-- Centering the map using the existing location button
-- Basic denied-permission and unavailable-location states
-
-The following functionality remains postponed:
-
-- Background location
-- Route recording
-- Continuous trip tracking
-- Fishing spot management
 - Catch logging
-- Offline map downloads
-- Local database
+- Offline maps
+- Route recording
+- Weather integration
 - Cloud synchronization
+- Social features
+- Statistics
