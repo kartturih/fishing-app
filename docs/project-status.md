@@ -8,9 +8,9 @@
 
 ## Current Phase
 
-The application foundation and core map functionality are complete.
+The application foundation and core fishing spot functionality are complete.
 
-The next development phase is **Fishing Spot Management**.
+The next development phase is **Local Persistence (Drift)**.
 
 ---
 
@@ -29,68 +29,104 @@ The next development phase is **Fishing Spot Management**.
 - Material 3 theme implemented
 - Initial design token system created
 
-### Architecture
+### Architecture Decision Records
 
 - ADR-0001: Project Architecture
 - ADR-0002: Map Technology
 - ADR-0003: Core Services
+- ADR-0004: Fishing Spot Domain
 
 ### Feature Specifications
 
 - MFS-001: Map Feature
 - MFS-002: Map Controls
 - MFS-003: User Location
+- MFS-004: Fishing Spot Foundation
+- MFS-005: Create Fishing Spot
 
 ### Technical Designs
 
 - TD-003: User Location Implementation
+- TD-004: Fishing Spot Foundation Implementation
+- TD-005: Create Fishing Spot Implementation
 
-### Implemented Features
+---
 
-#### Map Foundation
+## Implemented Features
+
+### Map
 
 - MapLibre integrated
-- Interactive map implemented
-- Initial camera positioned over Finland
-- Map configured as the application start screen
-- Pan and zoom functionality verified
+- Interactive map
+- Finland initial camera
+- Pan and zoom
+- Physical Android support
 
-#### Map Controls
+### Map Controls
 
-- Reusable MapControls widget
-- Material 3 Floating Action Buttons
-- SafeArea support
 - Current Location button
-- Map Settings placeholder button
+- Add Fishing Spot button
+- Settings button
+- Selection mode controls
 
-#### User Location
+### User Location
 
-- Core LocationService implemented
-- Foreground location permission handling
-- Location service availability detection
+- LocationService
+- Permission handling
 - Current location retrieval
-- Camera centering on current location
-- User location layer enabled
-- Graceful handling of:
-  - Disabled location services
-  - Permission denied
-  - Permission denied forever
-  - Unavailable position
+- Camera centering
+- User location layer
+- Graceful error handling
+
+### Fishing Spots
+
+- Framework-independent FishingSpot domain model
+- Temporary in-memory fishing spot store
+- Development sample fishing spots
+- Marker rendering
+- Marker labels
+- Runtime marker creation
+
+### Fishing Spot Creation
+
+- Create from current location
+- Create from map
+- Crosshair map selection
+- Fishing spot naming
+- Immediate marker rendering
+- Session-only storage
 
 ---
 
 ## Validation
 
-Verified on a physical Android device:
+Verified on a physical Android device.
 
-- Application starts successfully
+### Map
+
 - Map loads correctly
-- Pan and zoom work correctly
-- Map controls function correctly
-- Location permission flow verified
-- Camera centers on current location
-- Disabled location services handled correctly
-- `flutter analyze` passes without issues
+- Pan works
+- Zoom works
+
+### User Location
+
+- Permission flow works
+- Camera centers correctly
+- Location failures handled correctly
+
+### Fishing Spots
+
+- Sample markers displayed
+- New spots created from current location
+- New spots created from map selection
+- Crosshair mode verified
+- Marker rendering verified
+- Existing markers preserved
+
+### Quality
+
+- flutter analyze passes
+- Architecture review completed
 
 ---
 
@@ -106,7 +142,6 @@ Verified on a physical Android device:
 - Offline-first
 - Feature-first
 - Core Services
-- Repository Pattern (planned)
 
 ### State Management
 
@@ -119,7 +154,6 @@ Verified on a physical Android device:
 ### Maps
 
 - MapLibre GL
-- maplibre_gl
 
 ### Location
 
@@ -128,13 +162,13 @@ Verified on a physical Android device:
 ### UI
 
 - Material 3
-- Centralized Theme
 - Design Tokens
 
 ### Planned
 
-- Drift (SQLite)
-- Supabase (future)
+- Drift
+- Repository Layer
+- Supabase
 
 ---
 
@@ -143,22 +177,15 @@ Verified on a physical Android device:
 ```text
 lib/
 ├── app/
-│   ├── router/
-│   ├── theme/
-│   └── app.dart
-│
 ├── core/
 │   └── location/
-│       └── location_service.dart
-│
 ├── features/
+│   ├── fishing_spots/
+│   │   ├── data/
+│   │   ├── domain/
+│   │   └── presentation/
 │   ├── home/
 │   └── map/
-│       └── presentation/
-│           ├── map_screen.dart
-│           └── widgets/
-│               └── map_controls.dart
-│
 └── main.dart
 ```
 
@@ -166,43 +193,37 @@ lib/
 
 ## Current Application State
 
-The application currently provides:
+The application currently supports:
 
 - Interactive map
-- Map controls
-- Current user location
-- Permission handling
-- Camera centering
-- Physical Android support
+- User location
+- Fishing spot markers
+- Create fishing spots
+- Create from current location
+- Create from map
+- Crosshair map selection
+- Session-only in-memory storage
 
-The application is now ready for location-based fishing functionality.
+The next milestone is persistent offline storage using Drift.
 
 ---
 
 ## Android Configuration
 
-Foreground location permissions are configured:
+Configured:
 
 - ACCESS_FINE_LOCATION
 - ACCESS_COARSE_LOCATION
 
-Background location is intentionally **not** implemented.
-
-Kotlin incremental compilation is currently disabled:
-
-```properties
-kotlin.incremental=false
-```
-
-This workaround is currently required because of a Kotlin incremental compilation issue when the project and the Pub cache are located on different Windows drives.
+Background location is intentionally not implemented.
 
 ---
 
 ## Development Workflow
 
-1. Architectural decision (ADR) when required
-2. Feature specification (MFS)
-3. Technical design (TD)
+1. ADR (when required)
+2. MFS
+3. TD
 4. Claude Code implementation
 5. flutter analyze
 6. Architecture review
@@ -210,48 +231,29 @@ This workaround is currently required because of a Kotlin incremental compilatio
 8. Git commit
 9. Project status update
 
-Project rules:
-
-- Architecture decisions require an ADR.
-- Features require an MFS.
-- Complex implementations require a TD.
-- Device features must be tested on physical hardware.
-- No architectural shortcuts.
-- No unnecessary abstractions.
-- Keep commits small and focused.
-
 ---
 
 ## Next Planned Task
 
-### Fishing Spot Foundation
+### Local Persistence
 
-The next feature is expected to establish the foundation for fishing spots.
+Introduce persistent offline storage using Drift.
 
-Planning includes:
+Goals:
 
-- Fishing Spot data model
-- Marker architecture
-- Marker rendering
-- Spot creation workflow
-- Map interaction
-- Repository design
-- Local persistence strategy
+- Integrate Drift
+- Create FishingSpot table
+- Create FishingSpot repository
+- Replace session-only storage
+- Automatically restore fishing spots when the application starts
 
-Before implementation:
+Future work:
 
-1. Define the architecture.
-2. Write ADRs if required.
-3. Create MFS.
-4. Create TD.
-5. Implement a minimal MVP.
-
-Future features remain postponed:
-
+- Edit fishing spots
+- Delete fishing spots
+- Spot details
 - Catch logging
-- Offline maps
-- Route recording
-- Weather integration
+- Photos
+- Notes
+- Offline map tiles
 - Cloud synchronization
-- Social features
-- Statistics
