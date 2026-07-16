@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/core/location/location_service.dart';
-import 'package:fishing_app/features/fishing_spots/data/sample_fishing_spots.dart';
+import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/add_fishing_spot_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_name_bottom_sheet.dart';
@@ -22,6 +25,9 @@ class _MapScreenState extends State<MapScreen> {
   );
 
   final LocationService _locationService = const LocationService();
+  final AppDatabase _database = AppDatabase();
+  late final FishingSpotRepository _fishingSpotRepository =
+      FishingSpotRepository(_database);
 
   MapLibreMapController? _mapController;
   bool _myLocationEnabled = false;
@@ -29,8 +35,11 @@ class _MapScreenState extends State<MapScreen> {
   bool _isSelectionMode = false;
   bool _isCreatingFishingSpot = false;
 
-  String _generateFishingSpotId() =>
-      'spot-${DateTime.now().microsecondsSinceEpoch}';
+  @override
+  void dispose() {
+    unawaited(_database.close());
+    super.dispose();
+  }
 
   Future<void> _addFishingSpotMarkers() async {
     final controller = _mapController;
@@ -38,9 +47,17 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
 
+    List<FishingSpot> spots;
+    try {
+      spots = await _fishingSpotRepository.loadAll();
+    } catch (error) {
+      debugPrint('Failed to load fishing spots: $error');
+      return;
+    }
+
     var allMarkersAdded = true;
 
-    for (final spot in sampleFishingSpots) {
+    for (final spot in spots) {
       final success = await _addFishingSpotMarker(spot);
       if (!success) {
         allMarkersAdded = false;
@@ -168,16 +185,21 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
 
-    final spot = FishingSpot(
-      id: _generateFishingSpotId(),
-      name: name,
-      latitude: position.latitude,
-      longitude: position.longitude,
-      createdAt: DateTime.now(),
-    );
-
-    sampleFishingSpots.add(spot);
-    await _addFishingSpotMarker(spot);
+    try {
+      final spot = await _fishingSpotRepository.create(
+        name: name,
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+      await _addFishingSpotMarker(spot);
+    } catch (error) {
+      debugPrint('Failed to save fishing spot: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save the fishing spot.')),
+        );
+      }
+    }
   }
 
   void _showLocationFailureMessage(LocationFailureReason reason) {
