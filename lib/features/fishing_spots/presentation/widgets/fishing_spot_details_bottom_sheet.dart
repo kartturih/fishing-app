@@ -3,13 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:fishing_app/app/theme/app_spacing.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 
+sealed class FishingSpotDetailsResult {
+  const FishingSpotDetailsResult();
+}
+
+final class FishingSpotRenamed extends FishingSpotDetailsResult {
+  const FishingSpotRenamed(this.name);
+
+  final String name;
+}
+
+final class FishingSpotDeleted extends FishingSpotDetailsResult {
+  const FishingSpotDeleted();
+}
+
 class FishingSpotDetailsBottomSheet extends StatefulWidget {
   const FishingSpotDetailsBottomSheet({super.key, required this.fishingSpot});
 
   final FishingSpot fishingSpot;
 
-  static Future<String?> show(BuildContext context, FishingSpot fishingSpot) {
-    return showModalBottomSheet<String>(
+  static Future<FishingSpotDetailsResult?> show(
+    BuildContext context,
+    FishingSpot fishingSpot,
+  ) {
+    return showModalBottomSheet<FishingSpotDetailsResult>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -57,7 +74,33 @@ class _FishingSpotDetailsBottomSheetState
     }
 
     setState(() => _isSaving = true);
-    Navigator.of(context).pop(name);
+    Navigator.of(context).pop(FishingSpotRenamed(name));
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Fishing Spot'),
+        content: Text(
+          'Delete "${widget.fishingSpot.name}"? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pop(const FishingSpotDeleted());
+    }
   }
 
   @override
@@ -90,6 +133,15 @@ class _FishingSpotDetailsBottomSheetState
       FilledButton.tonal(
         onPressed: _startEditing,
         child: const Text('Edit Name'),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      OutlinedButton(
+        onPressed: _confirmDelete,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Theme.of(context).colorScheme.error,
+          side: BorderSide(color: Theme.of(context).colorScheme.error),
+        ),
+        child: const Text('Delete'),
       ),
     ];
   }

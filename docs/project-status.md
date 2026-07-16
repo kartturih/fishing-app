@@ -2,15 +2,15 @@
 
 ## Last Updated
 
-2026-07-15
+2026-07-17
 
 ---
 
 ## Current Phase
 
-The application foundation and core fishing spot functionality are complete.
+The application foundation and Fishing Spot management are complete.
 
-The next development phase is **Local Persistence (Drift)**.
+The next development phase is **Catch Foundation**.
 
 ---
 
@@ -18,37 +18,45 @@ The next development phase is **Local Persistence (Drift)**.
 
 ### Project Foundation
 
-- Git repository initialized
-- GitHub repository connected
-- Initial project documentation created
-- Flutter project initialized
-- Android development environment configured
-- Riverpod integrated
-- GoRouter integrated
-- Feature-first project structure established
-- Material 3 theme implemented
-- Initial design token system created
+* Git repository initialized
+* GitHub repository connected
+* Initial project documentation created
+* Flutter project initialized
+* Android development environment configured
+* Riverpod integrated
+* GoRouter integrated
+* Feature-first project structure established
+* Material 3 theme implemented
+* Initial design token system created
 
 ### Architecture Decision Records
 
-- ADR-0001: Project Architecture
-- ADR-0002: Map Technology
-- ADR-0003: Core Services
-- ADR-0004: Fishing Spot Domain
+* ADR-0001: Project Architecture
+* ADR-0002: Map Technology
+* ADR-0003: Core Services
+* ADR-0004: Fishing Spot Domain
+* ADR-0005: Local Persistence
+* ADR-0006: Database Ownership
 
 ### Feature Specifications
 
-- MFS-001: Map Feature
-- MFS-002: Map Controls
-- MFS-003: User Location
-- MFS-004: Fishing Spot Foundation
-- MFS-005: Create Fishing Spot
+* MFS-001: Map Feature
+* MFS-002: Map Controls
+* MFS-003: User Location
+* MFS-004: Fishing Spot Foundation
+* MFS-005: Create Fishing Spot
+* MFS-006: Local Persistence
+* MFS-007: Edit Fishing Spot
+* MFS-008: Delete Fishing Spot
 
 ### Technical Designs
 
-- TD-003: User Location Implementation
-- TD-004: Fishing Spot Foundation Implementation
-- TD-005: Create Fishing Spot Implementation
+* TD-003: User Location Implementation
+* TD-004: Fishing Spot Foundation Implementation
+* TD-005: Create Fishing Spot Implementation
+* TD-006: Local Persistence Implementation
+* TD-007: Edit Fishing Spot Implementation
+* TD-008: Delete Fishing Spot Implementation
 
 ---
 
@@ -56,77 +64,89 @@ The next development phase is **Local Persistence (Drift)**.
 
 ### Map
 
-- MapLibre integrated
-- Interactive map
-- Finland initial camera
-- Pan and zoom
-- Physical Android support
+* MapLibre integrated
+* Interactive map
+* Finland initial camera
+* Pan and zoom
+* Physical Android support
+* GeoJSON-based fishing spot rendering
 
 ### Map Controls
 
-- Current Location button
-- Add Fishing Spot button
-- Settings button
-- Selection mode controls
+* Current Location button
+* Add Fishing Spot button
+* Settings button
+* Selection mode controls
 
 ### User Location
 
-- LocationService
-- Permission handling
-- Current location retrieval
-- Camera centering
-- User location layer
-- Graceful error handling
+* LocationService
+* Permission handling
+* Current location retrieval
+* Camera centering
+* User location layer
+* Graceful error handling
 
 ### Fishing Spots
 
-- Framework-independent FishingSpot domain model
-- Temporary in-memory fishing spot store
-- Development sample fishing spots
-- Marker rendering
-- Marker labels
-- Runtime marker creation
+* Framework-independent FishingSpot domain model
+* Drift persistence
+* Repository pattern
+* GeoJSON-backed marker rendering
+* Marker labels
+* Automatic loading on application startup
+* Persistent offline storage
 
-### Fishing Spot Creation
+### Fishing Spot Management
 
-- Create from current location
-- Create from map
-- Crosshair map selection
-- Fishing spot naming
-- Immediate marker rendering
-- Session-only storage
+* Create from current location
+* Create from map
+* Crosshair map selection
+* Fishing spot naming
+* Edit fishing spot names
+* Delete fishing spots
+* Delete confirmation dialog
+* Immediate marker updates
+* Immediate marker removal
+* Persistent CRUD operations
 
 ---
 
 ## Validation
 
-Verified on a physical Android device.
+Verified on physical Android devices.
 
 ### Map
 
-- Map loads correctly
-- Pan works
-- Zoom works
+* Map loads correctly
+* Pan works
+* Zoom works
+* Marker rendering verified
+* Marker updates verified
 
 ### User Location
 
-- Permission flow works
-- Camera centers correctly
-- Location failures handled correctly
+* Permission flow works
+* Camera centers correctly
+* Location failures handled correctly
 
 ### Fishing Spots
 
-- Sample markers displayed
-- New spots created from current location
-- New spots created from map selection
-- Crosshair mode verified
-- Marker rendering verified
-- Existing markers preserved
+* Fishing spots persist after restarting
+* Create from current location works
+* Create from map selection works
+* Edit works
+* Delete works
+* Delete confirmation works
+* Crosshair mode verified
+* Existing markers preserved
+* Marker labels update immediately
 
 ### Quality
 
-- flutter analyze passes
-- Architecture review completed
+* flutter analyze passes
+* Architecture review completed
+* Physical Android testing completed
 
 ---
 
@@ -134,41 +154,45 @@ Verified on a physical Android device.
 
 ### Framework
 
-- Flutter
-- Dart
+* Flutter
+* Dart
 
 ### Architecture
 
-- Offline-first
-- Feature-first
-- Core Services
+* Offline-first
+* Feature-first
+* Core Services
 
 ### State Management
 
-- Riverpod
+* Riverpod
 
 ### Navigation
 
-- GoRouter
+* GoRouter
 
 ### Maps
 
-- MapLibre GL
+* MapLibre GL
+* GeoJSON Sources & Layers
+
+### Local Database
+
+* Drift
+* SQLite
 
 ### Location
 
-- geolocator
+* geolocator
 
 ### UI
 
-- Material 3
-- Design Tokens
+* Material 3
+* Design Tokens
 
 ### Planned
 
-- Drift
-- Repository Layer
-- Supabase
+* Supabase
 
 ---
 
@@ -178,6 +202,7 @@ Verified on a physical Android device.
 lib/
 ├── app/
 ├── core/
+│   ├── database/
 │   └── location/
 ├── features/
 │   ├── fishing_spots/
@@ -195,16 +220,17 @@ lib/
 
 The application currently supports:
 
-- Interactive map
-- User location
-- Fishing spot markers
-- Create fishing spots
-- Create from current location
-- Create from map
-- Crosshair map selection
-- Session-only in-memory storage
-
-The next milestone is persistent offline storage using Drift.
+* Interactive map
+* User location
+* Persistent offline fishing spots
+* Fishing spot markers
+* Create fishing spots
+* Edit fishing spot names
+* Delete fishing spots
+* Create from current location
+* Create from map
+* Crosshair map selection
+* Automatic loading of stored fishing spots
 
 ---
 
@@ -212,8 +238,8 @@ The next milestone is persistent offline storage using Drift.
 
 Configured:
 
-- ACCESS_FINE_LOCATION
-- ACCESS_COARSE_LOCATION
+* ACCESS_FINE_LOCATION
+* ACCESS_COARSE_LOCATION
 
 Background location is intentionally not implemented.
 
@@ -225,8 +251,8 @@ Background location is intentionally not implemented.
 2. MFS
 3. TD
 4. Claude Code implementation
-5. flutter analyze
-6. Architecture review
+5. Architecture review
+6. flutter analyze
 7. Physical Android testing
 8. Git commit
 9. Project status update
@@ -235,25 +261,23 @@ Background location is intentionally not implemented.
 
 ## Next Planned Task
 
-### Local Persistence
+### Catch Foundation
 
-Introduce persistent offline storage using Drift.
+Introduce the first version of catch management.
 
 Goals:
 
-- Integrate Drift
-- Create FishingSpot table
-- Create FishingSpot repository
-- Replace session-only storage
-- Automatically restore fishing spots when the application starts
+* Define the Catch domain model.
+* Design the Catch data model.
+* Associate catches with fishing spots.
+* Prepare the application for catch logging.
 
 Future work:
 
-- Edit fishing spots
-- Delete fishing spots
-- Spot details
-- Catch logging
-- Photos
-- Notes
-- Offline map tiles
-- Cloud synchronization
+* Catch logging
+* Photos
+* Notes
+* Favorites
+* Coordinate editing
+* Offline map tiles
+* Cloud synchronization

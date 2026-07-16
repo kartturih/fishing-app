@@ -66,5 +66,18 @@ class FishingSpotRepository {
     );
   }
 
+  Future<void> delete(String id) async {
+    final table = _database.fishingSpots;
+    final existing = await (_database.select(
+      table,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+
+    if (existing == null) {
+      throw StateError('Fishing spot "$id" was not found.');
+    }
+
+    await (_database.delete(table)..where((t) => t.id.equals(id))).go();
+  }
+
   String _generateId() => 'spot-${DateTime.now().microsecondsSinceEpoch}';
 }

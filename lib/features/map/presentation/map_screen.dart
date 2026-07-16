@@ -184,11 +184,20 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _openFishingSpotDetails(FishingSpot spot) async {
-    final newName = await FishingSpotDetailsBottomSheet.show(context, spot);
-    if (!mounted || newName == null) {
+    final result = await FishingSpotDetailsBottomSheet.show(context, spot);
+    if (!mounted || result == null) {
       return;
     }
 
+    switch (result) {
+      case FishingSpotRenamed(:final name):
+        await _renameFishingSpot(spot, name);
+      case FishingSpotDeleted():
+        await _deleteFishingSpot(spot);
+    }
+  }
+
+  Future<void> _renameFishingSpot(FishingSpot spot, String newName) async {
     FishingSpot updated;
     try {
       updated = await _fishingSpotRepository.updateName(
@@ -219,6 +228,36 @@ class _MapScreenState extends State<MapScreen> {
       );
     } catch (error) {
       debugPrint('Failed to update fishing spot marker: $error');
+    }
+  }
+
+  Future<void> _deleteFishingSpot(FishingSpot spot) async {
+    try {
+      await _fishingSpotRepository.delete(spot.id);
+    } catch (error) {
+      debugPrint('Failed to delete fishing spot: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete the fishing spot.')),
+        );
+      }
+      return;
+    }
+
+    _fishingSpotsById.remove(spot.id);
+
+    final controller = _mapController;
+    if (controller == null) {
+      return;
+    }
+
+    try {
+      await controller.setGeoJsonSource(
+        _fishingSpotsSourceId,
+        _buildFeatureCollection(_fishingSpotsById.values),
+      );
+    } catch (error) {
+      debugPrint('Failed to refresh fishing spot markers: $error');
     }
   }
 
