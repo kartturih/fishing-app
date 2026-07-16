@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math' show Point;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -8,6 +10,7 @@ import 'package:fishing_app/core/location/location_service.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/add_fishing_spot_bottom_sheet.dart';
+import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_details_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_name_bottom_sheet.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart';
 
@@ -24,10 +27,16 @@ class _MapScreenState extends State<MapScreen> {
     zoom: 5,
   );
 
+  static const String _fishingSpotsSourceId = 'fishing-spots-source';
+  static const String _fishingSpotsCircleLayerId = 'fishing-spots-circle-layer';
+  static const String _fishingSpotsSymbolLayerId = 'fishing-spots-symbol-layer';
+
   final LocationService _locationService = const LocationService();
   final AppDatabase _database = AppDatabase();
   late final FishingSpotRepository _fishingSpotRepository =
       FishingSpotRepository(_database);
+
+  final Map<String, FishingSpot> _fishingSpotsById = {};
 
   MapLibreMapController? _mapController;
   bool _myLocationEnabled = false;
@@ -37,10 +46,45 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _mapController?.onFeatureTapped.remove(_onFishingSpotFeatureTapped);
     unawaited(_database.close());
     super.dispose();
   }
 
+  void _onMapCreated(MapLibreMapController controller) {
+    _mapController = controller;
+    controller.onFeatureTapped.add(_onFishingSpotFeatureTapped);
+  }
+
+  Map<String, dynamic> _fishingSpotToFeature(FishingSpot spot) {
+    return {
+      'type': 'Feature',
+      'id': spot.id,
+      'properties': {'id': spot.id, 'name': spot.name},
+      'geometry': {
+        'type': 'Point',
+        'coordinates': [spot.longitude, spot.latitude],
+      },
+    };
+  }
+
+  Map<String, dynamic> _buildFeatureCollection(Iterable<FishingSpot> spots) {
+    return {
+      'type': 'FeatureCollection',
+      'features': [for (final spot in spots) _fishingSpotToFeature(spot)],
+    };
+  }
+
+  /// Sets up a single shared GeoJSON source backing two style layers (a
+  /// circle for the marker dot, a symbol for the name label). Managed
+  /// MapLibre annotations (`addCircle`/`addSymbol`/`updateSymbol`) always
+  /// replace their *entire* backing GeoJSON source on every single call —
+  /// even to add or relabel one marker — which on Android briefly stalls the
+  /// embedded map surface and shows as a black flash. Using one feature-owned
+  /// source for both layers means one full-collection update per fishing
+  /// spot change instead of two (previously one for the circle annotation,
+  /// one for the symbol annotation), halving how often that native refresh
+  /// happens.
   Future<void> _addFishingSpotMarkers() async {
     final controller = _mapController;
     if (controller == null || _fishingSpotMarkersAdded) {
@@ -55,30 +99,21 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
 
-    var allMarkersAdded = true;
-
     for (final spot in spots) {
-      final success = await _addFishingSpotMarker(spot);
-      if (!success) {
-        allMarkersAdded = false;
-      }
-    }
-
-    if (allMarkersAdded) {
-      _fishingSpotMarkersAdded = true;
-    }
-  }
-
-  Future<bool> _addFishingSpotMarker(FishingSpot spot) async {
-    final controller = _mapController;
-    if (controller == null) {
-      return false;
+      _fishingSpotsById[spot.id] = spot;
     }
 
     try {
-      await controller.addCircle(
-        CircleOptions(
-          geometry: LatLng(spot.latitude, spot.longitude),
+      await controller.addGeoJsonSource(
+        _fishingSpotsSourceId,
+        _buildFeatureCollection(_fishingSpotsById.values),
+        promoteId: 'id',
+      );
+
+      await controller.addLayer(
+        _fishingSpotsSourceId,
+        _fishingSpotsCircleLayerId,
+        const CircleLayerProperties(
           circleRadius: 8,
           circleColor: '#009688',
           circleStrokeColor: '#ffffff',
@@ -86,18 +121,104 @@ class _MapScreenState extends State<MapScreen> {
         ),
       );
 
-      await controller.addSymbol(
-        SymbolOptions(
-          geometry: LatLng(spot.latitude, spot.longitude),
-          textField: spot.name,
-          textOffset: const Offset(0, 1.2),
+      await controller.addLayer(
+        _fishingSpotsSourceId,
+        _fishingSpotsSymbolLayerId,
+        SymbolLayerProperties(
+          textField: [Expressions.get, 'name'],
+          textOffset: [0, 1.2],
+          textFont: kIsWeb
+              ? null
+              : const ['Open Sans Regular', 'Arial Unicode MS Regular'],
         ),
       );
 
+      _fishingSpotMarkersAdded = true;
+    } catch (error) {
+      debugPrint('Failed to set up fishing spot markers: $error');
+    }
+  }
+
+  Future<bool> _addFishingSpotFeature(FishingSpot spot) async {
+    final controller = _mapController;
+    if (controller == null) {
+      return false;
+    }
+
+    _fishingSpotsById[spot.id] = spot;
+
+    try {
+      await controller.setGeoJsonSource(
+        _fishingSpotsSourceId,
+        _buildFeatureCollection(_fishingSpotsById.values),
+      );
       return true;
     } catch (error) {
       debugPrint('Failed to add fishing spot marker: $error');
       return false;
+    }
+  }
+
+  void _onFishingSpotFeatureTapped(
+    Point<double> point,
+    LatLng coordinates,
+    String id,
+    String layerId,
+    Annotation? annotation,
+  ) {
+    if (_isSelectionMode) {
+      return;
+    }
+
+    if (layerId != _fishingSpotsCircleLayerId &&
+        layerId != _fishingSpotsSymbolLayerId) {
+      return;
+    }
+
+    final spot = _fishingSpotsById[id];
+    if (spot == null) {
+      return;
+    }
+
+    unawaited(_openFishingSpotDetails(spot));
+  }
+
+  Future<void> _openFishingSpotDetails(FishingSpot spot) async {
+    final newName = await FishingSpotDetailsBottomSheet.show(context, spot);
+    if (!mounted || newName == null) {
+      return;
+    }
+
+    FishingSpot updated;
+    try {
+      updated = await _fishingSpotRepository.updateName(
+        id: spot.id,
+        name: newName,
+      );
+    } catch (error) {
+      debugPrint('Failed to update fishing spot: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update the fishing spot.')),
+        );
+      }
+      return;
+    }
+
+    _fishingSpotsById[updated.id] = updated;
+
+    final controller = _mapController;
+    if (controller == null) {
+      return;
+    }
+
+    try {
+      await controller.setGeoJsonFeature(
+        _fishingSpotsSourceId,
+        _fishingSpotToFeature(updated),
+      );
+    } catch (error) {
+      debugPrint('Failed to update fishing spot marker: $error');
     }
   }
 
@@ -191,7 +312,7 @@ class _MapScreenState extends State<MapScreen> {
         latitude: position.latitude,
         longitude: position.longitude,
       );
-      await _addFishingSpotMarker(spot);
+      await _addFishingSpotFeature(spot);
     } catch (error) {
       debugPrint('Failed to save fishing spot: $error');
       if (mounted) {
@@ -222,6 +343,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Fishing App')),
       body: Stack(
         children: [
@@ -229,7 +351,7 @@ class _MapScreenState extends State<MapScreen> {
             initialCameraPosition: _initialCameraPosition,
             myLocationEnabled: _myLocationEnabled,
             trackCameraPosition: true,
-            onMapCreated: (controller) => _mapController = controller,
+            onMapCreated: _onMapCreated,
             onStyleLoadedCallback: _addFishingSpotMarkers,
             styleString: 'https://demotiles.maplibre.org/style.json',
           ),

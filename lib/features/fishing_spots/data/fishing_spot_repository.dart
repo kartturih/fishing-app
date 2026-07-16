@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart';
+
 import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_mapper.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
@@ -34,6 +36,34 @@ class FishingSpotRepository {
 
     await _database.into(_database.fishingSpots).insert(spot.toCompanion());
     return spot;
+  }
+
+  Future<FishingSpot> updateName({
+    required String id,
+    required String name,
+  }) async {
+    final table = _database.fishingSpots;
+    final existing = await (_database.select(
+      table,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+
+    if (existing == null) {
+      throw StateError('Fishing spot "$id" was not found.');
+    }
+
+    await (_database.update(
+      table,
+    )..where((t) => t.id.equals(id))).write(
+      FishingSpotsCompanion(name: Value(name)),
+    );
+
+    return FishingSpot(
+      id: existing.id,
+      name: name,
+      latitude: existing.latitude,
+      longitude: existing.longitude,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(existing.createdAt),
+    );
   }
 
   String _generateId() => 'spot-${DateTime.now().microsecondsSinceEpoch}';
