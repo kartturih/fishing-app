@@ -4,6 +4,7 @@ import 'package:fishing_app/app/theme/app_spacing.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 
 sealed class FishingSpotDetailsResult {
@@ -22,6 +23,12 @@ final class FishingSpotDeleted extends FishingSpotDetailsResult {
 
 final class FishingSpotAddCatchRequested extends FishingSpotDetailsResult {
   const FishingSpotAddCatchRequested();
+}
+
+final class FishingSpotEditCatchRequested extends FishingSpotDetailsResult {
+  const FishingSpotEditCatchRequested(this.catchModel);
+
+  final Catch catchModel;
 }
 
 class FishingSpotDetailsBottomSheet extends StatefulWidget {
@@ -99,18 +106,18 @@ class _FishingSpotDetailsBottomSheetState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Fishing Spot'),
+        title: const Text('Poista kalastuspaikka'),
         content: Text(
-          'Delete "${widget.fishingSpot.name}"? This cannot be undone.',
+          'Poistetaanko "${widget.fishingSpot.name}"? Toimintoa ei voi perua.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: const Text('Peruuta'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: const Text('Poista'),
           ),
         ],
       ),
@@ -152,7 +159,7 @@ class _FishingSpotDetailsBottomSheetState
       const SizedBox(height: AppSpacing.lg),
       FilledButton.tonal(
         onPressed: _startEditing,
-        child: const Text('Edit Name'),
+        child: const Text('Muokkaa nimeä'),
       ),
       const SizedBox(height: AppSpacing.sm),
       FilledButton.tonalIcon(
@@ -168,7 +175,7 @@ class _FishingSpotDetailsBottomSheetState
           foregroundColor: Theme.of(context).colorScheme.error,
           side: BorderSide(color: Theme.of(context).colorScheme.error),
         ),
-        child: const Text('Delete'),
+        child: const Text('Poista'),
       ),
       const SizedBox(height: AppSpacing.lg),
       _buildCatchesSection(),
@@ -177,14 +184,14 @@ class _FishingSpotDetailsBottomSheetState
 
   List<Widget> _editingContent() {
     return [
-      Text('Edit Name', style: Theme.of(context).textTheme.titleMedium),
+      Text('Muokkaa nimeä', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: AppSpacing.md),
       TextField(
         controller: _nameController,
         autofocus: true,
         enabled: !_isSaving,
         textInputAction: TextInputAction.done,
-        decoration: const InputDecoration(labelText: 'Name'),
+        decoration: const InputDecoration(labelText: 'Nimi'),
         onSubmitted: (_) => _submit(),
       ),
       const SizedBox(height: AppSpacing.lg),
@@ -193,14 +200,14 @@ class _FishingSpotDetailsBottomSheetState
           Expanded(
             child: OutlinedButton(
               onPressed: _isSaving ? null : _cancelEditing,
-              child: const Text('Cancel'),
+              child: const Text('Peruuta'),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: FilledButton(
               onPressed: _isSaving ? null : _submit,
-              child: const Text('Save'),
+              child: const Text('Tallenna'),
             ),
           ),
         ],
@@ -214,13 +221,13 @@ class _FishingSpotDetailsBottomSheetState
       builder: (context, snapshot) {
         final Widget content;
         if (snapshot.connectionState != ConnectionState.done) {
-          content = const Text('Loading...');
+          content = const Text('Ladataan...');
         } else if (snapshot.hasError) {
-          content = const Text('Unable to load catches.');
+          content = const Text('Saaliiden lataaminen epäonnistui.');
         } else {
           final catches = snapshot.data ?? const <Catch>[];
           if (catches.isEmpty) {
-            content = const Text('No catches yet.');
+            content = const Text('Ei vielä saaliita.');
           } else {
             content = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -239,7 +246,7 @@ class _FishingSpotDetailsBottomSheetState
           children: [
             const Divider(),
             const SizedBox(height: AppSpacing.sm),
-            Text('Catches', style: Theme.of(context).textTheme.titleSmall),
+            Text('Saaliit', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: AppSpacing.sm),
             content,
           ],
@@ -251,40 +258,29 @@ class _FishingSpotDetailsBottomSheetState
   Widget _buildCatchRow(Catch catchModel) {
     final measurementLine = _formatMeasurementLine(catchModel);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            catchModel.species.finnishName,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          if (measurementLine != null) Text(measurementLine),
-          Text(
-            _formatCaughtAt(catchModel.caughtAt),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
+    return InkWell(
+      onTap: () =>
+          Navigator.of(context).pop(FishingSpotEditCatchRequested(catchModel)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              catchModel.species.finnishName,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            if (measurementLine != null) Text(measurementLine),
+            Text(
+              _formatCaughtAt(catchModel.caughtAt),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-
-const _monthAbbreviations = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
 
 String? _formatMeasurementLine(Catch catchModel) {
   final parts = [
@@ -316,11 +312,9 @@ String _formatTrimmedDecimal(double value, int maxDecimals) {
   return text;
 }
 
+// Reuses the same date/time formatting as the add/edit catch forms (e.g.
+// "14.7.2026 18.34") instead of English month abbreviations, so the catch
+// list matches the rest of the app's Finnish, numeric date style.
 String _formatCaughtAt(DateTime dateTime) {
-  final day = dateTime.day.toString();
-  final month = _monthAbbreviations[dateTime.month - 1];
-  final year = dateTime.year.toString();
-  final hour = dateTime.hour.toString().padLeft(2, '0');
-  final minute = dateTime.minute.toString().padLeft(2, '0');
-  return '$day $month $year $hour:$minute';
+  return '${formatCatchDate(dateTime)} ${formatCatchTime(dateTime)}';
 }

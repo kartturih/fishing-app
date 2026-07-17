@@ -26,17 +26,17 @@ class AddFishingSpotBottomSheet extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.my_location),
-              title: const Text('Current Location'),
-              onTap: () => Navigator.of(context).pop(
-                FishingSpotCreationMethod.currentLocation,
-              ),
+              title: const Text('Nykyinen sijainti'),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(FishingSpotCreationMethod.currentLocation),
             ),
             ListTile(
               leading: const Icon(Icons.map_outlined),
-              title: const Text('Select From Map'),
-              onTap: () => Navigator.of(context).pop(
-                FishingSpotCreationMethod.selectFromMap,
-              ),
+              title: const Text('Valitse kartalta'),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(FishingSpotCreationMethod.selectFromMap),
             ),
           ],
         ),

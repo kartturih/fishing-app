@@ -8,7 +8,9 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/core/location/location_service.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
+import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/edit_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/add_fishing_spot_bottom_sheet.dart';
@@ -203,6 +205,8 @@ class _MapScreenState extends State<MapScreen> {
         await _deleteFishingSpot(spot);
       case FishingSpotAddCatchRequested():
         await _openAddCatchBottomSheet(spot);
+      case FishingSpotEditCatchRequested(:final catchModel):
+        await _openEditCatchBottomSheet(spot, catchModel);
     }
   }
 
@@ -220,6 +224,33 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<void> _openEditCatchBottomSheet(
+    FishingSpot spot,
+    Catch catchModel,
+  ) async {
+    final result = await EditCatchBottomSheet.show(
+      context,
+      spot,
+      catchModel,
+      _catchRepository,
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    switch (result) {
+      case CatchUpdated():
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Saalis päivitetty')));
+      case CatchDeleted():
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Saalis poistettu')));
+    }
+  }
+
   Future<void> _renameFishingSpot(FishingSpot spot, String newName) async {
     FishingSpot updated;
     try {
@@ -231,7 +262,11 @@ class _MapScreenState extends State<MapScreen> {
       debugPrint('Failed to update fishing spot: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update the fishing spot.')),
+          const SnackBar(
+            content: Text(
+              'Kalastuspaikan päivittäminen epäonnistui. Yritä uudelleen.',
+            ),
+          ),
         );
       }
       return;
@@ -261,7 +296,11 @@ class _MapScreenState extends State<MapScreen> {
       debugPrint('Failed to delete fishing spot: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete the fishing spot.')),
+          const SnackBar(
+            content: Text(
+              'Kalastuspaikan poistaminen epäonnistui. Yritä uudelleen.',
+            ),
+          ),
         );
       }
       return;
@@ -379,7 +418,11 @@ class _MapScreenState extends State<MapScreen> {
       debugPrint('Failed to save fishing spot: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save the fishing spot.')),
+          const SnackBar(
+            content: Text(
+              'Kalastuspaikan tallentaminen epäonnistui. Yritä uudelleen.',
+            ),
+          ),
         );
       }
     }
@@ -388,13 +431,12 @@ class _MapScreenState extends State<MapScreen> {
   void _showLocationFailureMessage(LocationFailureReason reason) {
     final message = switch (reason) {
       LocationFailureReason.serviceDisabled =>
-        'Location services are disabled.',
-      LocationFailureReason.permissionDenied =>
-        'Location permission was denied.',
+        'Sijaintipalvelut on poistettu käytöstä.',
+      LocationFailureReason.permissionDenied => 'Sijaintilupa evättiin.',
       LocationFailureReason.permissionDeniedForever =>
-        'Location permission is permanently denied. Enable it in system settings.',
+        'Sijaintilupa on evätty pysyvästi. Ota se käyttöön järjestelmäasetuksista.',
       LocationFailureReason.positionUnavailable =>
-        'Current location is unavailable.',
+        'Nykyinen sijainti ei ole käytettävissä.',
     };
 
     ScaffoldMessenger.of(
@@ -406,7 +448,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(title: const Text('Fishing App')),
+      appBar: AppBar(title: const Text('Kalastussovellus')),
       body: Stack(
         children: [
           MapLibreMap(

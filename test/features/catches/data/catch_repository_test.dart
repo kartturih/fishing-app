@@ -139,4 +139,231 @@ void main() {
       expect(stored, isNull);
     });
   });
+
+  group('CatchRepository.update', () {
+    test('updates the species', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: FishSpecies.zander,
+        caughtAt: original.caughtAt,
+      );
+
+      expect(updated.species, FishSpecies.zander);
+      final stored = await catchRepository.getById(original.id);
+      expect(stored!.species, FishSpecies.zander);
+    });
+
+    test('updates the caught-at date and time', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17, 10, 0),
+      );
+
+      final newCaughtAt = DateTime(2026, 7, 18, 12, 30);
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: newCaughtAt,
+      );
+
+      expect(updated.caughtAt, newCaughtAt);
+    });
+
+    test('updates the weight', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        weightGrams: 1000,
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+        weightGrams: 2500,
+      );
+
+      expect(updated.weightGrams, 2500);
+    });
+
+    test('updates the length', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        lengthMillimeters: 500,
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+        lengthMillimeters: 720,
+      );
+
+      expect(updated.lengthMillimeters, 720);
+    });
+
+    test('clears an existing weight when omitted', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        weightGrams: 1000,
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+      );
+
+      expect(updated.weightGrams, isNull);
+      final stored = await catchRepository.getById(original.id);
+      expect(stored!.weightGrams, isNull);
+    });
+
+    test('clears an existing length when omitted', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        lengthMillimeters: 500,
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+      );
+
+      expect(updated.lengthMillimeters, isNull);
+      final stored = await catchRepository.getById(original.id);
+      expect(stored!.lengthMillimeters, isNull);
+    });
+
+    test('preserves id, fishingSpotId, and createdAt', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: FishSpecies.zander,
+        caughtAt: DateTime(2026, 7, 18),
+      );
+
+      expect(updated.id, original.id);
+      expect(updated.fishingSpotId, original.fishingSpotId);
+      expect(updated.createdAt, original.createdAt);
+    });
+
+    test('refreshes updatedAt', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 2));
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+      );
+
+      expect(updated.updatedAt.isAfter(original.updatedAt), isTrue);
+    });
+
+    test('rejects a non-positive weight', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      expect(
+        () => catchRepository.update(
+          catchModel: original,
+          species: original.species,
+          caughtAt: original.caughtAt,
+          weightGrams: 0,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('rejects a non-positive length', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      expect(
+        () => catchRepository.update(
+          catchModel: original,
+          species: original.species,
+          caughtAt: original.caughtAt,
+          lengthMillimeters: -1,
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('CatchRepository.delete', () {
+    test('deletes an existing catch', () async {
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      await catchRepository.delete(created.id);
+
+      expect(await catchRepository.getById(created.id), isNull);
+    });
+
+    test('completes successfully when the catch does not exist', () async {
+      await expectLater(
+        catchRepository.delete('catch-does-not-exist'),
+        completes,
+      );
+    });
+
+    test('only affects the selected catch', () async {
+      final first = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 2));
+      final second = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.perch,
+        caughtAt: DateTime(2026, 7, 16),
+      );
+
+      await catchRepository.delete(first.id);
+
+      expect(await catchRepository.getById(first.id), isNull);
+      expect(await catchRepository.getById(second.id), isNotNull);
+    });
+
+    test('rejects an empty id', () async {
+      expect(() => catchRepository.delete(''), throwsArgumentError);
+    });
+  });
 }

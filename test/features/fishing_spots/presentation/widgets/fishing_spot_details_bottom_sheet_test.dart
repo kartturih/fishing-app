@@ -82,12 +82,12 @@ void main() {
 
     await _openSheet(tester, fishingSpot, pendingRepository);
 
-    expect(find.text('Loading...'), findsOneWidget);
+    expect(find.text('Ladataan...'), findsOneWidget);
 
     pendingRepository.pendingResult.complete(const []);
     await tester.pumpAndSettle();
 
-    expect(find.text('No catches yet.'), findsOneWidget);
+    expect(find.text('Ei vielä saaliita.'), findsOneWidget);
   });
 
   testWidgets('shows the empty state when there are no catches', (
@@ -96,7 +96,7 @@ void main() {
     await _openSheet(tester, fishingSpot, catchRepository);
     await tester.pumpAndSettle();
 
-    expect(find.text('No catches yet.'), findsOneWidget);
+    expect(find.text('Ei vielä saaliita.'), findsOneWidget);
   });
 
   testWidgets('shows an error message when loading fails', (tester) async {
@@ -105,10 +105,10 @@ void main() {
     await _openSheet(tester, fishingSpot, catchRepository);
     await tester.pumpAndSettle();
 
-    expect(find.text('Unable to load catches.'), findsOneWidget);
+    expect(find.text('Saaliiden lataaminen epäonnistui.'), findsOneWidget);
     expect(find.text('Merrasjärvi'), findsOneWidget);
-    expect(find.text('Edit Name'), findsOneWidget);
-    expect(find.text('Delete'), findsOneWidget);
+    expect(find.text('Muokkaa nimeä'), findsOneWidget);
+    expect(find.text('Poista'), findsOneWidget);
   });
 
   testWidgets('shows one catch with species, measurements, and date', (
@@ -127,7 +127,7 @@ void main() {
 
     expect(find.text('Hauki'), findsOneWidget);
     expect(find.text('3.2 kg • 78 cm'), findsOneWidget);
-    expect(find.text('14 Jul 2026 18:34'), findsOneWidget);
+    expect(find.text('14.7.2026 18.34'), findsOneWidget);
   });
 
   testWidgets('shows multiple catches in the order the repository returns', (
@@ -298,26 +298,43 @@ void main() {
     });
   });
 
-  testWidgets('catch rows are read-only', (tester) async {
-    await catchRepository.create(
+  testWidgets('tapping a catch requests editing that catch', (tester) async {
+    final createdCatch = await catchRepository.create(
       fishingSpotId: fishingSpot.id,
       species: FishSpecies.zander,
       caughtAt: DateTime(2026, 7, 8, 7, 55),
       lengthMillimeters: 680,
     );
 
-    await _openSheet(tester, fishingSpot, catchRepository);
+    FishingSpotDetailsResult? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                result = await FishingSpotDetailsBottomSheet.show(
+                  context,
+                  fishingSpot,
+                  catchRepository,
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    final speciesText = find.text('Kuha');
-    expect(speciesText, findsOneWidget);
+    await tester.tap(find.text('Kuha'));
+    await tester.pumpAndSettle();
+
+    expect(result, isA<FishingSpotEditCatchRequested>());
     expect(
-      find.ancestor(of: speciesText, matching: find.byType(InkWell)),
-      findsNothing,
-    );
-    expect(
-      find.ancestor(of: speciesText, matching: find.byType(GestureDetector)),
-      findsNothing,
+      (result! as FishingSpotEditCatchRequested).catchModel.id,
+      createdCatch.id,
     );
   });
 }

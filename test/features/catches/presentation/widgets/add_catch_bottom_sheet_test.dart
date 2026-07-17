@@ -155,4 +155,20 @@ void main() {
       expect(validateCatchLengthInput('NaN'), 'Syötä kelvollinen pituus');
     });
   });
+
+  group('formatCatchDate', () {
+    test('formats day.month.year without leading zeros', () {
+      expect(formatCatchDate(DateTime(2026, 7, 14)), '14.7.2026');
+    });
+  });
+
+  group('formatCatchTime', () {
+    test('formats hour.minute with leading zeros', () {
+      expect(formatCatchTime(DateTime(2026, 7, 14, 8, 5)), '08.05');
+    });
+
+    test('formats a two-digit hour and minute unchanged', () {
+      expect(formatCatchTime(DateTime(2026, 7, 14, 18, 34)), '18.34');
+    });
+  });
 }

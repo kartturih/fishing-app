@@ -60,7 +60,7 @@ class _FishingSpotNameBottomSheetState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Fishing Spot Name',
+              'Kalastuspaikan nimi',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -69,7 +69,7 @@ class _FishingSpotNameBottomSheetState
               autofocus: true,
               enabled: !_isSaving,
               textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: const InputDecoration(labelText: 'Nimi'),
               onSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -80,14 +80,14 @@ class _FishingSpotNameBottomSheetState
                     onPressed: _isSaving
                         ? null
                         : () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: const Text('Peruuta'),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: FilledButton(
                     onPressed: _isSaving ? null : _submit,
-                    child: const Text('Save'),
+                    child: const Text('Tallenna'),
                   ),
                 ),
               ],
