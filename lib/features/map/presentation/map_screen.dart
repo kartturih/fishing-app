@@ -187,7 +187,11 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _openFishingSpotDetails(FishingSpot spot) async {
-    final result = await FishingSpotDetailsBottomSheet.show(context, spot);
+    final result = await FishingSpotDetailsBottomSheet.show(
+      context,
+      spot,
+      _catchRepository,
+    );
     if (!mounted || result == null) {
       return;
     }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:fishing_app/app/theme/app_spacing.dart';
+import 'package:fishing_app/features/catches/data/catch_repository.dart';
+import 'package:fishing_app/features/catches/domain/catch.dart';
+import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 
 sealed class FishingSpotDetailsResult {
@@ -22,20 +25,28 @@ final class FishingSpotAddCatchRequested extends FishingSpotDetailsResult {
 }
 
 class FishingSpotDetailsBottomSheet extends StatefulWidget {
-  const FishingSpotDetailsBottomSheet({super.key, required this.fishingSpot});
+  const FishingSpotDetailsBottomSheet({
+    super.key,
+    required this.fishingSpot,
+    required this.catchRepository,
+  });
 
   final FishingSpot fishingSpot;
+  final CatchRepository catchRepository;
 
   static Future<FishingSpotDetailsResult?> show(
     BuildContext context,
     FishingSpot fishingSpot,
+    CatchRepository catchRepository,
   ) {
     return showModalBottomSheet<FishingSpotDetailsResult>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) =>
-          FishingSpotDetailsBottomSheet(fishingSpot: fishingSpot),
+      builder: (context) => FishingSpotDetailsBottomSheet(
+        fishingSpot: fishingSpot,
+        catchRepository: catchRepository,
+      ),
     );
   }
 
@@ -49,6 +60,9 @@ class _FishingSpotDetailsBottomSheetState
   late final TextEditingController _nameController = TextEditingController(
     text: widget.fishingSpot.name,
   );
+  late final Future<List<Catch>> _catchesFuture = widget.catchRepository
+      .getByFishingSpotId(widget.fishingSpot.id);
+
   bool _isEditing = false;
   bool _isSaving = false;
 
@@ -118,10 +132,12 @@ class _FishingSpotDetailsBottomSheetState
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: _isEditing ? _editingContent() : _detailsContent(),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: _isEditing ? _editingContent() : _detailsContent(),
+          ),
         ),
       ),
     );
@@ -154,6 +170,8 @@ class _FishingSpotDetailsBottomSheetState
         ),
         child: const Text('Delete'),
       ),
+      const SizedBox(height: AppSpacing.lg),
+      _buildCatchesSection(),
     ];
   }
 
@@ -189,4 +207,120 @@ class _FishingSpotDetailsBottomSheetState
       ),
     ];
   }
+
+  Widget _buildCatchesSection() {
+    return FutureBuilder<List<Catch>>(
+      future: _catchesFuture,
+      builder: (context, snapshot) {
+        final Widget content;
+        if (snapshot.connectionState != ConnectionState.done) {
+          content = const Text('Loading...');
+        } else if (snapshot.hasError) {
+          content = const Text('Unable to load catches.');
+        } else {
+          final catches = snapshot.data ?? const <Catch>[];
+          if (catches.isEmpty) {
+            content = const Text('No catches yet.');
+          } else {
+            content = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < catches.length; i++) ...[
+                  if (i > 0) const Divider(),
+                  _buildCatchRow(catches[i]),
+                ],
+              ],
+            );
+          }
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Divider(),
+            const SizedBox(height: AppSpacing.sm),
+            Text('Catches', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: AppSpacing.sm),
+            content,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCatchRow(Catch catchModel) {
+    final measurementLine = _formatMeasurementLine(catchModel);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            catchModel.species.finnishName,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          if (measurementLine != null) Text(measurementLine),
+          Text(
+            _formatCaughtAt(catchModel.caughtAt),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+const _monthAbbreviations = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String? _formatMeasurementLine(Catch catchModel) {
+  final parts = [
+    if (catchModel.weightGrams != null) _formatWeight(catchModel.weightGrams!),
+    if (catchModel.lengthMillimeters != null)
+      _formatLength(catchModel.lengthMillimeters!),
+  ];
+
+  return parts.isEmpty ? null : parts.join(' • ');
+}
+
+String _formatWeight(int grams) {
+  if (grams < 1000) {
+    return '$grams g';
+  }
+  return '${_formatTrimmedDecimal(grams / 1000, 3)} kg';
+}
+
+String _formatLength(int millimeters) {
+  return '${_formatTrimmedDecimal(millimeters / 10, 1)} cm';
+}
+
+String _formatTrimmedDecimal(double value, int maxDecimals) {
+  var text = value.toStringAsFixed(maxDecimals);
+  if (text.contains('.')) {
+    text = text.replaceFirst(RegExp(r'0+$'), '');
+    text = text.replaceFirst(RegExp(r'\.$'), '');
+  }
+  return text;
+}
+
+String _formatCaughtAt(DateTime dateTime) {
+  final day = dateTime.day.toString();
+  final month = _monthAbbreviations[dateTime.month - 1];
+  final year = dateTime.year.toString();
+  final hour = dateTime.hour.toString().padLeft(2, '0');
+  final minute = dateTime.minute.toString().padLeft(2, '0');
+  return '$day $month $year $hour:$minute';
 }
