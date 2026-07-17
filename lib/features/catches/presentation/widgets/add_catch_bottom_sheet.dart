@@ -1,34 +1,62 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'package:fishing_app/app/theme/app_spacing.dart';
+import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
+import 'package:fishing_app/features/catch_photos/domain/catch_photo_limits.dart';
+import 'package:fishing_app/features/catch_photos/domain/pending_catch_photo.dart';
+import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_photo_picker.dart';
+import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_photo_preview_list.dart';
+import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_photo_viewer.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 
+sealed class AddCatchResult {
+  const AddCatchResult();
+}
+
+final class CatchCreated extends AddCatchResult {
+  const CatchCreated({
+    required this.catchModel,
+    required this.photoFailureCount,
+  });
+
+  final Catch catchModel;
+  final int photoFailureCount;
+
+  bool get hasPhotoFailures => photoFailureCount > 0;
+}
+
 class AddCatchBottomSheet extends StatefulWidget {
   const AddCatchBottomSheet({
     super.key,
     required this.fishingSpot,
     required this.catchRepository,
+    required this.catchPhotoRepository,
   });
 
   final FishingSpot fishingSpot;
   final CatchRepository catchRepository;
+  final CatchPhotoRepository catchPhotoRepository;
 
-  static Future<Catch?> show(
+  static Future<AddCatchResult?> show(
     BuildContext context,
     FishingSpot fishingSpot,
     CatchRepository catchRepository,
+    CatchPhotoRepository catchPhotoRepository,
   ) {
-    return showModalBottomSheet<Catch>(
+    return showModalBottomSheet<AddCatchResult>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => AddCatchBottomSheet(
         fishingSpot: fishingSpot,
         catchRepository: catchRepository,
+        catchPhotoRepository: catchPhotoRepository,
       ),
     );
   }
@@ -41,10 +69,15 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _weightController = TextEditingController();
   final _lengthController = TextEditingController();
+  final _catchPhotoPicker = CatchPhotoPicker();
 
   FishSpecies? _selectedSpecies;
   late DateTime _selectedCaughtAt;
   bool _isSaving = false;
+  bool _isPickingPhoto = false;
+  final List<PendingCatchPhoto> _pendingPhotos = [];
+
+  bool get _isBusy => _isSaving || _isPickingPhoto;
 
   @override
   void initState() {
@@ -101,8 +134,76 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
     });
   }
 
+  Future<void> _addPhoto() async {
+    if (_isBusy || _pendingPhotos.length >= maxCatchPhotos) {
+      return;
+    }
+
+    final source = await showCatchPhotoSourceDialog(context);
+    if (source == null || !mounted) {
+      return;
+    }
+
+    setState(() => _isPickingPhoto = true);
+
+    final remainingCapacity = maxCatchPhotos - _pendingPhotos.length;
+    final outcome = switch (source) {
+      CatchPhotoSource.camera => await _catchPhotoPicker.pickFromCamera(),
+      CatchPhotoSource.gallery => await _catchPhotoPicker.pickFromGallery(
+        remainingCapacity: remainingCapacity,
+      ),
+    };
+
+    if (!mounted) {
+      return;
+    }
+
+    switch (outcome) {
+      case CatchPhotosSelected(:final photos, :final exceededCapacity):
+        setState(() {
+          _pendingPhotos.addAll(photos);
+          _isPickingPhoto = false;
+        });
+        if (exceededCapacity) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Osa valituista kuvista jätettiin pois, koska kuvien '
+                'enimmäismäärä on 5.',
+              ),
+            ),
+          );
+        }
+      case CatchPhotoPickCancelled():
+        setState(() => _isPickingPhoto = false);
+      case CatchPhotoPickPermissionDenied():
+        setState(() => _isPickingPhoto = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kameran tai kuvien käyttöoikeus puuttuu.'),
+          ),
+        );
+      case CatchPhotoPickFailed():
+        setState(() => _isPickingPhoto = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kuvan lisääminen epäonnistui.')),
+        );
+    }
+  }
+
+  void _removePendingPhoto(PendingCatchPhoto pendingPhoto) {
+    setState(() => _pendingPhotos.remove(pendingPhoto));
+  }
+
+  void _openViewer(int index) {
+    final files = [
+      for (final pendingPhoto in _pendingPhotos) File(pendingPhoto.sourcePath),
+    ];
+    CatchPhotoViewer.open(context, files: files, initialIndex: index);
+  }
+
   Future<void> _submit() async {
-    if (_isSaving) {
+    if (_isBusy) {
       return;
     }
 
@@ -128,19 +229,15 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
         ? null
         : centimetersToMillimeters(parseCatchMeasurementInput(lengthText)!);
 
+    final Catch createdCatch;
     try {
-      final createdCatch = await widget.catchRepository.create(
+      createdCatch = await widget.catchRepository.create(
         fishingSpotId: widget.fishingSpot.id,
         species: species,
         caughtAt: _selectedCaughtAt,
         weightGrams: weightGrams,
         lengthMillimeters: lengthMillimeters,
       );
-
-      if (!mounted) {
-        return;
-      }
-      Navigator.of(context).pop(createdCatch);
     } catch (error) {
       debugPrint('Failed to save catch: $error');
       if (mounted) {
@@ -153,7 +250,32 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
           ),
         );
       }
+      return;
     }
+
+    var photoFailureCount = 0;
+    if (_pendingPhotos.isNotEmpty) {
+      try {
+        final result = await widget.catchPhotoRepository.addMany(
+          catchId: createdCatch.id,
+          pendingPhotos: _pendingPhotos,
+        );
+        photoFailureCount = result.failedCount;
+      } catch (error) {
+        debugPrint('Failed to add catch photos: $error');
+        photoFailureCount = _pendingPhotos.length;
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop(
+      CatchCreated(
+        catchModel: createdCatch,
+        photoFailureCount: photoFailureCount,
+      ),
+    );
   }
 
   @override
@@ -241,6 +363,20 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
                   validator: validateCatchLengthInput,
                 ),
                 const SizedBox(height: AppSpacing.lg),
+                Text('Kuvat', style: Theme.of(context).textTheme.labelMedium),
+                const SizedBox(height: AppSpacing.xs),
+                CatchPhotoPreviewList(
+                  existingPhotos: const [],
+                  existingFiles: const {},
+                  pendingPhotos: _pendingPhotos,
+                  maxPhotos: maxCatchPhotos,
+                  isAddEnabled: !_isBusy,
+                  onAddPressed: _addPhoto,
+                  onRemovePending: _removePendingPhoto,
+                  onDeleteExisting: (_) {},
+                  onOpenViewer: _openViewer,
+                ),
+                const SizedBox(height: AppSpacing.lg),
                 Row(
                   children: [
                     Expanded(
@@ -254,7 +390,7 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: FilledButton(
-                        onPressed: _isSaving ? null : _submit,
+                        onPressed: _isBusy ? null : _submit,
                         child: _isSaving
                             ? const SizedBox(
                                 height: 16,

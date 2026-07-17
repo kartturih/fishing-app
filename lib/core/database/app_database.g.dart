@@ -902,16 +902,398 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
   }
 }
 
+class $CatchPhotosTable extends CatchPhotos
+    with TableInfo<$CatchPhotosTable, CatchPhotoEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CatchPhotosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _catchIdMeta = const VerificationMeta(
+    'catchId',
+  );
+  @override
+  late final GeneratedColumn<String> catchId = GeneratedColumn<String>(
+    'catch_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES catches (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _relativePathMeta = const VerificationMeta(
+    'relativePath',
+  );
+  @override
+  late final GeneratedColumn<String> relativePath = GeneratedColumn<String>(
+    'relative_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    catchId,
+    relativePath,
+    sortOrder,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'catch_photos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CatchPhotoEntity> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('catch_id')) {
+      context.handle(
+        _catchIdMeta,
+        catchId.isAcceptableOrUnknown(data['catch_id']!, _catchIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_catchIdMeta);
+    }
+    if (data.containsKey('relative_path')) {
+      context.handle(
+        _relativePathMeta,
+        relativePath.isAcceptableOrUnknown(
+          data['relative_path']!,
+          _relativePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relativePathMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sortOrderMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CatchPhotoEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CatchPhotoEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      catchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}catch_id'],
+      )!,
+      relativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}relative_path'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CatchPhotosTable createAlias(String alias) {
+    return $CatchPhotosTable(attachedDatabase, alias);
+  }
+}
+
+class CatchPhotoEntity extends DataClass
+    implements Insertable<CatchPhotoEntity> {
+  final String id;
+  final String catchId;
+  final String relativePath;
+  final int sortOrder;
+  final int createdAt;
+  const CatchPhotoEntity({
+    required this.id,
+    required this.catchId,
+    required this.relativePath,
+    required this.sortOrder,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['catch_id'] = Variable<String>(catchId);
+    map['relative_path'] = Variable<String>(relativePath);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  CatchPhotosCompanion toCompanion(bool nullToAbsent) {
+    return CatchPhotosCompanion(
+      id: Value(id),
+      catchId: Value(catchId),
+      relativePath: Value(relativePath),
+      sortOrder: Value(sortOrder),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CatchPhotoEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CatchPhotoEntity(
+      id: serializer.fromJson<String>(json['id']),
+      catchId: serializer.fromJson<String>(json['catchId']),
+      relativePath: serializer.fromJson<String>(json['relativePath']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'catchId': serializer.toJson<String>(catchId),
+      'relativePath': serializer.toJson<String>(relativePath),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  CatchPhotoEntity copyWith({
+    String? id,
+    String? catchId,
+    String? relativePath,
+    int? sortOrder,
+    int? createdAt,
+  }) => CatchPhotoEntity(
+    id: id ?? this.id,
+    catchId: catchId ?? this.catchId,
+    relativePath: relativePath ?? this.relativePath,
+    sortOrder: sortOrder ?? this.sortOrder,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  CatchPhotoEntity copyWithCompanion(CatchPhotosCompanion data) {
+    return CatchPhotoEntity(
+      id: data.id.present ? data.id.value : this.id,
+      catchId: data.catchId.present ? data.catchId.value : this.catchId,
+      relativePath: data.relativePath.present
+          ? data.relativePath.value
+          : this.relativePath,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CatchPhotoEntity(')
+          ..write('id: $id, ')
+          ..write('catchId: $catchId, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, catchId, relativePath, sortOrder, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CatchPhotoEntity &&
+          other.id == this.id &&
+          other.catchId == this.catchId &&
+          other.relativePath == this.relativePath &&
+          other.sortOrder == this.sortOrder &&
+          other.createdAt == this.createdAt);
+}
+
+class CatchPhotosCompanion extends UpdateCompanion<CatchPhotoEntity> {
+  final Value<String> id;
+  final Value<String> catchId;
+  final Value<String> relativePath;
+  final Value<int> sortOrder;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const CatchPhotosCompanion({
+    this.id = const Value.absent(),
+    this.catchId = const Value.absent(),
+    this.relativePath = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CatchPhotosCompanion.insert({
+    required String id,
+    required String catchId,
+    required String relativePath,
+    required int sortOrder,
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       catchId = Value(catchId),
+       relativePath = Value(relativePath),
+       sortOrder = Value(sortOrder),
+       createdAt = Value(createdAt);
+  static Insertable<CatchPhotoEntity> custom({
+    Expression<String>? id,
+    Expression<String>? catchId,
+    Expression<String>? relativePath,
+    Expression<int>? sortOrder,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (catchId != null) 'catch_id': catchId,
+      if (relativePath != null) 'relative_path': relativePath,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CatchPhotosCompanion copyWith({
+    Value<String>? id,
+    Value<String>? catchId,
+    Value<String>? relativePath,
+    Value<int>? sortOrder,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return CatchPhotosCompanion(
+      id: id ?? this.id,
+      catchId: catchId ?? this.catchId,
+      relativePath: relativePath ?? this.relativePath,
+      sortOrder: sortOrder ?? this.sortOrder,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (catchId.present) {
+      map['catch_id'] = Variable<String>(catchId.value);
+    }
+    if (relativePath.present) {
+      map['relative_path'] = Variable<String>(relativePath.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CatchPhotosCompanion(')
+          ..write('id: $id, ')
+          ..write('catchId: $catchId, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $FishingSpotsTable fishingSpots = $FishingSpotsTable(this);
   late final $CatchesTable catches = $CatchesTable(this);
+  late final $CatchPhotosTable catchPhotos = $CatchPhotosTable(this);
+  late final Index catchPhotosCatchIdSort = Index(
+    'catch_photos_catch_id_sort',
+    'CREATE INDEX catch_photos_catch_id_sort ON catch_photos (catch_id, sort_order)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [fishingSpots, catches];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    fishingSpots,
+    catches,
+    catchPhotos,
+    catchPhotosCatchIdSort,
+  ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
     WritePropagation(
@@ -920,6 +1302,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('catches', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'catches',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('catch_photos', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -1274,6 +1663,24 @@ final class $$CatchesTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$CatchPhotosTable, List<CatchPhotoEntity>>
+  _catchPhotosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.catchPhotos,
+    aliasName: 'catches__id__catch_photos__catch_id',
+  );
+
+  $$CatchPhotosTableProcessedTableManager get catchPhotosRefs {
+    final manager = $$CatchPhotosTableTableManager(
+      $_db,
+      $_db.catchPhotos,
+    ).filter((f) => f.catchId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_catchPhotosRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$CatchesTableFilterComposer
@@ -1341,6 +1748,31 @@ class $$CatchesTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> catchPhotosRefs(
+    Expression<bool> Function($$CatchPhotosTableFilterComposer f) f,
+  ) {
+    final $$CatchPhotosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.catchPhotos,
+      getReferencedColumn: (t) => t.catchId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CatchPhotosTableFilterComposer(
+            $db: $db,
+            $table: $db.catchPhotos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -1468,6 +1900,31 @@ class $$CatchesTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> catchPhotosRefs<T extends Object>(
+    Expression<T> Function($$CatchPhotosTableAnnotationComposer a) f,
+  ) {
+    final $$CatchPhotosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.catchPhotos,
+      getReferencedColumn: (t) => t.catchId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CatchPhotosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.catchPhotos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CatchesTableTableManager
@@ -1483,7 +1940,7 @@ class $$CatchesTableTableManager
           $$CatchesTableUpdateCompanionBuilder,
           (CatchEntity, $$CatchesTableReferences),
           CatchEntity,
-          PrefetchHooks Function({bool fishingSpotId})
+          PrefetchHooks Function({bool fishingSpotId, bool catchPhotosRefs})
         > {
   $$CatchesTableTableManager(_$AppDatabase db, $CatchesTable table)
     : super(
@@ -1548,7 +2005,351 @@ class $$CatchesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({fishingSpotId = false}) {
+          prefetchHooksCallback:
+              ({fishingSpotId = false, catchPhotosRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (catchPhotosRefs) db.catchPhotos,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (fishingSpotId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.fishingSpotId,
+                                    referencedTable: $$CatchesTableReferences
+                                        ._fishingSpotIdTable(db),
+                                    referencedColumn: $$CatchesTableReferences
+                                        ._fishingSpotIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (catchPhotosRefs)
+                        await $_getPrefetchedData<
+                          CatchEntity,
+                          $CatchesTable,
+                          CatchPhotoEntity
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CatchesTableReferences
+                              ._catchPhotosRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CatchesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).catchPhotosRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.catchId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$CatchesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CatchesTable,
+      CatchEntity,
+      $$CatchesTableFilterComposer,
+      $$CatchesTableOrderingComposer,
+      $$CatchesTableAnnotationComposer,
+      $$CatchesTableCreateCompanionBuilder,
+      $$CatchesTableUpdateCompanionBuilder,
+      (CatchEntity, $$CatchesTableReferences),
+      CatchEntity,
+      PrefetchHooks Function({bool fishingSpotId, bool catchPhotosRefs})
+    >;
+typedef $$CatchPhotosTableCreateCompanionBuilder =
+    CatchPhotosCompanion Function({
+      required String id,
+      required String catchId,
+      required String relativePath,
+      required int sortOrder,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$CatchPhotosTableUpdateCompanionBuilder =
+    CatchPhotosCompanion Function({
+      Value<String> id,
+      Value<String> catchId,
+      Value<String> relativePath,
+      Value<int> sortOrder,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$CatchPhotosTableReferences
+    extends BaseReferences<_$AppDatabase, $CatchPhotosTable, CatchPhotoEntity> {
+  $$CatchPhotosTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CatchesTable _catchIdTable(_$AppDatabase db) =>
+      db.catches.createAlias('catch_photos__catch_id__catches__id');
+
+  $$CatchesTableProcessedTableManager get catchId {
+    final $_column = $_itemColumn<String>('catch_id')!;
+
+    final manager = $$CatchesTableTableManager(
+      $_db,
+      $_db.catches,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_catchIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CatchPhotosTableFilterComposer
+    extends Composer<_$AppDatabase, $CatchPhotosTable> {
+  $$CatchPhotosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CatchesTableFilterComposer get catchId {
+    final $$CatchesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.catchId,
+      referencedTable: $db.catches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CatchesTableFilterComposer(
+            $db: $db,
+            $table: $db.catches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CatchPhotosTableOrderingComposer
+    extends Composer<_$AppDatabase, $CatchPhotosTable> {
+  $$CatchPhotosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CatchesTableOrderingComposer get catchId {
+    final $$CatchesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.catchId,
+      referencedTable: $db.catches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CatchesTableOrderingComposer(
+            $db: $db,
+            $table: $db.catches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CatchPhotosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CatchPhotosTable> {
+  $$CatchPhotosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$CatchesTableAnnotationComposer get catchId {
+    final $$CatchesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.catchId,
+      referencedTable: $db.catches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CatchesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.catches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CatchPhotosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CatchPhotosTable,
+          CatchPhotoEntity,
+          $$CatchPhotosTableFilterComposer,
+          $$CatchPhotosTableOrderingComposer,
+          $$CatchPhotosTableAnnotationComposer,
+          $$CatchPhotosTableCreateCompanionBuilder,
+          $$CatchPhotosTableUpdateCompanionBuilder,
+          (CatchPhotoEntity, $$CatchPhotosTableReferences),
+          CatchPhotoEntity,
+          PrefetchHooks Function({bool catchId})
+        > {
+  $$CatchPhotosTableTableManager(_$AppDatabase db, $CatchPhotosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CatchPhotosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CatchPhotosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CatchPhotosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> catchId = const Value.absent(),
+                Value<String> relativePath = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CatchPhotosCompanion(
+                id: id,
+                catchId: catchId,
+                relativePath: relativePath,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String catchId,
+                required String relativePath,
+                required int sortOrder,
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CatchPhotosCompanion.insert(
+                id: id,
+                catchId: catchId,
+                relativePath: relativePath,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CatchPhotosTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({catchId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -1568,15 +2369,15 @@ class $$CatchesTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (fishingSpotId) {
+                    if (catchId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.fishingSpotId,
-                                referencedTable: $$CatchesTableReferences
-                                    ._fishingSpotIdTable(db),
-                                referencedColumn: $$CatchesTableReferences
-                                    ._fishingSpotIdTable(db)
+                                currentColumn: table.catchId,
+                                referencedTable: $$CatchPhotosTableReferences
+                                    ._catchIdTable(db),
+                                referencedColumn: $$CatchPhotosTableReferences
+                                    ._catchIdTable(db)
                                     .id,
                               )
                               as T;
@@ -1593,19 +2394,19 @@ class $$CatchesTableTableManager
       );
 }
 
-typedef $$CatchesTableProcessedTableManager =
+typedef $$CatchPhotosTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $CatchesTable,
-      CatchEntity,
-      $$CatchesTableFilterComposer,
-      $$CatchesTableOrderingComposer,
-      $$CatchesTableAnnotationComposer,
-      $$CatchesTableCreateCompanionBuilder,
-      $$CatchesTableUpdateCompanionBuilder,
-      (CatchEntity, $$CatchesTableReferences),
-      CatchEntity,
-      PrefetchHooks Function({bool fishingSpotId})
+      $CatchPhotosTable,
+      CatchPhotoEntity,
+      $$CatchPhotosTableFilterComposer,
+      $$CatchPhotosTableOrderingComposer,
+      $$CatchPhotosTableAnnotationComposer,
+      $$CatchPhotosTableCreateCompanionBuilder,
+      $$CatchPhotosTableUpdateCompanionBuilder,
+      (CatchPhotoEntity, $$CatchPhotosTableReferences),
+      CatchPhotoEntity,
+      PrefetchHooks Function({bool catchId})
     >;
 
 class $AppDatabaseManager {
@@ -1615,4 +2416,6 @@ class $AppDatabaseManager {
       $$FishingSpotsTableTableManager(_db, _db.fishingSpots);
   $$CatchesTableTableManager get catches =>
       $$CatchesTableTableManager(_db, _db.catches);
+  $$CatchPhotosTableTableManager get catchPhotos =>
+      $$CatchPhotosTableTableManager(_db, _db.catchPhotos);
 }

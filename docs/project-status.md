@@ -12,7 +12,7 @@ Fishing Spot management and Catch management foundation are complete.
 
 The application now supports full offline CRUD operations for both Fishing Spots and Catches.
 
-The next development phase is expanding catch functionality.
+Catch Photos (MFS-013 / TD-013) has been implemented: photo attachment during Add/Edit Catch, application-owned storage, and Catch deletion cleanup. Code is complete and all automated tests pass; physical Android testing for this feature has not yet been performed.
 
 ---
 
@@ -54,6 +54,7 @@ The next development phase is expanding catch functionality.
 * MFS-010: Add Catch
 * MFS-011: View Catches
 * MFS-012: Edit & Delete Catch
+* MFS-013: Catch Photos
 
 ### Technical Designs
 
@@ -67,6 +68,7 @@ The next development phase is expanding catch functionality.
 * TD-010: Add Catch Implementation
 * TD-011: View Catches Implementation
 * TD-012: Edit & Delete Catch Implementation
+* TD-013: Catch Photos Implementation
 
 ---
 
@@ -136,6 +138,21 @@ The next development phase is expanding catch functionality.
 * Immediate UI updates
 * Persistent offline CRUD operations
 
+### Catch Photos
+
+* Framework-independent CatchPhoto and PendingCatchPhoto domain models
+* Drift persistence (schema version 3, `catch_photos` table, cascade delete from Catches)
+* Concrete CatchPhotoRepository (ID generation, sort order, max 5 per Catch, storage/database failure cleanup)
+* Application-owned photo storage (`getApplicationDocumentsDirectory`), never a cache directory
+* Image processing: orientation correction, downscale to a 2048px longest side (no upscaling), JPEG re-encode at quality 85
+* Camera and gallery selection (source-selection dialog, not a nested Bottom Sheet)
+* Temporary photo handling during Add Catch (no permanent files/rows before the Catch exists)
+* Persistent photo handling during Edit Catch, including confirmed deletion
+* Full-screen photo viewer as a normal page (`MaterialPageRoute`, `PageView` + `InteractiveViewer`)
+* Missing/corrupt file placeholders
+* Catch deletion cleans up associated photo files before the Catch row is removed
+* Partial photo failures never roll back a successfully saved/updated Catch
+
 ---
 
 ## Validation
@@ -178,13 +195,20 @@ Verified on physical Android devices.
 * Repository tests completed
 * Widget tests completed
 
+### Catch Photos
+
+* Domain, database/migration, storage, and repository tests completed
+* Add/Edit Catch and full-screen viewer widget tests completed
+* flutter analyze passes; all automated tests pass
+* Physical Android testing **not yet performed** for this feature (see Known Limitations below)
+
 ### Quality
 
 * flutter analyze passes
-* 89 automated tests passing
+* 178 automated tests passing
 * Architecture review completed
 * Code review completed
-* Physical Android testing completed
+* Physical Android testing completed for all features prior to Catch Photos
 
 ---
 
@@ -223,6 +247,14 @@ Verified on physical Android devices.
 
 * geolocator
 
+### Photos
+
+* image_picker
+* path_provider
+* path
+* image
+* uuid (added for CatchPhoto UUID v4 identifiers; other domain IDs in the project use a separate, pre-existing timestamp-based scheme)
+
 ### UI
 
 * Material 3
@@ -243,6 +275,13 @@ lib/
 │   ├── database/
 │   └── location/
 ├── features/
+│   ├── catch_photos/
+│   │   ├── data/
+│   │   │   ├── local/
+│   │   │   └── storage/
+│   │   ├── domain/
+│   │   └── presentation/
+│   │       └── widgets/
 │   ├── catches/
 │   │   ├── data/
 │   │   ├── domain/
@@ -277,6 +316,9 @@ The application currently supports:
 * Crosshair map selection
 * Automatic loading of stored fishing spots
 * Automatic loading of catches
+* Catch photos (camera and gallery, up to 5 per Catch)
+* Full-screen photo viewer with zoom
+* Photo cleanup on Catch deletion
 
 ---
 
@@ -288,6 +330,19 @@ Configured:
 * ACCESS_COARSE_LOCATION
 
 Background location is intentionally not implemented.
+
+No additional permissions were required for Catch Photos: `image_picker` on Android launches the system camera app and photo picker via intents, neither of which requires a manifest permission declaration from this app.
+
+---
+
+## iOS Configuration
+
+Added for Catch Photos:
+
+* `NSCameraUsageDescription`
+* `NSPhotoLibraryUsageDescription`
+
+No other iOS configuration changes were required. Physical iOS testing has not been performed (no iOS build target/device in this environment).
 
 ---
 
@@ -305,13 +360,19 @@ Background location is intentionally not implemented.
 
 ---
 
+## Known Limitations
+
+* Physical Android testing for Catch Photos (camera capture, gallery multi-select, permission grant/denial, five-photo limit, image orientation, large camera images, app-restart persistence, photo deletion, Catch deletion cleanup, full-screen viewer, small-screen layout) has not yet been performed and remains outstanding before this feature can be considered fully validated per TD-013's Definition of Done.
+* iOS has not been physically tested for any feature in this project.
+
+---
+
 ## Next Planned Task
 
 Expand catch management.
 
 Possible next features:
 
-* Catch photos
 * Catch notes
 * Favorite fishing spots
 * Favorite catches
@@ -325,9 +386,9 @@ Possible next features:
 
 ## Project Metrics
 
-Current Feature Specifications: 12
+Current Feature Specifications: 13
 
-Current Technical Designs: 10
+Current Technical Designs: 11
 
 Architecture Decision Records: 6
 
@@ -336,11 +397,12 @@ Implemented Core Features:
 * User Location
 * Fishing Spot Management
 * Catch Management
+* Catch Photos
 
 Offline-first: Yes
 
-Physical Android Validation: Completed
+Physical Android Validation: Completed for all features except Catch Photos (pending)
 
 flutter analyze: Passing
 
-Automated Tests: 89 Passing
+Automated Tests: 178 Passing

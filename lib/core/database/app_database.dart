@@ -1,18 +1,19 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'package:fishing_app/features/catch_photos/data/local/catch_photos_table.dart';
 import 'package:fishing_app/features/catches/data/local/catches_table.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spots_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [FishingSpots, Catches])
+@DriftDatabase(tables: [FishingSpots, Catches, CatchPhotos])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
     : super(executor ?? driftDatabase(name: 'fishing_app'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -22,6 +23,10 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
         await migrator.createTable(catches);
+      }
+      if (from < 3) {
+        await migrator.createTable(catchPhotos);
+        await migrator.createIndex(catchPhotosCatchIdSort);
       }
     },
     beforeOpen: (details) async {

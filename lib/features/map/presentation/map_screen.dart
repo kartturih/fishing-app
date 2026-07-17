@@ -5,8 +5,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import 'package:path_provider/path_provider.dart';
+
 import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/core/location/location_service.dart';
+import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
+import 'package:fishing_app/features/catch_photos/data/storage/catch_photo_storage.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
@@ -40,6 +44,13 @@ class _MapScreenState extends State<MapScreen> {
   late final FishingSpotRepository _fishingSpotRepository =
       FishingSpotRepository(_database);
   late final CatchRepository _catchRepository = CatchRepository(_database);
+  late final CatchPhotoStorage _catchPhotoStorage = CatchPhotoStorage(
+    rootDirectoryProvider: getApplicationDocumentsDirectory,
+  );
+  late final CatchPhotoRepository _catchPhotoRepository = CatchPhotoRepository(
+    _database,
+    _catchPhotoStorage,
+  );
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -211,16 +222,30 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _openAddCatchBottomSheet(FishingSpot spot) async {
-    final createdCatch = await AddCatchBottomSheet.show(
+    final result = await AddCatchBottomSheet.show(
       context,
       spot,
       _catchRepository,
+      _catchPhotoRepository,
     );
 
-    if (createdCatch != null && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Saalis tallennettu')));
+    if (result == null || !mounted) {
+      return;
+    }
+
+    switch (result) {
+      case CatchCreated(:final hasPhotoFailures):
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              hasPhotoFailures
+                  ? 'Saalis tallennettu, mutta osaa kuvista ei voitu '
+                        'lisätä. Voit lisätä puuttuvat kuvat myöhemmin '
+                        'muokkaamalla saalista.'
+                  : 'Saalis tallennettu',
+            ),
+          ),
+        );
     }
   }
 
@@ -233,6 +258,7 @@ class _MapScreenState extends State<MapScreen> {
       spot,
       catchModel,
       _catchRepository,
+      _catchPhotoRepository,
     );
 
     if (!mounted || result == null) {
@@ -240,10 +266,16 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     switch (result) {
-      case CatchUpdated():
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Saalis päivitetty')));
+      case CatchUpdated(:final hasPhotoFailures):
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              hasPhotoFailures
+                  ? 'Saalis päivitetty, mutta osaa kuvista ei voitu lisätä.'
+                  : 'Saalis päivitetty',
+            ),
+          ),
+        );
       case CatchDeleted():
         ScaffoldMessenger.of(
           context,

@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Sovellus tarvitsee pääsyn kameraan, jotta voit ottaa kuvia saaliistasi.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Sovellus tarvitsee pääsyn kuvakirjastoon, jotta voit lisätä kuvia saaliistasi.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
