@@ -17,6 +17,10 @@ final class FishingSpotDeleted extends FishingSpotDetailsResult {
   const FishingSpotDeleted();
 }
 
+final class FishingSpotAddCatchRequested extends FishingSpotDetailsResult {
+  const FishingSpotAddCatchRequested();
+}
+
 class FishingSpotDetailsBottomSheet extends StatefulWidget {
   const FishingSpotDetailsBottomSheet({super.key, required this.fishingSpot});
 
@@ -133,6 +137,13 @@ class _FishingSpotDetailsBottomSheetState
       FilledButton.tonal(
         onPressed: _startEditing,
         child: const Text('Edit Name'),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      FilledButton.tonalIcon(
+        onPressed: () =>
+            Navigator.of(context).pop(const FishingSpotAddCatchRequested()),
+        icon: const Icon(Icons.add),
+        label: const Text('Lisää saalis'),
       ),
       const SizedBox(height: AppSpacing.sm),
       OutlinedButton(

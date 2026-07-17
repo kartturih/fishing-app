@@ -7,6 +7,8 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/core/location/location_service.dart';
+import 'package:fishing_app/features/catches/data/catch_repository.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/add_fishing_spot_bottom_sheet.dart';
@@ -35,6 +37,7 @@ class _MapScreenState extends State<MapScreen> {
   final AppDatabase _database = AppDatabase();
   late final FishingSpotRepository _fishingSpotRepository =
       FishingSpotRepository(_database);
+  late final CatchRepository _catchRepository = CatchRepository(_database);
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -194,6 +197,22 @@ class _MapScreenState extends State<MapScreen> {
         await _renameFishingSpot(spot, name);
       case FishingSpotDeleted():
         await _deleteFishingSpot(spot);
+      case FishingSpotAddCatchRequested():
+        await _openAddCatchBottomSheet(spot);
+    }
+  }
+
+  Future<void> _openAddCatchBottomSheet(FishingSpot spot) async {
+    final createdCatch = await AddCatchBottomSheet.show(
+      context,
+      spot,
+      _catchRepository,
+    );
+
+    if (createdCatch != null && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Saalis tallennettu')));
     }
   }
 
