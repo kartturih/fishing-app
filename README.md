@@ -15,9 +15,10 @@ The current version supports:
 - Catch photo attachments
 - Dedicated Catch Details view
 - Full-screen photo viewing and zoom
+- Read-only Lure Catalog with search and filtering
 - Persistent Drift/SQLite storage
 
-215 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
+315 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
 
 ## Vision
 

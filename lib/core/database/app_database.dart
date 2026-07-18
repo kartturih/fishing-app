@@ -4,16 +4,20 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:fishing_app/features/catch_photos/data/local/catch_photos_table.dart';
 import 'package:fishing_app/features/catches/data/local/catches_table.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spots_table.dart';
+import 'package:fishing_app/features/lure_catalog/data/local/lure_models_table.dart';
+import 'package:fishing_app/features/lure_catalog/data/local/lure_variants_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [FishingSpots, Catches, CatchPhotos])
+@DriftDatabase(
+  tables: [FishingSpots, Catches, CatchPhotos, LureModels, LureVariants],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
     : super(executor ?? driftDatabase(name: 'fishing_app'));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -27,6 +31,13 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         await migrator.createTable(catchPhotos);
         await migrator.createIndex(catchPhotosCatchIdSort);
+      }
+      if (from < 4) {
+        await migrator.createTable(lureModels);
+        await migrator.createTable(lureVariants);
+        await migrator.createIndex(lureModelsManufacturer);
+        await migrator.createIndex(lureModelsLureType);
+        await migrator.createIndex(lureVariantsLureModelId);
       }
     },
     beforeOpen: (details) async {

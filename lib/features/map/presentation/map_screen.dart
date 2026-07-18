@@ -18,6 +18,8 @@ import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/add_fishing_spot_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_details_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_name_bottom_sheet.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_list_page.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart';
 
 class MapScreen extends StatefulWidget {
@@ -49,6 +51,8 @@ class _MapScreenState extends State<MapScreen> {
     _database,
     _catchPhotoStorage,
   );
+  late final LureCatalogRepository _lureCatalogRepository =
+      LureCatalogRepository(_database);
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -423,6 +427,22 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // Temporary navigation entry point: the application currently has no
+  // dedicated navigation shell (no drawer, bottom navigation, or home
+  // menu), so this is the only existing screen with an AppBar to attach a
+  // link to. This does not make Lure Catalog a Map sub-feature — the
+  // dependency is one-way, for navigation only, and is expected to move
+  // once real app-wide navigation exists. See TD-015's Navigation Entry
+  // Point (Temporary) section.
+  void _openLureCatalog() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            LureCatalogListPage(repository: _lureCatalogRepository),
+      ),
+    );
+  }
+
   void _showLocationFailureMessage(LocationFailureReason reason) {
     final message = switch (reason) {
       LocationFailureReason.serviceDisabled =>
@@ -443,7 +463,17 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(title: const Text('Kalastussovellus')),
+      appBar: AppBar(
+        title: const Text('Kalastussovellus'),
+        actions: [
+          IconButton(
+            key: const Key('openLureCatalogButton'),
+            icon: const Icon(Icons.menu_book),
+            tooltip: 'Viehekatalogi',
+            onPressed: _openLureCatalog,
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           MapLibreMap(

@@ -1274,15 +1274,1683 @@ class CatchPhotosCompanion extends UpdateCompanion<CatchPhotoEntity> {
   }
 }
 
+class $LureModelsTable extends LureModels
+    with TableInfo<$LureModelsTable, LureModelEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LureModelsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manufacturerMeta = const VerificationMeta(
+    'manufacturer',
+  );
+  @override
+  late final GeneratedColumn<String> manufacturer = GeneratedColumn<String>(
+    'manufacturer',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _productFamilyMeta = const VerificationMeta(
+    'productFamily',
+  );
+  @override
+  late final GeneratedColumn<String> productFamily = GeneratedColumn<String>(
+    'product_family',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _modelNameMeta = const VerificationMeta(
+    'modelName',
+  );
+  @override
+  late final GeneratedColumn<String> modelName = GeneratedColumn<String>(
+    'model_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lureTypeMeta = const VerificationMeta(
+    'lureType',
+  );
+  @override
+  late final GeneratedColumn<String> lureType = GeneratedColumn<String>(
+    'lure_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _defaultImageReferenceMeta =
+      const VerificationMeta('defaultImageReference');
+  @override
+  late final GeneratedColumn<String> defaultImageReference =
+      GeneratedColumn<String>(
+        'default_image_reference',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _searchTextMeta = const VerificationMeta(
+    'searchText',
+  );
+  @override
+  late final GeneratedColumn<String> searchText = GeneratedColumn<String>(
+    'search_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _seedVersionMeta = const VerificationMeta(
+    'seedVersion',
+  );
+  @override
+  late final GeneratedColumn<int> seedVersion = GeneratedColumn<int>(
+    'seed_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    manufacturer,
+    productFamily,
+    modelName,
+    lureType,
+    defaultImageReference,
+    searchText,
+    seedVersion,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lure_models';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LureModelEntity> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('manufacturer')) {
+      context.handle(
+        _manufacturerMeta,
+        manufacturer.isAcceptableOrUnknown(
+          data['manufacturer']!,
+          _manufacturerMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manufacturerMeta);
+    }
+    if (data.containsKey('product_family')) {
+      context.handle(
+        _productFamilyMeta,
+        productFamily.isAcceptableOrUnknown(
+          data['product_family']!,
+          _productFamilyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('model_name')) {
+      context.handle(
+        _modelNameMeta,
+        modelName.isAcceptableOrUnknown(data['model_name']!, _modelNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modelNameMeta);
+    }
+    if (data.containsKey('lure_type')) {
+      context.handle(
+        _lureTypeMeta,
+        lureType.isAcceptableOrUnknown(data['lure_type']!, _lureTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lureTypeMeta);
+    }
+    if (data.containsKey('default_image_reference')) {
+      context.handle(
+        _defaultImageReferenceMeta,
+        defaultImageReference.isAcceptableOrUnknown(
+          data['default_image_reference']!,
+          _defaultImageReferenceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('search_text')) {
+      context.handle(
+        _searchTextMeta,
+        searchText.isAcceptableOrUnknown(data['search_text']!, _searchTextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_searchTextMeta);
+    }
+    if (data.containsKey('seed_version')) {
+      context.handle(
+        _seedVersionMeta,
+        seedVersion.isAcceptableOrUnknown(
+          data['seed_version']!,
+          _seedVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LureModelEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LureModelEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      manufacturer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manufacturer'],
+      )!,
+      productFamily: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}product_family'],
+      ),
+      modelName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_name'],
+      )!,
+      lureType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lure_type'],
+      )!,
+      defaultImageReference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}default_image_reference'],
+      ),
+      searchText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}search_text'],
+      )!,
+      seedVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seed_version'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LureModelsTable createAlias(String alias) {
+    return $LureModelsTable(attachedDatabase, alias);
+  }
+}
+
+class LureModelEntity extends DataClass implements Insertable<LureModelEntity> {
+  final String id;
+  final String manufacturer;
+  final String? productFamily;
+  final String modelName;
+  final String lureType;
+  final String? defaultImageReference;
+  final String searchText;
+  final int? seedVersion;
+  final int createdAt;
+  final int updatedAt;
+  const LureModelEntity({
+    required this.id,
+    required this.manufacturer,
+    this.productFamily,
+    required this.modelName,
+    required this.lureType,
+    this.defaultImageReference,
+    required this.searchText,
+    this.seedVersion,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['manufacturer'] = Variable<String>(manufacturer);
+    if (!nullToAbsent || productFamily != null) {
+      map['product_family'] = Variable<String>(productFamily);
+    }
+    map['model_name'] = Variable<String>(modelName);
+    map['lure_type'] = Variable<String>(lureType);
+    if (!nullToAbsent || defaultImageReference != null) {
+      map['default_image_reference'] = Variable<String>(defaultImageReference);
+    }
+    map['search_text'] = Variable<String>(searchText);
+    if (!nullToAbsent || seedVersion != null) {
+      map['seed_version'] = Variable<int>(seedVersion);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  LureModelsCompanion toCompanion(bool nullToAbsent) {
+    return LureModelsCompanion(
+      id: Value(id),
+      manufacturer: Value(manufacturer),
+      productFamily: productFamily == null && nullToAbsent
+          ? const Value.absent()
+          : Value(productFamily),
+      modelName: Value(modelName),
+      lureType: Value(lureType),
+      defaultImageReference: defaultImageReference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(defaultImageReference),
+      searchText: Value(searchText),
+      seedVersion: seedVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedVersion),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LureModelEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LureModelEntity(
+      id: serializer.fromJson<String>(json['id']),
+      manufacturer: serializer.fromJson<String>(json['manufacturer']),
+      productFamily: serializer.fromJson<String?>(json['productFamily']),
+      modelName: serializer.fromJson<String>(json['modelName']),
+      lureType: serializer.fromJson<String>(json['lureType']),
+      defaultImageReference: serializer.fromJson<String?>(
+        json['defaultImageReference'],
+      ),
+      searchText: serializer.fromJson<String>(json['searchText']),
+      seedVersion: serializer.fromJson<int?>(json['seedVersion']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'manufacturer': serializer.toJson<String>(manufacturer),
+      'productFamily': serializer.toJson<String?>(productFamily),
+      'modelName': serializer.toJson<String>(modelName),
+      'lureType': serializer.toJson<String>(lureType),
+      'defaultImageReference': serializer.toJson<String?>(
+        defaultImageReference,
+      ),
+      'searchText': serializer.toJson<String>(searchText),
+      'seedVersion': serializer.toJson<int?>(seedVersion),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  LureModelEntity copyWith({
+    String? id,
+    String? manufacturer,
+    Value<String?> productFamily = const Value.absent(),
+    String? modelName,
+    String? lureType,
+    Value<String?> defaultImageReference = const Value.absent(),
+    String? searchText,
+    Value<int?> seedVersion = const Value.absent(),
+    int? createdAt,
+    int? updatedAt,
+  }) => LureModelEntity(
+    id: id ?? this.id,
+    manufacturer: manufacturer ?? this.manufacturer,
+    productFamily: productFamily.present
+        ? productFamily.value
+        : this.productFamily,
+    modelName: modelName ?? this.modelName,
+    lureType: lureType ?? this.lureType,
+    defaultImageReference: defaultImageReference.present
+        ? defaultImageReference.value
+        : this.defaultImageReference,
+    searchText: searchText ?? this.searchText,
+    seedVersion: seedVersion.present ? seedVersion.value : this.seedVersion,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  LureModelEntity copyWithCompanion(LureModelsCompanion data) {
+    return LureModelEntity(
+      id: data.id.present ? data.id.value : this.id,
+      manufacturer: data.manufacturer.present
+          ? data.manufacturer.value
+          : this.manufacturer,
+      productFamily: data.productFamily.present
+          ? data.productFamily.value
+          : this.productFamily,
+      modelName: data.modelName.present ? data.modelName.value : this.modelName,
+      lureType: data.lureType.present ? data.lureType.value : this.lureType,
+      defaultImageReference: data.defaultImageReference.present
+          ? data.defaultImageReference.value
+          : this.defaultImageReference,
+      searchText: data.searchText.present
+          ? data.searchText.value
+          : this.searchText,
+      seedVersion: data.seedVersion.present
+          ? data.seedVersion.value
+          : this.seedVersion,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LureModelEntity(')
+          ..write('id: $id, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('productFamily: $productFamily, ')
+          ..write('modelName: $modelName, ')
+          ..write('lureType: $lureType, ')
+          ..write('defaultImageReference: $defaultImageReference, ')
+          ..write('searchText: $searchText, ')
+          ..write('seedVersion: $seedVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    manufacturer,
+    productFamily,
+    modelName,
+    lureType,
+    defaultImageReference,
+    searchText,
+    seedVersion,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LureModelEntity &&
+          other.id == this.id &&
+          other.manufacturer == this.manufacturer &&
+          other.productFamily == this.productFamily &&
+          other.modelName == this.modelName &&
+          other.lureType == this.lureType &&
+          other.defaultImageReference == this.defaultImageReference &&
+          other.searchText == this.searchText &&
+          other.seedVersion == this.seedVersion &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LureModelsCompanion extends UpdateCompanion<LureModelEntity> {
+  final Value<String> id;
+  final Value<String> manufacturer;
+  final Value<String?> productFamily;
+  final Value<String> modelName;
+  final Value<String> lureType;
+  final Value<String?> defaultImageReference;
+  final Value<String> searchText;
+  final Value<int?> seedVersion;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const LureModelsCompanion({
+    this.id = const Value.absent(),
+    this.manufacturer = const Value.absent(),
+    this.productFamily = const Value.absent(),
+    this.modelName = const Value.absent(),
+    this.lureType = const Value.absent(),
+    this.defaultImageReference = const Value.absent(),
+    this.searchText = const Value.absent(),
+    this.seedVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LureModelsCompanion.insert({
+    required String id,
+    required String manufacturer,
+    this.productFamily = const Value.absent(),
+    required String modelName,
+    required String lureType,
+    this.defaultImageReference = const Value.absent(),
+    required String searchText,
+    this.seedVersion = const Value.absent(),
+    required int createdAt,
+    required int updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       manufacturer = Value(manufacturer),
+       modelName = Value(modelName),
+       lureType = Value(lureType),
+       searchText = Value(searchText),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<LureModelEntity> custom({
+    Expression<String>? id,
+    Expression<String>? manufacturer,
+    Expression<String>? productFamily,
+    Expression<String>? modelName,
+    Expression<String>? lureType,
+    Expression<String>? defaultImageReference,
+    Expression<String>? searchText,
+    Expression<int>? seedVersion,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (manufacturer != null) 'manufacturer': manufacturer,
+      if (productFamily != null) 'product_family': productFamily,
+      if (modelName != null) 'model_name': modelName,
+      if (lureType != null) 'lure_type': lureType,
+      if (defaultImageReference != null)
+        'default_image_reference': defaultImageReference,
+      if (searchText != null) 'search_text': searchText,
+      if (seedVersion != null) 'seed_version': seedVersion,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LureModelsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? manufacturer,
+    Value<String?>? productFamily,
+    Value<String>? modelName,
+    Value<String>? lureType,
+    Value<String?>? defaultImageReference,
+    Value<String>? searchText,
+    Value<int?>? seedVersion,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LureModelsCompanion(
+      id: id ?? this.id,
+      manufacturer: manufacturer ?? this.manufacturer,
+      productFamily: productFamily ?? this.productFamily,
+      modelName: modelName ?? this.modelName,
+      lureType: lureType ?? this.lureType,
+      defaultImageReference:
+          defaultImageReference ?? this.defaultImageReference,
+      searchText: searchText ?? this.searchText,
+      seedVersion: seedVersion ?? this.seedVersion,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (manufacturer.present) {
+      map['manufacturer'] = Variable<String>(manufacturer.value);
+    }
+    if (productFamily.present) {
+      map['product_family'] = Variable<String>(productFamily.value);
+    }
+    if (modelName.present) {
+      map['model_name'] = Variable<String>(modelName.value);
+    }
+    if (lureType.present) {
+      map['lure_type'] = Variable<String>(lureType.value);
+    }
+    if (defaultImageReference.present) {
+      map['default_image_reference'] = Variable<String>(
+        defaultImageReference.value,
+      );
+    }
+    if (searchText.present) {
+      map['search_text'] = Variable<String>(searchText.value);
+    }
+    if (seedVersion.present) {
+      map['seed_version'] = Variable<int>(seedVersion.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LureModelsCompanion(')
+          ..write('id: $id, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('productFamily: $productFamily, ')
+          ..write('modelName: $modelName, ')
+          ..write('lureType: $lureType, ')
+          ..write('defaultImageReference: $defaultImageReference, ')
+          ..write('searchText: $searchText, ')
+          ..write('seedVersion: $seedVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LureVariantsTable extends LureVariants
+    with TableInfo<$LureVariantsTable, LureVariantEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LureVariantsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lureModelIdMeta = const VerificationMeta(
+    'lureModelId',
+  );
+  @override
+  late final GeneratedColumn<String> lureModelId = GeneratedColumn<String>(
+    'lure_model_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES lure_models (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _variantNameMeta = const VerificationMeta(
+    'variantName',
+  );
+  @override
+  late final GeneratedColumn<String> variantName = GeneratedColumn<String>(
+    'variant_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorNameMeta = const VerificationMeta(
+    'colorName',
+  );
+  @override
+  late final GeneratedColumn<String> colorName = GeneratedColumn<String>(
+    'color_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _manufacturerColorCodeMeta =
+      const VerificationMeta('manufacturerColorCode');
+  @override
+  late final GeneratedColumn<String> manufacturerColorCode =
+      GeneratedColumn<String>(
+        'manufacturer_color_code',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lengthMillimetersMeta = const VerificationMeta(
+    'lengthMillimeters',
+  );
+  @override
+  late final GeneratedColumn<int> lengthMillimeters = GeneratedColumn<int>(
+    'length_millimeters',
+    aliasedName,
+    true,
+    check: () =>
+        lengthMillimeters.isNull() |
+        ComparableExpr(lengthMillimeters).isBiggerThanValue(0),
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _weightGramsMeta = const VerificationMeta(
+    'weightGrams',
+  );
+  @override
+  late final GeneratedColumn<int> weightGrams = GeneratedColumn<int>(
+    'weight_grams',
+    aliasedName,
+    true,
+    check: () =>
+        weightGrams.isNull() | ComparableExpr(weightGrams).isBiggerThanValue(0),
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _minRunningDepthMillimetersMeta =
+      const VerificationMeta('minRunningDepthMillimeters');
+  @override
+  late final GeneratedColumn<int> minRunningDepthMillimeters =
+      GeneratedColumn<int>(
+        'min_running_depth_millimeters',
+        aliasedName,
+        true,
+        check: () =>
+            minRunningDepthMillimeters.isNull() |
+            ComparableExpr(minRunningDepthMillimeters).isBiggerThanValue(0),
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _maxRunningDepthMillimetersMeta =
+      const VerificationMeta('maxRunningDepthMillimeters');
+  @override
+  late final GeneratedColumn<int> maxRunningDepthMillimeters =
+      GeneratedColumn<int>(
+        'max_running_depth_millimeters',
+        aliasedName,
+        true,
+        check: () =>
+            maxRunningDepthMillimeters.isNull() |
+            ComparableExpr(maxRunningDepthMillimeters).isBiggerThanValue(0),
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _buoyancyMeta = const VerificationMeta(
+    'buoyancy',
+  );
+  @override
+  late final GeneratedColumn<String> buoyancy = GeneratedColumn<String>(
+    'buoyancy',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _imageReferenceMeta = const VerificationMeta(
+    'imageReference',
+  );
+  @override
+  late final GeneratedColumn<String> imageReference = GeneratedColumn<String>(
+    'image_reference',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _searchTextMeta = const VerificationMeta(
+    'searchText',
+  );
+  @override
+  late final GeneratedColumn<String> searchText = GeneratedColumn<String>(
+    'search_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _seedVersionMeta = const VerificationMeta(
+    'seedVersion',
+  );
+  @override
+  late final GeneratedColumn<int> seedVersion = GeneratedColumn<int>(
+    'seed_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _retiredAtMeta = const VerificationMeta(
+    'retiredAt',
+  );
+  @override
+  late final GeneratedColumn<int> retiredAt = GeneratedColumn<int>(
+    'retired_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    lureModelId,
+    variantName,
+    colorName,
+    manufacturerColorCode,
+    lengthMillimeters,
+    weightGrams,
+    minRunningDepthMillimeters,
+    maxRunningDepthMillimeters,
+    buoyancy,
+    imageReference,
+    searchText,
+    seedVersion,
+    retiredAt,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lure_variants';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LureVariantEntity> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('lure_model_id')) {
+      context.handle(
+        _lureModelIdMeta,
+        lureModelId.isAcceptableOrUnknown(
+          data['lure_model_id']!,
+          _lureModelIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lureModelIdMeta);
+    }
+    if (data.containsKey('variant_name')) {
+      context.handle(
+        _variantNameMeta,
+        variantName.isAcceptableOrUnknown(
+          data['variant_name']!,
+          _variantNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('color_name')) {
+      context.handle(
+        _colorNameMeta,
+        colorName.isAcceptableOrUnknown(data['color_name']!, _colorNameMeta),
+      );
+    }
+    if (data.containsKey('manufacturer_color_code')) {
+      context.handle(
+        _manufacturerColorCodeMeta,
+        manufacturerColorCode.isAcceptableOrUnknown(
+          data['manufacturer_color_code']!,
+          _manufacturerColorCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('length_millimeters')) {
+      context.handle(
+        _lengthMillimetersMeta,
+        lengthMillimeters.isAcceptableOrUnknown(
+          data['length_millimeters']!,
+          _lengthMillimetersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('weight_grams')) {
+      context.handle(
+        _weightGramsMeta,
+        weightGrams.isAcceptableOrUnknown(
+          data['weight_grams']!,
+          _weightGramsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('min_running_depth_millimeters')) {
+      context.handle(
+        _minRunningDepthMillimetersMeta,
+        minRunningDepthMillimeters.isAcceptableOrUnknown(
+          data['min_running_depth_millimeters']!,
+          _minRunningDepthMillimetersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('max_running_depth_millimeters')) {
+      context.handle(
+        _maxRunningDepthMillimetersMeta,
+        maxRunningDepthMillimeters.isAcceptableOrUnknown(
+          data['max_running_depth_millimeters']!,
+          _maxRunningDepthMillimetersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('buoyancy')) {
+      context.handle(
+        _buoyancyMeta,
+        buoyancy.isAcceptableOrUnknown(data['buoyancy']!, _buoyancyMeta),
+      );
+    }
+    if (data.containsKey('image_reference')) {
+      context.handle(
+        _imageReferenceMeta,
+        imageReference.isAcceptableOrUnknown(
+          data['image_reference']!,
+          _imageReferenceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('search_text')) {
+      context.handle(
+        _searchTextMeta,
+        searchText.isAcceptableOrUnknown(data['search_text']!, _searchTextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_searchTextMeta);
+    }
+    if (data.containsKey('seed_version')) {
+      context.handle(
+        _seedVersionMeta,
+        seedVersion.isAcceptableOrUnknown(
+          data['seed_version']!,
+          _seedVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('retired_at')) {
+      context.handle(
+        _retiredAtMeta,
+        retiredAt.isAcceptableOrUnknown(data['retired_at']!, _retiredAtMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LureVariantEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LureVariantEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      lureModelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lure_model_id'],
+      )!,
+      variantName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variant_name'],
+      ),
+      colorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_name'],
+      ),
+      manufacturerColorCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manufacturer_color_code'],
+      ),
+      lengthMillimeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}length_millimeters'],
+      ),
+      weightGrams: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}weight_grams'],
+      ),
+      minRunningDepthMillimeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}min_running_depth_millimeters'],
+      ),
+      maxRunningDepthMillimeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}max_running_depth_millimeters'],
+      ),
+      buoyancy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}buoyancy'],
+      ),
+      imageReference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_reference'],
+      ),
+      searchText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}search_text'],
+      )!,
+      seedVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seed_version'],
+      ),
+      retiredAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retired_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LureVariantsTable createAlias(String alias) {
+    return $LureVariantsTable(attachedDatabase, alias);
+  }
+}
+
+class LureVariantEntity extends DataClass
+    implements Insertable<LureVariantEntity> {
+  final String id;
+  final String lureModelId;
+  final String? variantName;
+  final String? colorName;
+  final String? manufacturerColorCode;
+  final int? lengthMillimeters;
+  final int? weightGrams;
+  final int? minRunningDepthMillimeters;
+  final int? maxRunningDepthMillimeters;
+  final String? buoyancy;
+  final String? imageReference;
+  final String searchText;
+  final int? seedVersion;
+  final int? retiredAt;
+  final int createdAt;
+  final int updatedAt;
+  const LureVariantEntity({
+    required this.id,
+    required this.lureModelId,
+    this.variantName,
+    this.colorName,
+    this.manufacturerColorCode,
+    this.lengthMillimeters,
+    this.weightGrams,
+    this.minRunningDepthMillimeters,
+    this.maxRunningDepthMillimeters,
+    this.buoyancy,
+    this.imageReference,
+    required this.searchText,
+    this.seedVersion,
+    this.retiredAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['lure_model_id'] = Variable<String>(lureModelId);
+    if (!nullToAbsent || variantName != null) {
+      map['variant_name'] = Variable<String>(variantName);
+    }
+    if (!nullToAbsent || colorName != null) {
+      map['color_name'] = Variable<String>(colorName);
+    }
+    if (!nullToAbsent || manufacturerColorCode != null) {
+      map['manufacturer_color_code'] = Variable<String>(manufacturerColorCode);
+    }
+    if (!nullToAbsent || lengthMillimeters != null) {
+      map['length_millimeters'] = Variable<int>(lengthMillimeters);
+    }
+    if (!nullToAbsent || weightGrams != null) {
+      map['weight_grams'] = Variable<int>(weightGrams);
+    }
+    if (!nullToAbsent || minRunningDepthMillimeters != null) {
+      map['min_running_depth_millimeters'] = Variable<int>(
+        minRunningDepthMillimeters,
+      );
+    }
+    if (!nullToAbsent || maxRunningDepthMillimeters != null) {
+      map['max_running_depth_millimeters'] = Variable<int>(
+        maxRunningDepthMillimeters,
+      );
+    }
+    if (!nullToAbsent || buoyancy != null) {
+      map['buoyancy'] = Variable<String>(buoyancy);
+    }
+    if (!nullToAbsent || imageReference != null) {
+      map['image_reference'] = Variable<String>(imageReference);
+    }
+    map['search_text'] = Variable<String>(searchText);
+    if (!nullToAbsent || seedVersion != null) {
+      map['seed_version'] = Variable<int>(seedVersion);
+    }
+    if (!nullToAbsent || retiredAt != null) {
+      map['retired_at'] = Variable<int>(retiredAt);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  LureVariantsCompanion toCompanion(bool nullToAbsent) {
+    return LureVariantsCompanion(
+      id: Value(id),
+      lureModelId: Value(lureModelId),
+      variantName: variantName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(variantName),
+      colorName: colorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorName),
+      manufacturerColorCode: manufacturerColorCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(manufacturerColorCode),
+      lengthMillimeters: lengthMillimeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lengthMillimeters),
+      weightGrams: weightGrams == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weightGrams),
+      minRunningDepthMillimeters:
+          minRunningDepthMillimeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(minRunningDepthMillimeters),
+      maxRunningDepthMillimeters:
+          maxRunningDepthMillimeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(maxRunningDepthMillimeters),
+      buoyancy: buoyancy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(buoyancy),
+      imageReference: imageReference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageReference),
+      searchText: Value(searchText),
+      seedVersion: seedVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedVersion),
+      retiredAt: retiredAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(retiredAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LureVariantEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LureVariantEntity(
+      id: serializer.fromJson<String>(json['id']),
+      lureModelId: serializer.fromJson<String>(json['lureModelId']),
+      variantName: serializer.fromJson<String?>(json['variantName']),
+      colorName: serializer.fromJson<String?>(json['colorName']),
+      manufacturerColorCode: serializer.fromJson<String?>(
+        json['manufacturerColorCode'],
+      ),
+      lengthMillimeters: serializer.fromJson<int?>(json['lengthMillimeters']),
+      weightGrams: serializer.fromJson<int?>(json['weightGrams']),
+      minRunningDepthMillimeters: serializer.fromJson<int?>(
+        json['minRunningDepthMillimeters'],
+      ),
+      maxRunningDepthMillimeters: serializer.fromJson<int?>(
+        json['maxRunningDepthMillimeters'],
+      ),
+      buoyancy: serializer.fromJson<String?>(json['buoyancy']),
+      imageReference: serializer.fromJson<String?>(json['imageReference']),
+      searchText: serializer.fromJson<String>(json['searchText']),
+      seedVersion: serializer.fromJson<int?>(json['seedVersion']),
+      retiredAt: serializer.fromJson<int?>(json['retiredAt']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'lureModelId': serializer.toJson<String>(lureModelId),
+      'variantName': serializer.toJson<String?>(variantName),
+      'colorName': serializer.toJson<String?>(colorName),
+      'manufacturerColorCode': serializer.toJson<String?>(
+        manufacturerColorCode,
+      ),
+      'lengthMillimeters': serializer.toJson<int?>(lengthMillimeters),
+      'weightGrams': serializer.toJson<int?>(weightGrams),
+      'minRunningDepthMillimeters': serializer.toJson<int?>(
+        minRunningDepthMillimeters,
+      ),
+      'maxRunningDepthMillimeters': serializer.toJson<int?>(
+        maxRunningDepthMillimeters,
+      ),
+      'buoyancy': serializer.toJson<String?>(buoyancy),
+      'imageReference': serializer.toJson<String?>(imageReference),
+      'searchText': serializer.toJson<String>(searchText),
+      'seedVersion': serializer.toJson<int?>(seedVersion),
+      'retiredAt': serializer.toJson<int?>(retiredAt),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  LureVariantEntity copyWith({
+    String? id,
+    String? lureModelId,
+    Value<String?> variantName = const Value.absent(),
+    Value<String?> colorName = const Value.absent(),
+    Value<String?> manufacturerColorCode = const Value.absent(),
+    Value<int?> lengthMillimeters = const Value.absent(),
+    Value<int?> weightGrams = const Value.absent(),
+    Value<int?> minRunningDepthMillimeters = const Value.absent(),
+    Value<int?> maxRunningDepthMillimeters = const Value.absent(),
+    Value<String?> buoyancy = const Value.absent(),
+    Value<String?> imageReference = const Value.absent(),
+    String? searchText,
+    Value<int?> seedVersion = const Value.absent(),
+    Value<int?> retiredAt = const Value.absent(),
+    int? createdAt,
+    int? updatedAt,
+  }) => LureVariantEntity(
+    id: id ?? this.id,
+    lureModelId: lureModelId ?? this.lureModelId,
+    variantName: variantName.present ? variantName.value : this.variantName,
+    colorName: colorName.present ? colorName.value : this.colorName,
+    manufacturerColorCode: manufacturerColorCode.present
+        ? manufacturerColorCode.value
+        : this.manufacturerColorCode,
+    lengthMillimeters: lengthMillimeters.present
+        ? lengthMillimeters.value
+        : this.lengthMillimeters,
+    weightGrams: weightGrams.present ? weightGrams.value : this.weightGrams,
+    minRunningDepthMillimeters: minRunningDepthMillimeters.present
+        ? minRunningDepthMillimeters.value
+        : this.minRunningDepthMillimeters,
+    maxRunningDepthMillimeters: maxRunningDepthMillimeters.present
+        ? maxRunningDepthMillimeters.value
+        : this.maxRunningDepthMillimeters,
+    buoyancy: buoyancy.present ? buoyancy.value : this.buoyancy,
+    imageReference: imageReference.present
+        ? imageReference.value
+        : this.imageReference,
+    searchText: searchText ?? this.searchText,
+    seedVersion: seedVersion.present ? seedVersion.value : this.seedVersion,
+    retiredAt: retiredAt.present ? retiredAt.value : this.retiredAt,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  LureVariantEntity copyWithCompanion(LureVariantsCompanion data) {
+    return LureVariantEntity(
+      id: data.id.present ? data.id.value : this.id,
+      lureModelId: data.lureModelId.present
+          ? data.lureModelId.value
+          : this.lureModelId,
+      variantName: data.variantName.present
+          ? data.variantName.value
+          : this.variantName,
+      colorName: data.colorName.present ? data.colorName.value : this.colorName,
+      manufacturerColorCode: data.manufacturerColorCode.present
+          ? data.manufacturerColorCode.value
+          : this.manufacturerColorCode,
+      lengthMillimeters: data.lengthMillimeters.present
+          ? data.lengthMillimeters.value
+          : this.lengthMillimeters,
+      weightGrams: data.weightGrams.present
+          ? data.weightGrams.value
+          : this.weightGrams,
+      minRunningDepthMillimeters: data.minRunningDepthMillimeters.present
+          ? data.minRunningDepthMillimeters.value
+          : this.minRunningDepthMillimeters,
+      maxRunningDepthMillimeters: data.maxRunningDepthMillimeters.present
+          ? data.maxRunningDepthMillimeters.value
+          : this.maxRunningDepthMillimeters,
+      buoyancy: data.buoyancy.present ? data.buoyancy.value : this.buoyancy,
+      imageReference: data.imageReference.present
+          ? data.imageReference.value
+          : this.imageReference,
+      searchText: data.searchText.present
+          ? data.searchText.value
+          : this.searchText,
+      seedVersion: data.seedVersion.present
+          ? data.seedVersion.value
+          : this.seedVersion,
+      retiredAt: data.retiredAt.present ? data.retiredAt.value : this.retiredAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LureVariantEntity(')
+          ..write('id: $id, ')
+          ..write('lureModelId: $lureModelId, ')
+          ..write('variantName: $variantName, ')
+          ..write('colorName: $colorName, ')
+          ..write('manufacturerColorCode: $manufacturerColorCode, ')
+          ..write('lengthMillimeters: $lengthMillimeters, ')
+          ..write('weightGrams: $weightGrams, ')
+          ..write('minRunningDepthMillimeters: $minRunningDepthMillimeters, ')
+          ..write('maxRunningDepthMillimeters: $maxRunningDepthMillimeters, ')
+          ..write('buoyancy: $buoyancy, ')
+          ..write('imageReference: $imageReference, ')
+          ..write('searchText: $searchText, ')
+          ..write('seedVersion: $seedVersion, ')
+          ..write('retiredAt: $retiredAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    lureModelId,
+    variantName,
+    colorName,
+    manufacturerColorCode,
+    lengthMillimeters,
+    weightGrams,
+    minRunningDepthMillimeters,
+    maxRunningDepthMillimeters,
+    buoyancy,
+    imageReference,
+    searchText,
+    seedVersion,
+    retiredAt,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LureVariantEntity &&
+          other.id == this.id &&
+          other.lureModelId == this.lureModelId &&
+          other.variantName == this.variantName &&
+          other.colorName == this.colorName &&
+          other.manufacturerColorCode == this.manufacturerColorCode &&
+          other.lengthMillimeters == this.lengthMillimeters &&
+          other.weightGrams == this.weightGrams &&
+          other.minRunningDepthMillimeters == this.minRunningDepthMillimeters &&
+          other.maxRunningDepthMillimeters == this.maxRunningDepthMillimeters &&
+          other.buoyancy == this.buoyancy &&
+          other.imageReference == this.imageReference &&
+          other.searchText == this.searchText &&
+          other.seedVersion == this.seedVersion &&
+          other.retiredAt == this.retiredAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LureVariantsCompanion extends UpdateCompanion<LureVariantEntity> {
+  final Value<String> id;
+  final Value<String> lureModelId;
+  final Value<String?> variantName;
+  final Value<String?> colorName;
+  final Value<String?> manufacturerColorCode;
+  final Value<int?> lengthMillimeters;
+  final Value<int?> weightGrams;
+  final Value<int?> minRunningDepthMillimeters;
+  final Value<int?> maxRunningDepthMillimeters;
+  final Value<String?> buoyancy;
+  final Value<String?> imageReference;
+  final Value<String> searchText;
+  final Value<int?> seedVersion;
+  final Value<int?> retiredAt;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const LureVariantsCompanion({
+    this.id = const Value.absent(),
+    this.lureModelId = const Value.absent(),
+    this.variantName = const Value.absent(),
+    this.colorName = const Value.absent(),
+    this.manufacturerColorCode = const Value.absent(),
+    this.lengthMillimeters = const Value.absent(),
+    this.weightGrams = const Value.absent(),
+    this.minRunningDepthMillimeters = const Value.absent(),
+    this.maxRunningDepthMillimeters = const Value.absent(),
+    this.buoyancy = const Value.absent(),
+    this.imageReference = const Value.absent(),
+    this.searchText = const Value.absent(),
+    this.seedVersion = const Value.absent(),
+    this.retiredAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LureVariantsCompanion.insert({
+    required String id,
+    required String lureModelId,
+    this.variantName = const Value.absent(),
+    this.colorName = const Value.absent(),
+    this.manufacturerColorCode = const Value.absent(),
+    this.lengthMillimeters = const Value.absent(),
+    this.weightGrams = const Value.absent(),
+    this.minRunningDepthMillimeters = const Value.absent(),
+    this.maxRunningDepthMillimeters = const Value.absent(),
+    this.buoyancy = const Value.absent(),
+    this.imageReference = const Value.absent(),
+    required String searchText,
+    this.seedVersion = const Value.absent(),
+    this.retiredAt = const Value.absent(),
+    required int createdAt,
+    required int updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       lureModelId = Value(lureModelId),
+       searchText = Value(searchText),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<LureVariantEntity> custom({
+    Expression<String>? id,
+    Expression<String>? lureModelId,
+    Expression<String>? variantName,
+    Expression<String>? colorName,
+    Expression<String>? manufacturerColorCode,
+    Expression<int>? lengthMillimeters,
+    Expression<int>? weightGrams,
+    Expression<int>? minRunningDepthMillimeters,
+    Expression<int>? maxRunningDepthMillimeters,
+    Expression<String>? buoyancy,
+    Expression<String>? imageReference,
+    Expression<String>? searchText,
+    Expression<int>? seedVersion,
+    Expression<int>? retiredAt,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (lureModelId != null) 'lure_model_id': lureModelId,
+      if (variantName != null) 'variant_name': variantName,
+      if (colorName != null) 'color_name': colorName,
+      if (manufacturerColorCode != null)
+        'manufacturer_color_code': manufacturerColorCode,
+      if (lengthMillimeters != null) 'length_millimeters': lengthMillimeters,
+      if (weightGrams != null) 'weight_grams': weightGrams,
+      if (minRunningDepthMillimeters != null)
+        'min_running_depth_millimeters': minRunningDepthMillimeters,
+      if (maxRunningDepthMillimeters != null)
+        'max_running_depth_millimeters': maxRunningDepthMillimeters,
+      if (buoyancy != null) 'buoyancy': buoyancy,
+      if (imageReference != null) 'image_reference': imageReference,
+      if (searchText != null) 'search_text': searchText,
+      if (seedVersion != null) 'seed_version': seedVersion,
+      if (retiredAt != null) 'retired_at': retiredAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LureVariantsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? lureModelId,
+    Value<String?>? variantName,
+    Value<String?>? colorName,
+    Value<String?>? manufacturerColorCode,
+    Value<int?>? lengthMillimeters,
+    Value<int?>? weightGrams,
+    Value<int?>? minRunningDepthMillimeters,
+    Value<int?>? maxRunningDepthMillimeters,
+    Value<String?>? buoyancy,
+    Value<String?>? imageReference,
+    Value<String>? searchText,
+    Value<int?>? seedVersion,
+    Value<int?>? retiredAt,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LureVariantsCompanion(
+      id: id ?? this.id,
+      lureModelId: lureModelId ?? this.lureModelId,
+      variantName: variantName ?? this.variantName,
+      colorName: colorName ?? this.colorName,
+      manufacturerColorCode:
+          manufacturerColorCode ?? this.manufacturerColorCode,
+      lengthMillimeters: lengthMillimeters ?? this.lengthMillimeters,
+      weightGrams: weightGrams ?? this.weightGrams,
+      minRunningDepthMillimeters:
+          minRunningDepthMillimeters ?? this.minRunningDepthMillimeters,
+      maxRunningDepthMillimeters:
+          maxRunningDepthMillimeters ?? this.maxRunningDepthMillimeters,
+      buoyancy: buoyancy ?? this.buoyancy,
+      imageReference: imageReference ?? this.imageReference,
+      searchText: searchText ?? this.searchText,
+      seedVersion: seedVersion ?? this.seedVersion,
+      retiredAt: retiredAt ?? this.retiredAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (lureModelId.present) {
+      map['lure_model_id'] = Variable<String>(lureModelId.value);
+    }
+    if (variantName.present) {
+      map['variant_name'] = Variable<String>(variantName.value);
+    }
+    if (colorName.present) {
+      map['color_name'] = Variable<String>(colorName.value);
+    }
+    if (manufacturerColorCode.present) {
+      map['manufacturer_color_code'] = Variable<String>(
+        manufacturerColorCode.value,
+      );
+    }
+    if (lengthMillimeters.present) {
+      map['length_millimeters'] = Variable<int>(lengthMillimeters.value);
+    }
+    if (weightGrams.present) {
+      map['weight_grams'] = Variable<int>(weightGrams.value);
+    }
+    if (minRunningDepthMillimeters.present) {
+      map['min_running_depth_millimeters'] = Variable<int>(
+        minRunningDepthMillimeters.value,
+      );
+    }
+    if (maxRunningDepthMillimeters.present) {
+      map['max_running_depth_millimeters'] = Variable<int>(
+        maxRunningDepthMillimeters.value,
+      );
+    }
+    if (buoyancy.present) {
+      map['buoyancy'] = Variable<String>(buoyancy.value);
+    }
+    if (imageReference.present) {
+      map['image_reference'] = Variable<String>(imageReference.value);
+    }
+    if (searchText.present) {
+      map['search_text'] = Variable<String>(searchText.value);
+    }
+    if (seedVersion.present) {
+      map['seed_version'] = Variable<int>(seedVersion.value);
+    }
+    if (retiredAt.present) {
+      map['retired_at'] = Variable<int>(retiredAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LureVariantsCompanion(')
+          ..write('id: $id, ')
+          ..write('lureModelId: $lureModelId, ')
+          ..write('variantName: $variantName, ')
+          ..write('colorName: $colorName, ')
+          ..write('manufacturerColorCode: $manufacturerColorCode, ')
+          ..write('lengthMillimeters: $lengthMillimeters, ')
+          ..write('weightGrams: $weightGrams, ')
+          ..write('minRunningDepthMillimeters: $minRunningDepthMillimeters, ')
+          ..write('maxRunningDepthMillimeters: $maxRunningDepthMillimeters, ')
+          ..write('buoyancy: $buoyancy, ')
+          ..write('imageReference: $imageReference, ')
+          ..write('searchText: $searchText, ')
+          ..write('seedVersion: $seedVersion, ')
+          ..write('retiredAt: $retiredAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $FishingSpotsTable fishingSpots = $FishingSpotsTable(this);
   late final $CatchesTable catches = $CatchesTable(this);
   late final $CatchPhotosTable catchPhotos = $CatchPhotosTable(this);
+  late final $LureModelsTable lureModels = $LureModelsTable(this);
+  late final $LureVariantsTable lureVariants = $LureVariantsTable(this);
   late final Index catchPhotosCatchIdSort = Index(
     'catch_photos_catch_id_sort',
     'CREATE INDEX catch_photos_catch_id_sort ON catch_photos (catch_id, sort_order)',
+  );
+  late final Index lureModelsManufacturer = Index(
+    'lure_models_manufacturer',
+    'CREATE INDEX lure_models_manufacturer ON lure_models (manufacturer)',
+  );
+  late final Index lureModelsLureType = Index(
+    'lure_models_lure_type',
+    'CREATE INDEX lure_models_lure_type ON lure_models (lure_type)',
+  );
+  late final Index lureVariantsLureModelId = Index(
+    'lure_variants_lure_model_id',
+    'CREATE INDEX lure_variants_lure_model_id ON lure_variants (lure_model_id)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -1292,7 +2960,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     fishingSpots,
     catches,
     catchPhotos,
+    lureModels,
+    lureVariants,
     catchPhotosCatchIdSort,
+    lureModelsManufacturer,
+    lureModelsLureType,
+    lureVariantsLureModelId,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1309,6 +2982,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('catch_photos', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'lure_models',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('lure_variants', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -2408,6 +4088,959 @@ typedef $$CatchPhotosTableProcessedTableManager =
       CatchPhotoEntity,
       PrefetchHooks Function({bool catchId})
     >;
+typedef $$LureModelsTableCreateCompanionBuilder =
+    LureModelsCompanion Function({
+      required String id,
+      required String manufacturer,
+      Value<String?> productFamily,
+      required String modelName,
+      required String lureType,
+      Value<String?> defaultImageReference,
+      required String searchText,
+      Value<int?> seedVersion,
+      required int createdAt,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LureModelsTableUpdateCompanionBuilder =
+    LureModelsCompanion Function({
+      Value<String> id,
+      Value<String> manufacturer,
+      Value<String?> productFamily,
+      Value<String> modelName,
+      Value<String> lureType,
+      Value<String?> defaultImageReference,
+      Value<String> searchText,
+      Value<int?> seedVersion,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$LureModelsTableReferences
+    extends BaseReferences<_$AppDatabase, $LureModelsTable, LureModelEntity> {
+  $$LureModelsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$LureVariantsTable, List<LureVariantEntity>>
+  _lureVariantsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.lureVariants,
+    aliasName: 'lure_models__id__lure_variants__lure_model_id',
+  );
+
+  $$LureVariantsTableProcessedTableManager get lureVariantsRefs {
+    final manager = $$LureVariantsTableTableManager(
+      $_db,
+      $_db.lureVariants,
+    ).filter((f) => f.lureModelId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_lureVariantsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$LureModelsTableFilterComposer
+    extends Composer<_$AppDatabase, $LureModelsTable> {
+  $$LureModelsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get manufacturer => $composableBuilder(
+    column: $table.manufacturer,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get productFamily => $composableBuilder(
+    column: $table.productFamily,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelName => $composableBuilder(
+    column: $table.modelName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lureType => $composableBuilder(
+    column: $table.lureType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get defaultImageReference => $composableBuilder(
+    column: $table.defaultImageReference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get searchText => $composableBuilder(
+    column: $table.searchText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seedVersion => $composableBuilder(
+    column: $table.seedVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> lureVariantsRefs(
+    Expression<bool> Function($$LureVariantsTableFilterComposer f) f,
+  ) {
+    final $$LureVariantsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.lureVariants,
+      getReferencedColumn: (t) => t.lureModelId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LureVariantsTableFilterComposer(
+            $db: $db,
+            $table: $db.lureVariants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LureModelsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LureModelsTable> {
+  $$LureModelsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get manufacturer => $composableBuilder(
+    column: $table.manufacturer,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get productFamily => $composableBuilder(
+    column: $table.productFamily,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelName => $composableBuilder(
+    column: $table.modelName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lureType => $composableBuilder(
+    column: $table.lureType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get defaultImageReference => $composableBuilder(
+    column: $table.defaultImageReference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get searchText => $composableBuilder(
+    column: $table.searchText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seedVersion => $composableBuilder(
+    column: $table.seedVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LureModelsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LureModelsTable> {
+  $$LureModelsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get manufacturer => $composableBuilder(
+    column: $table.manufacturer,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get productFamily => $composableBuilder(
+    column: $table.productFamily,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modelName =>
+      $composableBuilder(column: $table.modelName, builder: (column) => column);
+
+  GeneratedColumn<String> get lureType =>
+      $composableBuilder(column: $table.lureType, builder: (column) => column);
+
+  GeneratedColumn<String> get defaultImageReference => $composableBuilder(
+    column: $table.defaultImageReference,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get searchText => $composableBuilder(
+    column: $table.searchText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get seedVersion => $composableBuilder(
+    column: $table.seedVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  Expression<T> lureVariantsRefs<T extends Object>(
+    Expression<T> Function($$LureVariantsTableAnnotationComposer a) f,
+  ) {
+    final $$LureVariantsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.lureVariants,
+      getReferencedColumn: (t) => t.lureModelId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LureVariantsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.lureVariants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LureModelsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LureModelsTable,
+          LureModelEntity,
+          $$LureModelsTableFilterComposer,
+          $$LureModelsTableOrderingComposer,
+          $$LureModelsTableAnnotationComposer,
+          $$LureModelsTableCreateCompanionBuilder,
+          $$LureModelsTableUpdateCompanionBuilder,
+          (LureModelEntity, $$LureModelsTableReferences),
+          LureModelEntity,
+          PrefetchHooks Function({bool lureVariantsRefs})
+        > {
+  $$LureModelsTableTableManager(_$AppDatabase db, $LureModelsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LureModelsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LureModelsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LureModelsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> manufacturer = const Value.absent(),
+                Value<String?> productFamily = const Value.absent(),
+                Value<String> modelName = const Value.absent(),
+                Value<String> lureType = const Value.absent(),
+                Value<String?> defaultImageReference = const Value.absent(),
+                Value<String> searchText = const Value.absent(),
+                Value<int?> seedVersion = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LureModelsCompanion(
+                id: id,
+                manufacturer: manufacturer,
+                productFamily: productFamily,
+                modelName: modelName,
+                lureType: lureType,
+                defaultImageReference: defaultImageReference,
+                searchText: searchText,
+                seedVersion: seedVersion,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String manufacturer,
+                Value<String?> productFamily = const Value.absent(),
+                required String modelName,
+                required String lureType,
+                Value<String?> defaultImageReference = const Value.absent(),
+                required String searchText,
+                Value<int?> seedVersion = const Value.absent(),
+                required int createdAt,
+                required int updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LureModelsCompanion.insert(
+                id: id,
+                manufacturer: manufacturer,
+                productFamily: productFamily,
+                modelName: modelName,
+                lureType: lureType,
+                defaultImageReference: defaultImageReference,
+                searchText: searchText,
+                seedVersion: seedVersion,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$LureModelsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({lureVariantsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (lureVariantsRefs) db.lureVariants],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (lureVariantsRefs)
+                    await $_getPrefetchedData<
+                      LureModelEntity,
+                      $LureModelsTable,
+                      LureVariantEntity
+                    >(
+                      currentTable: table,
+                      referencedTable: $$LureModelsTableReferences
+                          ._lureVariantsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$LureModelsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).lureVariantsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.lureModelId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LureModelsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LureModelsTable,
+      LureModelEntity,
+      $$LureModelsTableFilterComposer,
+      $$LureModelsTableOrderingComposer,
+      $$LureModelsTableAnnotationComposer,
+      $$LureModelsTableCreateCompanionBuilder,
+      $$LureModelsTableUpdateCompanionBuilder,
+      (LureModelEntity, $$LureModelsTableReferences),
+      LureModelEntity,
+      PrefetchHooks Function({bool lureVariantsRefs})
+    >;
+typedef $$LureVariantsTableCreateCompanionBuilder =
+    LureVariantsCompanion Function({
+      required String id,
+      required String lureModelId,
+      Value<String?> variantName,
+      Value<String?> colorName,
+      Value<String?> manufacturerColorCode,
+      Value<int?> lengthMillimeters,
+      Value<int?> weightGrams,
+      Value<int?> minRunningDepthMillimeters,
+      Value<int?> maxRunningDepthMillimeters,
+      Value<String?> buoyancy,
+      Value<String?> imageReference,
+      required String searchText,
+      Value<int?> seedVersion,
+      Value<int?> retiredAt,
+      required int createdAt,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LureVariantsTableUpdateCompanionBuilder =
+    LureVariantsCompanion Function({
+      Value<String> id,
+      Value<String> lureModelId,
+      Value<String?> variantName,
+      Value<String?> colorName,
+      Value<String?> manufacturerColorCode,
+      Value<int?> lengthMillimeters,
+      Value<int?> weightGrams,
+      Value<int?> minRunningDepthMillimeters,
+      Value<int?> maxRunningDepthMillimeters,
+      Value<String?> buoyancy,
+      Value<String?> imageReference,
+      Value<String> searchText,
+      Value<int?> seedVersion,
+      Value<int?> retiredAt,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$LureVariantsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $LureVariantsTable, LureVariantEntity> {
+  $$LureVariantsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $LureModelsTable _lureModelIdTable(_$AppDatabase db) => db.lureModels
+      .createAlias('lure_variants__lure_model_id__lure_models__id');
+
+  $$LureModelsTableProcessedTableManager get lureModelId {
+    final $_column = $_itemColumn<String>('lure_model_id')!;
+
+    final manager = $$LureModelsTableTableManager(
+      $_db,
+      $_db.lureModels,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_lureModelIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$LureVariantsTableFilterComposer
+    extends Composer<_$AppDatabase, $LureVariantsTable> {
+  $$LureVariantsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get variantName => $composableBuilder(
+    column: $table.variantName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorName => $composableBuilder(
+    column: $table.colorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get manufacturerColorCode => $composableBuilder(
+    column: $table.manufacturerColorCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lengthMillimeters => $composableBuilder(
+    column: $table.lengthMillimeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get weightGrams => $composableBuilder(
+    column: $table.weightGrams,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get minRunningDepthMillimeters => $composableBuilder(
+    column: $table.minRunningDepthMillimeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get maxRunningDepthMillimeters => $composableBuilder(
+    column: $table.maxRunningDepthMillimeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get buoyancy => $composableBuilder(
+    column: $table.buoyancy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imageReference => $composableBuilder(
+    column: $table.imageReference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get searchText => $composableBuilder(
+    column: $table.searchText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seedVersion => $composableBuilder(
+    column: $table.seedVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retiredAt => $composableBuilder(
+    column: $table.retiredAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LureModelsTableFilterComposer get lureModelId {
+    final $$LureModelsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lureModelId,
+      referencedTable: $db.lureModels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LureModelsTableFilterComposer(
+            $db: $db,
+            $table: $db.lureModels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LureVariantsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LureVariantsTable> {
+  $$LureVariantsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get variantName => $composableBuilder(
+    column: $table.variantName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorName => $composableBuilder(
+    column: $table.colorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get manufacturerColorCode => $composableBuilder(
+    column: $table.manufacturerColorCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lengthMillimeters => $composableBuilder(
+    column: $table.lengthMillimeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get weightGrams => $composableBuilder(
+    column: $table.weightGrams,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get minRunningDepthMillimeters => $composableBuilder(
+    column: $table.minRunningDepthMillimeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get maxRunningDepthMillimeters => $composableBuilder(
+    column: $table.maxRunningDepthMillimeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get buoyancy => $composableBuilder(
+    column: $table.buoyancy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get imageReference => $composableBuilder(
+    column: $table.imageReference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get searchText => $composableBuilder(
+    column: $table.searchText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seedVersion => $composableBuilder(
+    column: $table.seedVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retiredAt => $composableBuilder(
+    column: $table.retiredAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LureModelsTableOrderingComposer get lureModelId {
+    final $$LureModelsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lureModelId,
+      referencedTable: $db.lureModels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LureModelsTableOrderingComposer(
+            $db: $db,
+            $table: $db.lureModels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LureVariantsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LureVariantsTable> {
+  $$LureVariantsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get variantName => $composableBuilder(
+    column: $table.variantName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get colorName =>
+      $composableBuilder(column: $table.colorName, builder: (column) => column);
+
+  GeneratedColumn<String> get manufacturerColorCode => $composableBuilder(
+    column: $table.manufacturerColorCode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lengthMillimeters => $composableBuilder(
+    column: $table.lengthMillimeters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get weightGrams => $composableBuilder(
+    column: $table.weightGrams,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get minRunningDepthMillimeters => $composableBuilder(
+    column: $table.minRunningDepthMillimeters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get maxRunningDepthMillimeters => $composableBuilder(
+    column: $table.maxRunningDepthMillimeters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get buoyancy =>
+      $composableBuilder(column: $table.buoyancy, builder: (column) => column);
+
+  GeneratedColumn<String> get imageReference => $composableBuilder(
+    column: $table.imageReference,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get searchText => $composableBuilder(
+    column: $table.searchText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get seedVersion => $composableBuilder(
+    column: $table.seedVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get retiredAt =>
+      $composableBuilder(column: $table.retiredAt, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$LureModelsTableAnnotationComposer get lureModelId {
+    final $$LureModelsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lureModelId,
+      referencedTable: $db.lureModels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LureModelsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.lureModels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LureVariantsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LureVariantsTable,
+          LureVariantEntity,
+          $$LureVariantsTableFilterComposer,
+          $$LureVariantsTableOrderingComposer,
+          $$LureVariantsTableAnnotationComposer,
+          $$LureVariantsTableCreateCompanionBuilder,
+          $$LureVariantsTableUpdateCompanionBuilder,
+          (LureVariantEntity, $$LureVariantsTableReferences),
+          LureVariantEntity,
+          PrefetchHooks Function({bool lureModelId})
+        > {
+  $$LureVariantsTableTableManager(_$AppDatabase db, $LureVariantsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LureVariantsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LureVariantsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LureVariantsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> lureModelId = const Value.absent(),
+                Value<String?> variantName = const Value.absent(),
+                Value<String?> colorName = const Value.absent(),
+                Value<String?> manufacturerColorCode = const Value.absent(),
+                Value<int?> lengthMillimeters = const Value.absent(),
+                Value<int?> weightGrams = const Value.absent(),
+                Value<int?> minRunningDepthMillimeters = const Value.absent(),
+                Value<int?> maxRunningDepthMillimeters = const Value.absent(),
+                Value<String?> buoyancy = const Value.absent(),
+                Value<String?> imageReference = const Value.absent(),
+                Value<String> searchText = const Value.absent(),
+                Value<int?> seedVersion = const Value.absent(),
+                Value<int?> retiredAt = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LureVariantsCompanion(
+                id: id,
+                lureModelId: lureModelId,
+                variantName: variantName,
+                colorName: colorName,
+                manufacturerColorCode: manufacturerColorCode,
+                lengthMillimeters: lengthMillimeters,
+                weightGrams: weightGrams,
+                minRunningDepthMillimeters: minRunningDepthMillimeters,
+                maxRunningDepthMillimeters: maxRunningDepthMillimeters,
+                buoyancy: buoyancy,
+                imageReference: imageReference,
+                searchText: searchText,
+                seedVersion: seedVersion,
+                retiredAt: retiredAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String lureModelId,
+                Value<String?> variantName = const Value.absent(),
+                Value<String?> colorName = const Value.absent(),
+                Value<String?> manufacturerColorCode = const Value.absent(),
+                Value<int?> lengthMillimeters = const Value.absent(),
+                Value<int?> weightGrams = const Value.absent(),
+                Value<int?> minRunningDepthMillimeters = const Value.absent(),
+                Value<int?> maxRunningDepthMillimeters = const Value.absent(),
+                Value<String?> buoyancy = const Value.absent(),
+                Value<String?> imageReference = const Value.absent(),
+                required String searchText,
+                Value<int?> seedVersion = const Value.absent(),
+                Value<int?> retiredAt = const Value.absent(),
+                required int createdAt,
+                required int updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LureVariantsCompanion.insert(
+                id: id,
+                lureModelId: lureModelId,
+                variantName: variantName,
+                colorName: colorName,
+                manufacturerColorCode: manufacturerColorCode,
+                lengthMillimeters: lengthMillimeters,
+                weightGrams: weightGrams,
+                minRunningDepthMillimeters: minRunningDepthMillimeters,
+                maxRunningDepthMillimeters: maxRunningDepthMillimeters,
+                buoyancy: buoyancy,
+                imageReference: imageReference,
+                searchText: searchText,
+                seedVersion: seedVersion,
+                retiredAt: retiredAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$LureVariantsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({lureModelId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (lureModelId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.lureModelId,
+                                referencedTable: $$LureVariantsTableReferences
+                                    ._lureModelIdTable(db),
+                                referencedColumn: $$LureVariantsTableReferences
+                                    ._lureModelIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LureVariantsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LureVariantsTable,
+      LureVariantEntity,
+      $$LureVariantsTableFilterComposer,
+      $$LureVariantsTableOrderingComposer,
+      $$LureVariantsTableAnnotationComposer,
+      $$LureVariantsTableCreateCompanionBuilder,
+      $$LureVariantsTableUpdateCompanionBuilder,
+      (LureVariantEntity, $$LureVariantsTableReferences),
+      LureVariantEntity,
+      PrefetchHooks Function({bool lureModelId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2418,4 +5051,8 @@ class $AppDatabaseManager {
       $$CatchesTableTableManager(_db, _db.catches);
   $$CatchPhotosTableTableManager get catchPhotos =>
       $$CatchPhotosTableTableManager(_db, _db.catchPhotos);
+  $$LureModelsTableTableManager get lureModels =>
+      $$LureModelsTableTableManager(_db, _db.lureModels);
+  $$LureVariantsTableTableManager get lureVariants =>
+      $$LureVariantsTableTableManager(_db, _db.lureVariants);
 }

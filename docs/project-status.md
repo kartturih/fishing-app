@@ -8,11 +8,11 @@
 
 ## Current Phase
 
-Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated.
 
-The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, and a dedicated read-only Catch Details view with a swipeable photo gallery.
+The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, and a shared, read-only Lure Catalog with search and filtering.
 
-The project is ready for the next Catch Management expansion feature.
+The project is ready for the next milestone: Personal Tackle Box (MFS-016).
 
 ---
 
@@ -56,6 +56,7 @@ The project is ready for the next Catch Management expansion feature.
 * MFS-012: Edit & Delete Catch
 * MFS-013: Catch Photos
 * MFS-014: Catch Details View
+* MFS-015: Lure Catalog Foundation
 
 ### Technical Designs
 
@@ -71,6 +72,7 @@ The project is ready for the next Catch Management expansion feature.
 * TD-012: Edit & Delete Catch Implementation
 * TD-013: Catch Photos Implementation
 * TD-014: Catch Details View Implementation
+* TD-015: Lure Catalog Foundation Implementation
 
 ---
 
@@ -172,6 +174,21 @@ The project is ready for the next Catch Management expansion feature.
 * Missing/corrupt image handling
 * Immediate UI updates after edits and deletion
 
+### Lure Catalog
+
+* Framework-independent `LureModel`/`LureVariant` domain models, joined into a flat `LureCatalogEntry` read model for all UI-facing queries
+* Drift persistence (schema migrated from version 3 to version 4: `lure_models` and `lure_variants` tables, with FK cascade delete and indexes on manufacturer/lureType/lureModelId)
+* Concrete, read-only `LureCatalogRepository` (no create/update/delete operations exposed — the catalog is shared reference data, not user-owned data)
+* Versioned, idempotent seed reconciliation (`ensureSeeded()`): inserts missing seed rows, corrects stale seed-owned rows while preserving `createdAt`, and never modifies a row whose `seedVersion` is `null`
+* Variant retirement (soft-delete via `retiredAt`) instead of deletion, with automatic reactivation if a variant reappears in a later seed version
+* Browse, search, and filter by manufacturer and lure type, backed by a single joined query (no N+1)
+* Finnish (ä/ö) case-insensitive search via precomputed, Dart-lowercased `searchText` columns
+* Free-text search treats `%` and `_` as literal characters, not SQL wildcards
+* Filter options (manufacturer/lure type) only ever list values with at least one currently active (non-retired) variant
+* Open, extensible lure type/buoyancy codes with Finnish display labels and a humanized fallback for unrecognized values
+* Lure Catalog list and details pages, with loading/empty/error states and image-load fallback to a placeholder
+* A small, hand-authored local seed dataset (4 models, 14 variants) — local-seed-only in this milestone; no network access, cloud sync, or user-created entries
+
 ---
 
 ## Validation
@@ -236,10 +253,19 @@ Verified on physical Android devices.
 * Edge navigation between photos verified
 * Widget tests completed
 
+### Lure Catalog
+
+* Schema migration (v3 → v4) verified: existing Fishing Spot/Catch/Catch Photo data preserved across the upgrade, new tables usable immediately after
+* Domain, database/migration, mapper, search-text, and repository tests completed
+* Presentation widget tests completed (list, filter, details, loading/empty/error states)
+* Architecture review completed; the 4 Important findings raised (LIKE wildcard escaping, running-depth CHECK constraint, stale out-of-order search results, filter options with no active variants) were all implemented and verified
+* flutter analyze passes; all automated tests pass
+* Physical Android testing completed
+
 ### Quality
 
 * flutter analyze passes, with only 5 pre-existing unrelated info-level lints
-* 215 automated tests passing
+* 315 automated tests passing
 * Architecture review completed
 * Code review completed
 * Physical Android testing completed for all currently implemented Android features
@@ -287,7 +313,7 @@ Verified on physical Android devices.
 * path_provider
 * path
 * image
-* uuid (added for CatchPhoto UUID v4 identifiers; other domain IDs in the project use a separate, pre-existing timestamp-based scheme)
+* uuid (used for CatchPhoto runtime UUID v4 identifiers and for hand-authored, compile-time Lure Catalog seed identifiers; other domain IDs in the project use a separate, pre-existing timestamp-based scheme)
 
 ### UI
 
@@ -325,6 +351,12 @@ lib/
 │   │   ├── domain/
 │   │   └── presentation/
 │   ├── home/
+│   ├── lure_catalog/
+│   │   ├── data/
+│   │   │   └── local/
+│   │   ├── domain/
+│   │   └── presentation/
+│   │       └── widgets/
 │   └── map/
 └── main.dart
 ```
@@ -358,6 +390,9 @@ The application currently supports:
 * Swipeable catch photo gallery
 * One-finger panning of zoomed photos
 * Edge handoff between zoomed photos
+* Read-only Lure Catalog (browse, search, and filter by manufacturer/lure type)
+* Finnish-aware, case-insensitive lure search
+* Lure Catalog details view
 
 ---
 
@@ -372,6 +407,8 @@ Background location is intentionally not implemented.
 
 No additional permissions were required for Catch Photos: `image_picker` on Android launches the system camera app and photo picker via intents, neither of which requires a manifest permission declaration from this app.
 
+No additional permissions were required for the Lure Catalog: it reads bundled local assets and the local database only.
+
 ---
 
 ## iOS Configuration
@@ -381,7 +418,7 @@ Added for Catch Photos:
 * `NSCameraUsageDescription`
 * `NSPhotoLibraryUsageDescription`
 
-No other iOS configuration changes were required. Physical iOS testing has not been performed (no iOS build target/device in this environment).
+No other iOS configuration changes were required, including for the Lure Catalog. Physical iOS testing has not been performed (no iOS build target/device in this environment).
 
 ---
 
@@ -402,31 +439,23 @@ No other iOS configuration changes were required. Physical iOS testing has not b
 ## Known Limitations
 
 * iOS has not been physically tested for any feature in this project.
+* The Lure Catalog is local-seed data only in this milestone: no network access, no cloud sync, and no user-created catalog entries. It is not yet associated with a personal Tackle Box or with Catches.
 
 ---
 
 ## Next Planned Task
 
-Expand catch management. The next exact feature has not yet been selected.
+MFS-016: Personal Tackle Box.
 
-Possible candidates:
-
-* Catch notes
-* Favorite fishing spots
-* Favorite catches
-* Coordinate editing
-* Statistics
-* Weather integration
-* Offline map tiles
-* Cloud synchronization
+Lets an angler mark Lure Catalog entries as part of their own tackle box, building on the read-only Lure Catalog Foundation delivered in MFS-015. Exact scope and technical design have not yet been drafted.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 14
+Current Feature Specifications: 15
 
-Current Technical Designs: 12
+Current Technical Designs: 13
 
 Architecture Decision Records: 6
 
@@ -437,6 +466,7 @@ Implemented Core Features:
 * Catch Management
 * Catch Photos
 * Catch Details
+* Lure Catalog
 
 Offline-first: Yes
 
@@ -444,4 +474,4 @@ Physical Android Validation: Completed for all currently implemented features
 
 flutter analyze: Passing with 5 pre-existing unrelated info-level lints
 
-Automated Tests: 215 Passing
+Automated Tests: 315 Passing
