@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:fishing_app/app/theme/app_spacing.dart';
+import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
-import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
-import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 
 sealed class FishingSpotDetailsResult {
@@ -25,26 +26,23 @@ final class FishingSpotAddCatchRequested extends FishingSpotDetailsResult {
   const FishingSpotAddCatchRequested();
 }
 
-final class FishingSpotEditCatchRequested extends FishingSpotDetailsResult {
-  const FishingSpotEditCatchRequested(this.catchModel);
-
-  final Catch catchModel;
-}
-
 class FishingSpotDetailsBottomSheet extends StatefulWidget {
   const FishingSpotDetailsBottomSheet({
     super.key,
     required this.fishingSpot,
     required this.catchRepository,
+    required this.catchPhotoRepository,
   });
 
   final FishingSpot fishingSpot;
   final CatchRepository catchRepository;
+  final CatchPhotoRepository catchPhotoRepository;
 
   static Future<FishingSpotDetailsResult?> show(
     BuildContext context,
     FishingSpot fishingSpot,
     CatchRepository catchRepository,
+    CatchPhotoRepository catchPhotoRepository,
   ) {
     return showModalBottomSheet<FishingSpotDetailsResult>(
       context: context,
@@ -53,6 +51,7 @@ class FishingSpotDetailsBottomSheet extends StatefulWidget {
       builder: (context) => FishingSpotDetailsBottomSheet(
         fishingSpot: fishingSpot,
         catchRepository: catchRepository,
+        catchPhotoRepository: catchPhotoRepository,
       ),
     );
   }
@@ -67,7 +66,7 @@ class _FishingSpotDetailsBottomSheetState
   late final TextEditingController _nameController = TextEditingController(
     text: widget.fishingSpot.name,
   );
-  late final Future<List<Catch>> _catchesFuture = widget.catchRepository
+  late Future<List<Catch>> _catchesFuture = widget.catchRepository
       .getByFishingSpotId(widget.fishingSpot.id);
 
   bool _isEditing = false;
@@ -77,6 +76,25 @@ class _FishingSpotDetailsBottomSheetState
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openCatchDetails(Catch catchModel) async {
+    await CatchDetailsPage.open(
+      context,
+      fishingSpot: widget.fishingSpot,
+      catchModel: catchModel,
+      catchRepository: widget.catchRepository,
+      catchPhotoRepository: widget.catchPhotoRepository,
+    );
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _catchesFuture = widget.catchRepository.getByFishingSpotId(
+        widget.fishingSpot.id,
+      );
+    });
   }
 
   void _startEditing() {
@@ -234,7 +252,12 @@ class _FishingSpotDetailsBottomSheetState
               children: [
                 for (var i = 0; i < catches.length; i++) ...[
                   if (i > 0) const Divider(),
-                  _buildCatchRow(catches[i]),
+                  CatchListItem(
+                    key: ValueKey(catches[i].id),
+                    catchModel: catches[i],
+                    catchPhotoRepository: widget.catchPhotoRepository,
+                    onTap: () => _openCatchDetails(catches[i]),
+                  ),
                 ],
               ],
             );
@@ -254,67 +277,4 @@ class _FishingSpotDetailsBottomSheetState
       },
     );
   }
-
-  Widget _buildCatchRow(Catch catchModel) {
-    final measurementLine = _formatMeasurementLine(catchModel);
-
-    return InkWell(
-      onTap: () =>
-          Navigator.of(context).pop(FishingSpotEditCatchRequested(catchModel)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              catchModel.species.finnishName,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            if (measurementLine != null) Text(measurementLine),
-            Text(
-              _formatCaughtAt(catchModel.caughtAt),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-String? _formatMeasurementLine(Catch catchModel) {
-  final parts = [
-    if (catchModel.weightGrams != null) _formatWeight(catchModel.weightGrams!),
-    if (catchModel.lengthMillimeters != null)
-      _formatLength(catchModel.lengthMillimeters!),
-  ];
-
-  return parts.isEmpty ? null : parts.join(' • ');
-}
-
-String _formatWeight(int grams) {
-  if (grams < 1000) {
-    return '$grams g';
-  }
-  return '${_formatTrimmedDecimal(grams / 1000, 3)} kg';
-}
-
-String _formatLength(int millimeters) {
-  return '${_formatTrimmedDecimal(millimeters / 10, 1)} cm';
-}
-
-String _formatTrimmedDecimal(double value, int maxDecimals) {
-  var text = value.toStringAsFixed(maxDecimals);
-  if (text.contains('.')) {
-    text = text.replaceFirst(RegExp(r'0+$'), '');
-    text = text.replaceFirst(RegExp(r'\.$'), '');
-  }
-  return text;
-}
-
-// Reuses the same date/time formatting as the add/edit catch forms (e.g.
-// "14.7.2026 18.34") instead of English month abbreviations, so the catch
-// list matches the rest of the app's Finnish, numeric date style.
-String _formatCaughtAt(DateTime dateTime) {
-  return '${formatCatchDate(dateTime)} ${formatCatchTime(dateTime)}';
 }

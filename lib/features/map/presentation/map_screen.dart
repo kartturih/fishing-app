@@ -12,9 +12,7 @@ import 'package:fishing_app/core/location/location_service.dart';
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
 import 'package:fishing_app/features/catch_photos/data/storage/catch_photo_storage.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
-import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
-import 'package:fishing_app/features/catches/presentation/widgets/edit_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/add_fishing_spot_bottom_sheet.dart';
@@ -204,6 +202,7 @@ class _MapScreenState extends State<MapScreen> {
       context,
       spot,
       _catchRepository,
+      _catchPhotoRepository,
     );
     if (!mounted || result == null) {
       return;
@@ -216,8 +215,6 @@ class _MapScreenState extends State<MapScreen> {
         await _deleteFishingSpot(spot);
       case FishingSpotAddCatchRequested():
         await _openAddCatchBottomSheet(spot);
-      case FishingSpotEditCatchRequested(:final catchModel):
-        await _openEditCatchBottomSheet(spot, catchModel);
     }
   }
 
@@ -246,40 +243,6 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
         );
-    }
-  }
-
-  Future<void> _openEditCatchBottomSheet(
-    FishingSpot spot,
-    Catch catchModel,
-  ) async {
-    final result = await EditCatchBottomSheet.show(
-      context,
-      spot,
-      catchModel,
-      _catchRepository,
-      _catchPhotoRepository,
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    switch (result) {
-      case CatchUpdated(:final hasPhotoFailures):
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              hasPhotoFailures
-                  ? 'Saalis päivitetty, mutta osaa kuvista ei voitu lisätä.'
-                  : 'Saalis päivitetty',
-            ),
-          ),
-        );
-      case CatchDeleted():
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Saalis poistettu')));
     }
   }
 

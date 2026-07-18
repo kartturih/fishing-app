@@ -1,14 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fishing_app/core/database/app_database.dart';
+import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
+import 'package:fishing_app/features/catch_photos/data/storage/catch_photo_storage.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_details_bottom_sheet.dart';
@@ -31,6 +35,7 @@ Future<void> _openSheet(
   WidgetTester tester,
   FishingSpot fishingSpot,
   CatchRepository catchRepository,
+  CatchPhotoRepository catchPhotoRepository,
 ) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -42,6 +47,7 @@ Future<void> _openSheet(
                 context,
                 fishingSpot,
                 catchRepository,
+                catchPhotoRepository,
               );
             },
             child: const Text('open'),
@@ -57,12 +63,21 @@ Future<void> _openSheet(
 void main() {
   late AppDatabase database;
   late CatchRepository catchRepository;
+  late CatchPhotoRepository catchPhotoRepository;
+  late Directory tempDir;
   late FishingSpotRepository fishingSpotRepository;
   late FishingSpot fishingSpot;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
     catchRepository = CatchRepository(database);
+    tempDir = Directory.systemTemp.createTempSync(
+      'fishing_spot_details_bottom_sheet',
+    );
+    catchPhotoRepository = CatchPhotoRepository(
+      database,
+      CatchPhotoStorage(rootDirectoryProvider: () async => tempDir),
+    );
     fishingSpotRepository = FishingSpotRepository(database);
     fishingSpot = await fishingSpotRepository.create(
       name: 'Merrasjärvi',
@@ -73,6 +88,9 @@ void main() {
 
   tearDown(() async {
     await database.close();
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
   });
 
   testWidgets('shows a loading indicator while catches are loading', (
@@ -80,7 +98,12 @@ void main() {
   ) async {
     final pendingRepository = _PendingCatchRepository(database);
 
-    await _openSheet(tester, fishingSpot, pendingRepository);
+    await _openSheet(
+      tester,
+      fishingSpot,
+      pendingRepository,
+      catchPhotoRepository,
+    );
 
     expect(find.text('Ladataan...'), findsOneWidget);
 
@@ -93,7 +116,12 @@ void main() {
   testWidgets('shows the empty state when there are no catches', (
     tester,
   ) async {
-    await _openSheet(tester, fishingSpot, catchRepository);
+    await _openSheet(
+      tester,
+      fishingSpot,
+      catchRepository,
+      catchPhotoRepository,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Ei vielä saaliita.'), findsOneWidget);
@@ -102,7 +130,12 @@ void main() {
   testWidgets('shows an error message when loading fails', (tester) async {
     await database.close();
 
-    await _openSheet(tester, fishingSpot, catchRepository);
+    await _openSheet(
+      tester,
+      fishingSpot,
+      catchRepository,
+      catchPhotoRepository,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Saaliiden lataaminen epäonnistui.'), findsOneWidget);
@@ -122,7 +155,12 @@ void main() {
       lengthMillimeters: 780,
     );
 
-    await _openSheet(tester, fishingSpot, catchRepository);
+    await _openSheet(
+      tester,
+      fishingSpot,
+      catchRepository,
+      catchPhotoRepository,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Hauki'), findsOneWidget);
@@ -153,7 +191,12 @@ void main() {
       fishingSpot.id,
     );
 
-    await _openSheet(tester, fishingSpot, catchRepository);
+    await _openSheet(
+      tester,
+      fishingSpot,
+      catchRepository,
+      catchPhotoRepository,
+    );
     await tester.pumpAndSettle();
 
     final renderedText = tester
@@ -186,7 +229,12 @@ void main() {
         lengthMillimeters: lengthMillimeters,
       );
 
-      await _openSheet(tester, fishingSpot, catchRepository);
+      await _openSheet(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+      );
       await tester.pumpAndSettle();
     }
 
@@ -243,7 +291,12 @@ void main() {
         lengthMillimeters: 780,
       );
 
-      await _openSheet(tester, fishingSpot, catchRepository);
+      await _openSheet(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('3.2 kg • 78 cm'), findsOneWidget);
@@ -258,7 +311,12 @@ void main() {
         weightGrams: 3200,
       );
 
-      await _openSheet(tester, fishingSpot, catchRepository);
+      await _openSheet(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('3.2 kg'), findsOneWidget);
@@ -273,7 +331,12 @@ void main() {
         lengthMillimeters: 680,
       );
 
-      await _openSheet(tester, fishingSpot, catchRepository);
+      await _openSheet(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('68 cm'), findsOneWidget);
@@ -289,7 +352,12 @@ void main() {
         caughtAt: DateTime(2026, 7, 8, 7, 55),
       );
 
-      await _openSheet(tester, fishingSpot, catchRepository);
+      await _openSheet(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Kuha'), findsOneWidget);
@@ -298,43 +366,70 @@ void main() {
     });
   });
 
-  testWidgets('tapping a catch requests editing that catch', (tester) async {
-    final createdCatch = await catchRepository.create(
+  testWidgets('tapping a catch opens Catch Details instead of an editor', (
+    tester,
+  ) async {
+    await catchRepository.create(
       fishingSpotId: fishingSpot.id,
       species: FishSpecies.zander,
       caughtAt: DateTime(2026, 7, 8, 7, 55),
       lengthMillimeters: 680,
     );
 
-    FishingSpotDetailsResult? result;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () async {
-                result = await FishingSpotDetailsBottomSheet.show(
-                  context,
-                  fishingSpot,
-                  catchRepository,
-                );
-              },
-              child: const Text('open'),
-            ),
-          ),
-        ),
-      ),
+    await _openSheet(
+      tester,
+      fishingSpot,
+      catchRepository,
+      catchPhotoRepository,
     );
-    await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Kuha'));
     await tester.pumpAndSettle();
 
-    expect(result, isA<FishingSpotEditCatchRequested>());
-    expect(
-      (result! as FishingSpotEditCatchRequested).catchModel.id,
-      createdCatch.id,
+    expect(find.byType(CatchDetailsPage), findsOneWidget);
+    // The Catch list Bottom Sheet stays on the Navigator stack underneath.
+    expect(find.text('Ei vielä saaliita.'), findsNothing);
+  });
+
+  testWidgets('the catch list refreshes after returning from Catch Details', (
+    tester,
+  ) async {
+    final createdCatch = await catchRepository.create(
+      fishingSpotId: fishingSpot.id,
+      species: FishSpecies.zander,
+      caughtAt: DateTime(2026, 7, 8, 7, 55),
     );
+
+    await _openSheet(
+      tester,
+      fishingSpot,
+      catchRepository,
+      catchPhotoRepository,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Kuha'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CatchDetailsPage), findsOneWidget);
+
+    // Delete the catch directly through the overflow menu, then confirm
+    // that returning to the (still-open) catch list shows it refreshed.
+    // `.last` is needed throughout because the underlying Fishing Spot
+    // Details sheet's own "Poista" (delete fishing spot) button remains
+    // mounted on the Navigator stack the whole time.
+    await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Poista').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Poista').last);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CatchDetailsPage), findsNothing);
+    expect(find.text('Ei vielä saaliita.'), findsOneWidget);
+    expect(await catchRepository.getById(createdCatch.id), isNull);
   });
 }

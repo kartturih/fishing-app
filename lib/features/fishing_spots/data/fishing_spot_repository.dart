@@ -51,9 +51,7 @@ class FishingSpotRepository {
       throw StateError('Fishing spot "$id" was not found.');
     }
 
-    await (_database.update(
-      table,
-    )..where((t) => t.id.equals(id))).write(
+    await (_database.update(table)..where((t) => t.id.equals(id))).write(
       FishingSpotsCompanion(name: Value(name)),
     );
 
