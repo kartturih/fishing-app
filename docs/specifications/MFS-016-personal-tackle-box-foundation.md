@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture-reviewed, all automated tests passing, and physical Android verification completed. See TD-016 for the technical design and `docs/project-status.md` for the verification record.
 
 ## Related
 

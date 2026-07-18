@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture review passed, all automated tests passing, `flutter analyze` clean, and physical Android verification completed successfully. No architectural deviations from this document were required in production code; see [Implementation Notes](#implementation-notes) for the small number of details the implementation clarified.
 
 ## Goal
 
@@ -267,7 +267,7 @@ class AppDatabase extends _$AppDatabase {
 }
 ```
 
-Confirm the actual current schema version in `lib/core/database/app_database.dart` before implementing — it was `4` at the time this document was written.
+Confirmed at implementation time: the schema version was `4`, exactly as anticipated when this document was written. The migration to `5` was applied and verified against a live schema-4 database file (see the migration requirements below and [§10](#10-testing-strategy)).
 
 Migration requirements:
 
@@ -276,6 +276,8 @@ Migration requirements:
 - do not rebuild or modify any existing table
 - migration from schema version 4 succeeds
 - the migration creates the empty table only — there is no seed data to reconcile (unlike `lure_catalog`, `personal_tackle_box` has no shipped content; it starts empty for every user)
+
+Verified: `tackle_box_entries_database_test.dart` seeds a live schema-4 database file with Fishing Spot/Catch/LureModel/LureVariant rows, upgrades it through the real `AppDatabase`, and confirms every prior row survives and the new table is immediately usable. The same upgrade path was also exercised on a physical Android device.
 
 ### Repository implementation
 
@@ -288,14 +290,11 @@ class PersonalTackleBoxRepository {
   PersonalTackleBoxRepository(
     this._database,
     this._storage, {
-    PersonalTackleBoxMapper mapper = const PersonalTackleBoxMapper(),
-    LureCatalogMapper catalogMapper = const LureCatalogMapper(),
-    Uuid uuid = const Uuid(),
+    this._mapper = const PersonalTackleBoxMapper(),
+    this._catalogMapper = const LureCatalogMapper(),
+    this._uuid = const Uuid(),
     DateTime Function()? now,
-  }) : _mapper = mapper,
-       _catalogMapper = catalogMapper,
-       _uuid = uuid,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final AppDatabase _database;
   final TackleBoxPhotoStorage _storage;
@@ -594,7 +593,9 @@ store/resolve/delete; the flat `tackle_box_photos/<id>.jpg` path (no subdirector
 **Widget** (`test/features/personal_tackle_box/presentation/widgets/`):
 `personal_tackle_box_page_test.dart` — loading, empty, error, grouped rendering (multiple manufacturers/models), tapping a row opens `OwnedEntryDetailPage` with the correct item. `owned_entry_detail_page_test.dart` — renders catalog details and personal photo (or fallback); remove confirmation shown; cancel leaves the entry; confirmed remove pops and the entry is gone; remove failure keeps the entry and shows an error. `add_to_tackle_box_action_test.dart` — initial not-owned/owned states from `isOwned`; skip-photo add; camera add; gallery add; already-owned renders disabled and is not tappable; photo failure shows the retry affordance and `attachPhoto` succeeds on retry. Photo picker interactions are mocked via `ImagePickerPlatform.instance`, exactly as `catch_photos`' widget tests already do — no real camera in tests.
 
-**Integration/physical Android testing**: add with camera photo; add with gallery photo; add with no photo; duplicate-add attempt blocked; grouped browsing after app restart (persistence across the schema-5 migration); remove with confirmation and file cleanup verified; airplane mode; small-screen layout for the grouped list and detail view; both new `MapScreen` entry points.
+**Real `dart:io` in widget tests requires `tester.runAsync()`.** A real file operation (`TackleBoxPhotoStorage.store()`/`.delete()`) awaited directly inside a `testWidgets()` body — even before any pump — never resolves under this project's `TestWidgetsFlutterBinding`; the test hangs until Flutter's own `pumpAndSettle` timeout. This is a stricter case of the same real-I/O pattern already documented in `edit_catch_bottom_sheet_test.dart`/`catch_photo_viewer_test.dart` (there, plain `pumpAndSettle` after a tap-triggered store/delete needed several `tester.runAsync(() => Future.delayed(...))` windows to observe completion) — but here the *triggering* `await` itself must run inside `tester.runAsync()`, not just the subsequent pumps. Every widget test in this feature that seeds an entry with a real photo, or triggers a real store/delete from a tap, wraps that call in `tester.runAsync()`.
+
+**Integration/physical Android testing — completed.** Verified: add with camera photo; add with gallery photo; add with no photo; duplicate-add attempt blocked; grouped browsing after app restart (persistence across the schema-5 migration); remove with confirmation and file cleanup verified; airplane mode; small-screen layout for the grouped list and detail view; both new `MapScreen` entry points.
 
 ---
 
@@ -655,6 +656,13 @@ Modify generated Drift files only through code generation.
 
 ---
 
+## Implementation Notes
+
+- **`prefer_initializing_formals`**: `PersonalTackleBoxRepository`'s `mapper`/`catalogMapper`/`uuid` named parameters became initializing formals (`this._mapper`, etc. — see [§4](#repository-implementation)), since none of the three is ever passed by name outside this file. `TackleBoxPhotoStorage`'s `rootDirectoryProvider`/`maxLongestSide`/`jpegQuality` were deliberately left as-is: those three *are* referenced by name throughout production code and tests, and an initializing formal would force the external parameter label to match the private field name, which would rename (and break) every call site — the same reason `CatchPhotoStorage`'s equivalent constructor was never changed either.
+- No other deviation from this document was required — the domain, data, and presentation layers were implemented exactly as designed above.
+
+---
+
 ## Validation
 
 ```bash
@@ -665,9 +673,13 @@ flutter test
 
 All must pass. Review generated Drift changes. Confirm the schema version and migration are correct against the repository's actual current state before implementing, in case it has moved past `4` since this document was written.
 
+**Result:** `dart format .` — no changes needed. `flutter analyze` — 0 errors, 0 warnings (8 pre-existing/accepted `info`-level `prefer_initializing_formals` hints remain across the codebase; see [Implementation Notes](#implementation-notes)). `flutter test` — 380/380 passing, including 65 new Personal Tackle Box tests, no regressions.
+
 ---
 
 ## Definition of Done
+
+Confirmed against the completed implementation, architecture review, and physical Android verification:
 
 - The implementation satisfies all requirements in MFS-016.
 - The implementation follows TD-016, or documents and justifies each deviation.

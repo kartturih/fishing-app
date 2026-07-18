@@ -2,17 +2,17 @@
 
 ## Last Updated
 
-2026-07-18
+2026-07-19
 
 ---
 
 ## Current Phase
 
-Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated.
 
-The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, and a shared, read-only Lure Catalog with search and filtering.
+The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared, read-only Lure Catalog with search and filtering, and a Personal Tackle Box that lets an angler track which catalog lures they actually own, with an optional personal photo per owned lure.
 
-The project is ready for the next milestone: Personal Tackle Box (MFS-016).
+The project is ready for the next milestone: Assign Lure to Catch (MFS-017).
 
 ---
 
@@ -57,6 +57,7 @@ The project is ready for the next milestone: Personal Tackle Box (MFS-016).
 * MFS-013: Catch Photos
 * MFS-014: Catch Details View
 * MFS-015: Lure Catalog Foundation
+* MFS-016: Personal Tackle Box Foundation
 
 ### Technical Designs
 
@@ -73,6 +74,7 @@ The project is ready for the next milestone: Personal Tackle Box (MFS-016).
 * TD-013: Catch Photos Implementation
 * TD-014: Catch Details View Implementation
 * TD-015: Lure Catalog Foundation Implementation
+* TD-016: Personal Tackle Box Foundation Implementation
 
 ---
 
@@ -189,6 +191,21 @@ The project is ready for the next milestone: Personal Tackle Box (MFS-016).
 * Lure Catalog list and details pages, with loading/empty/error states and image-load fallback to a placeholder
 * A small, hand-authored local seed dataset (4 models, 14 variants) — local-seed-only in this milestone; no network access, cloud sync, or user-created entries
 
+### Personal Tackle Box
+
+* Framework-independent `TackleBoxEntry` domain model and `TackleBoxItem` joined read-model, reusing `lure_catalog`'s `LureCatalogEntry` by reference rather than copying catalog data
+* Drift persistence (schema migrated from version 4 to version 5: `tackle_box_entries` table, `onDelete: KeyAction.restrict` foreign key to `lure_variants`, unique constraint on `lureVariantId`)
+* Concrete `PersonalTackleBoxRepository` performing its own three-table join (`tackle_box_entries` ⨝ `lure_variants` ⨝ `lure_models`), reusing `lure_catalog`'s existing mapper — one query per screen, no N+1
+* Duplicate-ownership prevention enforced at both the UI (`isOwned` pre-check) and database (unique constraint) layers
+* Explicit "Add to Tackle Box" action reachable from the Lure Catalog's variant details view via a small optional passthrough parameter added to that feature's presentation layer only — the Lure Catalog's domain, data, and repository remain unmodified and fully read-only
+* Optional personal photo capture (camera or gallery) when adding a lure, or skip entirely; application-owned photo storage mirroring Catch Photos' processing (2048px longest side, JPEG quality 85, atomic write) but with one flat file per entry (no per-entry subdirectory, since at most one photo exists)
+* A narrow, retry-only `attachPhoto` operation lets a user re-attempt a failed photo attach immediately after adding a lure — not a general photo-replace feature
+* Personal Tackle Box browsing view grouped by manufacturer, then model, then variant — never a flat one-row-per-variant list
+* Owned Entry Detail view: resolved catalog details, personal photo (with fallback to the catalog image), and the Remove action
+* Removing an owned entry requires confirmation and deletes both its database row and its personal photo file
+* A `TackleBoxEntry` referencing a retired catalog variant remains fully visible, viewable, and removable
+* Fully offline; no new external dependencies
+
 ---
 
 ## Validation
@@ -262,10 +279,20 @@ Verified on physical Android devices.
 * flutter analyze passes; all automated tests pass
 * Physical Android testing completed
 
+### Personal Tackle Box
+
+* Schema migration (v4 → v5) verified: existing Fishing Spot/Catch/Catch Photo/Lure Catalog data preserved across the upgrade, new `tackle_box_entries` table usable immediately after; verified both in an automated migration test and on a physical Android device
+* Domain, database/migration, mapper, storage, and repository tests completed (including `attachPhoto`'s narrow retry behavior and duplicate-prevention at the database layer)
+* Presentation widget tests completed (grouped list, owned entry detail, add flow — loading/empty/error states, photo capture, remove confirmation)
+* Discovered during widget-test verification: real `dart:io` file operations (photo store/delete) awaited directly inside a `testWidgets()` body hang indefinitely unless wrapped in `tester.runAsync()` — a stricter variant of the real-I/O pattern already used in `edit_catch_bottom_sheet_test.dart`/`catch_photo_viewer_test.dart`
+* Architecture review completed; no architectural deviations required in production code
+* flutter analyze passes; all automated tests pass
+* Physical Android testing completed: add with camera/gallery/no photo, duplicate-add blocked, persistence across the schema-5 migration, remove with file cleanup, airplane mode, both new `MapScreen` entry points
+
 ### Quality
 
-* flutter analyze passes, with only 5 pre-existing unrelated info-level lints
-* 315 automated tests passing
+* flutter analyze passes, with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`, on constructor parameters whose external names are relied on by callers and cannot be renamed without breaking the public API — see TD-016 Implementation Notes)
+* 380 automated tests passing
 * Architecture review completed
 * Code review completed
 * Physical Android testing completed for all currently implemented Android features
@@ -313,7 +340,7 @@ Verified on physical Android devices.
 * path_provider
 * path
 * image
-* uuid (used for CatchPhoto runtime UUID v4 identifiers and for hand-authored, compile-time Lure Catalog seed identifiers; other domain IDs in the project use a separate, pre-existing timestamp-based scheme)
+* uuid (used for CatchPhoto and TackleBoxEntry runtime UUID v4 identifiers, and for hand-authored, compile-time Lure Catalog seed identifiers; other domain IDs in the project use a separate, pre-existing timestamp-based scheme)
 
 ### UI
 
@@ -357,7 +384,14 @@ lib/
 │   │   ├── domain/
 │   │   └── presentation/
 │   │       └── widgets/
-│   └── map/
+│   ├── map/
+│   └── personal_tackle_box/
+│       ├── data/
+│       │   ├── local/
+│       │   └── storage/
+│       ├── domain/
+│       └── presentation/
+│           └── widgets/
 └── main.dart
 ```
 
@@ -393,6 +427,9 @@ The application currently supports:
 * Read-only Lure Catalog (browse, search, and filter by manufacturer/lure type)
 * Finnish-aware, case-insensitive lure search
 * Lure Catalog details view
+* Personal Tackle Box (add, browse grouped by manufacturer/model, and remove owned lures)
+* Optional personal photo per owned lure (camera or gallery, or skip)
+* Owned Entry Detail view with resolved catalog details and personal photo
 
 ---
 
@@ -409,6 +446,8 @@ No additional permissions were required for Catch Photos: `image_picker` on Andr
 
 No additional permissions were required for the Lure Catalog: it reads bundled local assets and the local database only.
 
+No additional permissions were required for the Personal Tackle Box: it reuses the same `image_picker` camera/gallery intents already used by Catch Photos, which require no manifest permission declaration from this app.
+
 ---
 
 ## iOS Configuration
@@ -418,7 +457,7 @@ Added for Catch Photos:
 * `NSCameraUsageDescription`
 * `NSPhotoLibraryUsageDescription`
 
-No other iOS configuration changes were required, including for the Lure Catalog. Physical iOS testing has not been performed (no iOS build target/device in this environment).
+No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos). Physical iOS testing has not been performed (no iOS build target/device in this environment).
 
 ---
 
@@ -439,23 +478,25 @@ No other iOS configuration changes were required, including for the Lure Catalog
 ## Known Limitations
 
 * iOS has not been physically tested for any feature in this project.
-* The Lure Catalog is local-seed data only in this milestone: no network access, no cloud sync, and no user-created catalog entries. It is not yet associated with a personal Tackle Box or with Catches.
+* The Lure Catalog is local-seed data only in this milestone: no network access, no cloud sync, and no user-created catalog entries. It is not yet associated with Catches (planned for MFS-017).
+* The Personal Tackle Box intentionally does not support search/filtering within a user's own tackle box, editing/replacing an existing personal photo, multiple photos per entry, notes, condition, or purchase information — all explicitly out of scope for MFS-016 (see its Future Extensions section).
+* A small number of UI/UX refinements were consciously deferred rather than built speculatively, and are candidates for a later, separate polish task (not a change to MFS-016/TD-016 scope): the empty Personal Tackle Box state relies on standard back navigation to reach the Lure Catalog rather than a dedicated shortcut button, and the grouped browsing list shows the catalog image only — the personal photo is shown on the Owned Entry Detail screen.
 
 ---
 
 ## Next Planned Task
 
-MFS-016: Personal Tackle Box.
+MFS-017: Assign Lure to Catch.
 
-Lets an angler mark Lure Catalog entries as part of their own tackle box, building on the read-only Lure Catalog Foundation delivered in MFS-015. Exact scope and technical design have not yet been drafted.
+Lets an angler attach a Personal Tackle Box entry to a Catch when logging it, building on the Personal Tackle Box Foundation delivered in MFS-016. Exact scope and technical design have not yet been drafted.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 15
+Current Feature Specifications: 16
 
-Current Technical Designs: 13
+Current Technical Designs: 14
 
 Architecture Decision Records: 6
 
@@ -467,11 +508,14 @@ Implemented Core Features:
 * Catch Photos
 * Catch Details
 * Lure Catalog
+* Personal Tackle Box
 
 Offline-first: Yes
 
 Physical Android Validation: Completed for all currently implemented features
 
-flutter analyze: Passing with 5 pre-existing unrelated info-level lints
+flutter analyze: Passing with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
 
-Automated Tests: 315 Passing
+Automated Tests: 380 Passing
+
+Database schema version: 5
