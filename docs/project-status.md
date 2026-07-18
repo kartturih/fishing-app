@@ -2,17 +2,17 @@
 
 ## Last Updated
 
-2026-07-17
+2026-07-18
 
 ---
 
 ## Current Phase
 
-Fishing Spot management and Catch management foundation are complete.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated.
 
-The application now supports full offline CRUD operations for both Fishing Spots and Catches.
+The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, and a dedicated read-only Catch Details view with a swipeable photo gallery.
 
-Catch Photos (MFS-013 / TD-013) has been implemented: photo attachment during Add/Edit Catch, application-owned storage, and Catch deletion cleanup. Code is complete and all automated tests pass; physical Android testing for this feature has not yet been performed.
+The project is ready for the next Catch Management expansion feature.
 
 ---
 
@@ -55,6 +55,7 @@ Catch Photos (MFS-013 / TD-013) has been implemented: photo attachment during Ad
 * MFS-011: View Catches
 * MFS-012: Edit & Delete Catch
 * MFS-013: Catch Photos
+* MFS-014: Catch Details View
 
 ### Technical Designs
 
@@ -69,6 +70,7 @@ Catch Photos (MFS-013 / TD-013) has been implemented: photo attachment during Ad
 * TD-011: View Catches Implementation
 * TD-012: Edit & Delete Catch Implementation
 * TD-013: Catch Photos Implementation
+* TD-014: Catch Details View Implementation
 
 ---
 
@@ -148,10 +150,27 @@ Catch Photos (MFS-013 / TD-013) has been implemented: photo attachment during Ad
 * Camera and gallery selection (source-selection dialog, not a nested Bottom Sheet)
 * Temporary photo handling during Add Catch (no permanent files/rows before the Catch exists)
 * Persistent photo handling during Edit Catch, including confirmed deletion
-* Full-screen photo viewer as a normal page (`MaterialPageRoute`, `PageView` + `InteractiveViewer`)
+* Full-screen photo viewer as a normal page (`MaterialPageRoute`), using a `PageView` with a per-page `TransformationController`
+* Zoomed photos support one-finger panning in all directions (the `PageView` yields to the `InteractiveViewer` while the current photo is zoomed)
+* Page navigation is handed off to the next/previous photo when dragging outward beyond the zoomed image's pan boundary
 * Missing/corrupt file placeholders
 * Catch deletion cleans up associated photo files before the Catch row is removed
 * Partial photo failures never roll back a successfully saved/updated Catch
+
+### Catch Details
+
+* Dedicated read-only Catch Details page (`CatchDetailsPage`), pushed as a normal full-screen page rather than a Bottom Sheet
+* Catch List → Catch Details → Edit Catch navigation, with Back/Android-back returning to the Catch list
+* Catch list items display a photo thumbnail (or placeholder) alongside species, measurements, and date/time
+* Catch information formatting (weight, length, date/time) shared through `catch_formatters.dart`
+* Edit and Delete actions available from an overflow menu; Edit reuses the existing Edit Catch editor, Delete reuses the existing confirmation and photo-cleanup flow
+* Swipeable 4:3 photo gallery (`PageView`) with a bottom-left page indicator
+* `BoxFit.cover`-cropped gallery previews, centered, over a soft dark background
+* Full-screen photo viewer reused unchanged for the complete, uncropped image
+* Pinch-to-zoom and one-finger panning while zoomed, inherited from the shared photo viewer
+* Previous/next photo navigation through edge overdrag while zoomed
+* Missing/corrupt image handling
+* Immediate UI updates after edits and deletion
 
 ---
 
@@ -200,15 +219,30 @@ Verified on physical Android devices.
 * Domain, database/migration, storage, and repository tests completed
 * Add/Edit Catch and full-screen viewer widget tests completed
 * flutter analyze passes; all automated tests pass
-* Physical Android testing **not yet performed** for this feature (see Known Limitations below)
+* Physical Android testing completed
+
+### Catch Details
+
+* Catch Details navigation verified
+* Catch information rendering verified
+* Catch list thumbnails verified
+* Edit navigation and returned updates verified
+* Delete flow verified
+* Photo gallery swiping verified
+* Portrait and landscape image presentation verified
+* Full-screen viewer verified
+* Pinch zoom verified
+* One-finger zoomed-image panning verified
+* Edge navigation between photos verified
+* Widget tests completed
 
 ### Quality
 
-* flutter analyze passes
-* 178 automated tests passing
+* flutter analyze passes, with only 5 pre-existing unrelated info-level lints
+* 215 automated tests passing
 * Architecture review completed
 * Code review completed
-* Physical Android testing completed for all features prior to Catch Photos
+* Physical Android testing completed for all currently implemented Android features
 
 ---
 
@@ -319,6 +353,11 @@ The application currently supports:
 * Catch photos (camera and gallery, up to 5 per Catch)
 * Full-screen photo viewer with zoom
 * Photo cleanup on Catch deletion
+* Dedicated Catch Details view
+* Catch list photo thumbnails
+* Swipeable catch photo gallery
+* One-finger panning of zoomed photos
+* Edge handoff between zoomed photos
 
 ---
 
@@ -362,16 +401,15 @@ No other iOS configuration changes were required. Physical iOS testing has not b
 
 ## Known Limitations
 
-* Physical Android testing for Catch Photos (camera capture, gallery multi-select, permission grant/denial, five-photo limit, image orientation, large camera images, app-restart persistence, photo deletion, Catch deletion cleanup, full-screen viewer, small-screen layout) has not yet been performed and remains outstanding before this feature can be considered fully validated per TD-013's Definition of Done.
 * iOS has not been physically tested for any feature in this project.
 
 ---
 
 ## Next Planned Task
 
-Expand catch management.
+Expand catch management. The next exact feature has not yet been selected.
 
-Possible next features:
+Possible candidates:
 
 * Catch notes
 * Favorite fishing spots
@@ -386,9 +424,9 @@ Possible next features:
 
 ## Project Metrics
 
-Current Feature Specifications: 13
+Current Feature Specifications: 14
 
-Current Technical Designs: 11
+Current Technical Designs: 12
 
 Architecture Decision Records: 6
 
@@ -398,11 +436,12 @@ Implemented Core Features:
 * Fishing Spot Management
 * Catch Management
 * Catch Photos
+* Catch Details
 
 Offline-first: Yes
 
-Physical Android Validation: Completed for all features except Catch Photos (pending)
+Physical Android Validation: Completed for all currently implemented features
 
-flutter analyze: Passing
+flutter analyze: Passing with 5 pre-existing unrelated info-level lints
 
-Automated Tests: 178 Passing
+Automated Tests: 215 Passing
