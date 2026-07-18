@@ -19,8 +19,13 @@ import 'package:fishing_app/features/fishing_spots/presentation/widgets/add_fish
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_details_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_name_bottom_sheet.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
 import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_list_page.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
+import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/add_to_tackle_box_action.dart';
+import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/personal_tackle_box_page.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -53,6 +58,12 @@ class _MapScreenState extends State<MapScreen> {
   );
   late final LureCatalogRepository _lureCatalogRepository =
       LureCatalogRepository(_database);
+  late final TackleBoxPhotoStorage _tackleBoxPhotoStorage =
+      TackleBoxPhotoStorage(
+        rootDirectoryProvider: getApplicationDocumentsDirectory,
+      );
+  late final PersonalTackleBoxRepository _personalTackleBoxRepository =
+      PersonalTackleBoxRepository(_database, _tackleBoxPhotoStorage);
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -437,8 +448,41 @@ class _MapScreenState extends State<MapScreen> {
   void _openLureCatalog() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) =>
-            LureCatalogListPage(repository: _lureCatalogRepository),
+        builder: (context) => LureCatalogListPage(
+          repository: _lureCatalogRepository,
+          detailsActionsBuilder: _buildLureDetailsActions,
+        ),
+      ),
+    );
+  }
+
+  /// Builds the "Add to Tackle Box" AppBar action for a Lure Details page.
+  /// `lure_catalog` never imports `personal_tackle_box` itself — this
+  /// closure is the one place the two features meet, built entirely by
+  /// `MapScreen` and threaded in through `LureDetailsPage.actionsBuilder`.
+  /// See TD-016's Key Design Decision 1.
+  List<Widget> _buildLureDetailsActions(
+    BuildContext context,
+    LureCatalogEntry entry,
+  ) {
+    return [
+      AddToTackleBoxAction(
+        key: ValueKey('addToTackleBox-${entry.id}'),
+        catalogEntry: entry,
+        repository: _personalTackleBoxRepository,
+      ),
+    ];
+  }
+
+  // Temporary navigation entry point, same rationale as _openLureCatalog
+  // above. See TD-016's Navigation section.
+  void _openPersonalTackleBox() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PersonalTackleBoxPage(
+          repository: _personalTackleBoxRepository,
+          photoStorage: _tackleBoxPhotoStorage,
+        ),
       ),
     );
   }
@@ -471,6 +515,12 @@ class _MapScreenState extends State<MapScreen> {
             icon: const Icon(Icons.menu_book),
             tooltip: 'Viehekatalogi',
             onPressed: _openLureCatalog,
+          ),
+          IconButton(
+            key: const Key('openPersonalTackleBoxButton'),
+            icon: const Icon(Icons.inventory_2_outlined),
+            tooltip: 'Oma vieherasia',
+            onPressed: _openPersonalTackleBox,
           ),
         ],
       ),

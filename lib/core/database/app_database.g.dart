@@ -2928,6 +2928,454 @@ class LureVariantsCompanion extends UpdateCompanion<LureVariantEntity> {
   }
 }
 
+class $TackleBoxEntriesTable extends TackleBoxEntries
+    with TableInfo<$TackleBoxEntriesTable, TackleBoxEntryEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TackleBoxEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lureVariantIdMeta = const VerificationMeta(
+    'lureVariantId',
+  );
+  @override
+  late final GeneratedColumn<String> lureVariantId = GeneratedColumn<String>(
+    'lure_variant_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES lure_variants (id) ON DELETE RESTRICT',
+    ),
+  );
+  static const VerificationMeta _personalPhotoRelativePathMeta =
+      const VerificationMeta('personalPhotoRelativePath');
+  @override
+  late final GeneratedColumn<String> personalPhotoRelativePath =
+      GeneratedColumn<String>(
+        'personal_photo_relative_path',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta(
+    'addedAt',
+  );
+  @override
+  late final GeneratedColumn<int> addedAt = GeneratedColumn<int>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    lureVariantId,
+    personalPhotoRelativePath,
+    addedAt,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tackle_box_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TackleBoxEntryEntity> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('lure_variant_id')) {
+      context.handle(
+        _lureVariantIdMeta,
+        lureVariantId.isAcceptableOrUnknown(
+          data['lure_variant_id']!,
+          _lureVariantIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lureVariantIdMeta);
+    }
+    if (data.containsKey('personal_photo_relative_path')) {
+      context.handle(
+        _personalPhotoRelativePathMeta,
+        personalPhotoRelativePath.isAcceptableOrUnknown(
+          data['personal_photo_relative_path']!,
+          _personalPhotoRelativePathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(
+        _addedAtMeta,
+        addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_addedAtMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {lureVariantId},
+  ];
+  @override
+  TackleBoxEntryEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TackleBoxEntryEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      lureVariantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lure_variant_id'],
+      )!,
+      personalPhotoRelativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}personal_photo_relative_path'],
+      ),
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}added_at'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TackleBoxEntriesTable createAlias(String alias) {
+    return $TackleBoxEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class TackleBoxEntryEntity extends DataClass
+    implements Insertable<TackleBoxEntryEntity> {
+  final String id;
+  final String lureVariantId;
+  final String? personalPhotoRelativePath;
+  final int addedAt;
+  final int createdAt;
+  final int updatedAt;
+  const TackleBoxEntryEntity({
+    required this.id,
+    required this.lureVariantId,
+    this.personalPhotoRelativePath,
+    required this.addedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['lure_variant_id'] = Variable<String>(lureVariantId);
+    if (!nullToAbsent || personalPhotoRelativePath != null) {
+      map['personal_photo_relative_path'] = Variable<String>(
+        personalPhotoRelativePath,
+      );
+    }
+    map['added_at'] = Variable<int>(addedAt);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  TackleBoxEntriesCompanion toCompanion(bool nullToAbsent) {
+    return TackleBoxEntriesCompanion(
+      id: Value(id),
+      lureVariantId: Value(lureVariantId),
+      personalPhotoRelativePath:
+          personalPhotoRelativePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(personalPhotoRelativePath),
+      addedAt: Value(addedAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory TackleBoxEntryEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TackleBoxEntryEntity(
+      id: serializer.fromJson<String>(json['id']),
+      lureVariantId: serializer.fromJson<String>(json['lureVariantId']),
+      personalPhotoRelativePath: serializer.fromJson<String?>(
+        json['personalPhotoRelativePath'],
+      ),
+      addedAt: serializer.fromJson<int>(json['addedAt']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'lureVariantId': serializer.toJson<String>(lureVariantId),
+      'personalPhotoRelativePath': serializer.toJson<String?>(
+        personalPhotoRelativePath,
+      ),
+      'addedAt': serializer.toJson<int>(addedAt),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  TackleBoxEntryEntity copyWith({
+    String? id,
+    String? lureVariantId,
+    Value<String?> personalPhotoRelativePath = const Value.absent(),
+    int? addedAt,
+    int? createdAt,
+    int? updatedAt,
+  }) => TackleBoxEntryEntity(
+    id: id ?? this.id,
+    lureVariantId: lureVariantId ?? this.lureVariantId,
+    personalPhotoRelativePath: personalPhotoRelativePath.present
+        ? personalPhotoRelativePath.value
+        : this.personalPhotoRelativePath,
+    addedAt: addedAt ?? this.addedAt,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  TackleBoxEntryEntity copyWithCompanion(TackleBoxEntriesCompanion data) {
+    return TackleBoxEntryEntity(
+      id: data.id.present ? data.id.value : this.id,
+      lureVariantId: data.lureVariantId.present
+          ? data.lureVariantId.value
+          : this.lureVariantId,
+      personalPhotoRelativePath: data.personalPhotoRelativePath.present
+          ? data.personalPhotoRelativePath.value
+          : this.personalPhotoRelativePath,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TackleBoxEntryEntity(')
+          ..write('id: $id, ')
+          ..write('lureVariantId: $lureVariantId, ')
+          ..write('personalPhotoRelativePath: $personalPhotoRelativePath, ')
+          ..write('addedAt: $addedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    lureVariantId,
+    personalPhotoRelativePath,
+    addedAt,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TackleBoxEntryEntity &&
+          other.id == this.id &&
+          other.lureVariantId == this.lureVariantId &&
+          other.personalPhotoRelativePath == this.personalPhotoRelativePath &&
+          other.addedAt == this.addedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class TackleBoxEntriesCompanion extends UpdateCompanion<TackleBoxEntryEntity> {
+  final Value<String> id;
+  final Value<String> lureVariantId;
+  final Value<String?> personalPhotoRelativePath;
+  final Value<int> addedAt;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const TackleBoxEntriesCompanion({
+    this.id = const Value.absent(),
+    this.lureVariantId = const Value.absent(),
+    this.personalPhotoRelativePath = const Value.absent(),
+    this.addedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TackleBoxEntriesCompanion.insert({
+    required String id,
+    required String lureVariantId,
+    this.personalPhotoRelativePath = const Value.absent(),
+    required int addedAt,
+    required int createdAt,
+    required int updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       lureVariantId = Value(lureVariantId),
+       addedAt = Value(addedAt),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<TackleBoxEntryEntity> custom({
+    Expression<String>? id,
+    Expression<String>? lureVariantId,
+    Expression<String>? personalPhotoRelativePath,
+    Expression<int>? addedAt,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (lureVariantId != null) 'lure_variant_id': lureVariantId,
+      if (personalPhotoRelativePath != null)
+        'personal_photo_relative_path': personalPhotoRelativePath,
+      if (addedAt != null) 'added_at': addedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TackleBoxEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? lureVariantId,
+    Value<String?>? personalPhotoRelativePath,
+    Value<int>? addedAt,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return TackleBoxEntriesCompanion(
+      id: id ?? this.id,
+      lureVariantId: lureVariantId ?? this.lureVariantId,
+      personalPhotoRelativePath:
+          personalPhotoRelativePath ?? this.personalPhotoRelativePath,
+      addedAt: addedAt ?? this.addedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (lureVariantId.present) {
+      map['lure_variant_id'] = Variable<String>(lureVariantId.value);
+    }
+    if (personalPhotoRelativePath.present) {
+      map['personal_photo_relative_path'] = Variable<String>(
+        personalPhotoRelativePath.value,
+      );
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<int>(addedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TackleBoxEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('lureVariantId: $lureVariantId, ')
+          ..write('personalPhotoRelativePath: $personalPhotoRelativePath, ')
+          ..write('addedAt: $addedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2936,6 +3384,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CatchPhotosTable catchPhotos = $CatchPhotosTable(this);
   late final $LureModelsTable lureModels = $LureModelsTable(this);
   late final $LureVariantsTable lureVariants = $LureVariantsTable(this);
+  late final $TackleBoxEntriesTable tackleBoxEntries = $TackleBoxEntriesTable(
+    this,
+  );
   late final Index catchPhotosCatchIdSort = Index(
     'catch_photos_catch_id_sort',
     'CREATE INDEX catch_photos_catch_id_sort ON catch_photos (catch_id, sort_order)',
@@ -2962,6 +3413,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     catchPhotos,
     lureModels,
     lureVariants,
+    tackleBoxEntries,
     catchPhotosCatchIdSort,
     lureModelsManufacturer,
     lureModelsLureType,
@@ -4558,6 +5010,26 @@ final class $$LureVariantsTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$TackleBoxEntriesTable, List<TackleBoxEntryEntity>>
+  _tackleBoxEntriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.tackleBoxEntries,
+    aliasName: 'lure_variants__id__tackle_box_entries__lure_variant_id',
+  );
+
+  $$TackleBoxEntriesTableProcessedTableManager get tackleBoxEntriesRefs {
+    final manager = $$TackleBoxEntriesTableTableManager(
+      $_db,
+      $_db.tackleBoxEntries,
+    ).filter((f) => f.lureVariantId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _tackleBoxEntriesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$LureVariantsTableFilterComposer
@@ -4665,6 +5137,31 @@ class $$LureVariantsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> tackleBoxEntriesRefs(
+    Expression<bool> Function($$TackleBoxEntriesTableFilterComposer f) f,
+  ) {
+    final $$TackleBoxEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tackleBoxEntries,
+      getReferencedColumn: (t) => t.lureVariantId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TackleBoxEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.tackleBoxEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -4870,6 +5367,31 @@ class $$LureVariantsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> tackleBoxEntriesRefs<T extends Object>(
+    Expression<T> Function($$TackleBoxEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$TackleBoxEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tackleBoxEntries,
+      getReferencedColumn: (t) => t.lureVariantId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TackleBoxEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tackleBoxEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$LureVariantsTableTableManager
@@ -4885,7 +5407,7 @@ class $$LureVariantsTableTableManager
           $$LureVariantsTableUpdateCompanionBuilder,
           (LureVariantEntity, $$LureVariantsTableReferences),
           LureVariantEntity,
-          PrefetchHooks Function({bool lureModelId})
+          PrefetchHooks Function({bool lureModelId, bool tackleBoxEntriesRefs})
         > {
   $$LureVariantsTableTableManager(_$AppDatabase db, $LureVariantsTable table)
     : super(
@@ -4982,7 +5504,384 @@ class $$LureVariantsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({lureModelId = false}) {
+          prefetchHooksCallback:
+              ({lureModelId = false, tackleBoxEntriesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (tackleBoxEntriesRefs) db.tackleBoxEntries,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (lureModelId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.lureModelId,
+                                    referencedTable:
+                                        $$LureVariantsTableReferences
+                                            ._lureModelIdTable(db),
+                                    referencedColumn:
+                                        $$LureVariantsTableReferences
+                                            ._lureModelIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (tackleBoxEntriesRefs)
+                        await $_getPrefetchedData<
+                          LureVariantEntity,
+                          $LureVariantsTable,
+                          TackleBoxEntryEntity
+                        >(
+                          currentTable: table,
+                          referencedTable: $$LureVariantsTableReferences
+                              ._tackleBoxEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$LureVariantsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).tackleBoxEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.lureVariantId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$LureVariantsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LureVariantsTable,
+      LureVariantEntity,
+      $$LureVariantsTableFilterComposer,
+      $$LureVariantsTableOrderingComposer,
+      $$LureVariantsTableAnnotationComposer,
+      $$LureVariantsTableCreateCompanionBuilder,
+      $$LureVariantsTableUpdateCompanionBuilder,
+      (LureVariantEntity, $$LureVariantsTableReferences),
+      LureVariantEntity,
+      PrefetchHooks Function({bool lureModelId, bool tackleBoxEntriesRefs})
+    >;
+typedef $$TackleBoxEntriesTableCreateCompanionBuilder =
+    TackleBoxEntriesCompanion Function({
+      required String id,
+      required String lureVariantId,
+      Value<String?> personalPhotoRelativePath,
+      required int addedAt,
+      required int createdAt,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $$TackleBoxEntriesTableUpdateCompanionBuilder =
+    TackleBoxEntriesCompanion Function({
+      Value<String> id,
+      Value<String> lureVariantId,
+      Value<String?> personalPhotoRelativePath,
+      Value<int> addedAt,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$TackleBoxEntriesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $TackleBoxEntriesTable,
+          TackleBoxEntryEntity
+        > {
+  $$TackleBoxEntriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $LureVariantsTable _lureVariantIdTable(_$AppDatabase db) => db
+      .lureVariants
+      .createAlias('tackle_box_entries__lure_variant_id__lure_variants__id');
+
+  $$LureVariantsTableProcessedTableManager get lureVariantId {
+    final $_column = $_itemColumn<String>('lure_variant_id')!;
+
+    final manager = $$LureVariantsTableTableManager(
+      $_db,
+      $_db.lureVariants,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_lureVariantIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TackleBoxEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $TackleBoxEntriesTable> {
+  $$TackleBoxEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personalPhotoRelativePath => $composableBuilder(
+    column: $table.personalPhotoRelativePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LureVariantsTableFilterComposer get lureVariantId {
+    final $$LureVariantsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lureVariantId,
+      referencedTable: $db.lureVariants,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LureVariantsTableFilterComposer(
+            $db: $db,
+            $table: $db.lureVariants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TackleBoxEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TackleBoxEntriesTable> {
+  $$TackleBoxEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get personalPhotoRelativePath => $composableBuilder(
+    column: $table.personalPhotoRelativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LureVariantsTableOrderingComposer get lureVariantId {
+    final $$LureVariantsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lureVariantId,
+      referencedTable: $db.lureVariants,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LureVariantsTableOrderingComposer(
+            $db: $db,
+            $table: $db.lureVariants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TackleBoxEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TackleBoxEntriesTable> {
+  $$TackleBoxEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get personalPhotoRelativePath => $composableBuilder(
+    column: $table.personalPhotoRelativePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$LureVariantsTableAnnotationComposer get lureVariantId {
+    final $$LureVariantsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.lureVariantId,
+      referencedTable: $db.lureVariants,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LureVariantsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.lureVariants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TackleBoxEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TackleBoxEntriesTable,
+          TackleBoxEntryEntity,
+          $$TackleBoxEntriesTableFilterComposer,
+          $$TackleBoxEntriesTableOrderingComposer,
+          $$TackleBoxEntriesTableAnnotationComposer,
+          $$TackleBoxEntriesTableCreateCompanionBuilder,
+          $$TackleBoxEntriesTableUpdateCompanionBuilder,
+          (TackleBoxEntryEntity, $$TackleBoxEntriesTableReferences),
+          TackleBoxEntryEntity,
+          PrefetchHooks Function({bool lureVariantId})
+        > {
+  $$TackleBoxEntriesTableTableManager(
+    _$AppDatabase db,
+    $TackleBoxEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TackleBoxEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TackleBoxEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TackleBoxEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> lureVariantId = const Value.absent(),
+                Value<String?> personalPhotoRelativePath = const Value.absent(),
+                Value<int> addedAt = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TackleBoxEntriesCompanion(
+                id: id,
+                lureVariantId: lureVariantId,
+                personalPhotoRelativePath: personalPhotoRelativePath,
+                addedAt: addedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String lureVariantId,
+                Value<String?> personalPhotoRelativePath = const Value.absent(),
+                required int addedAt,
+                required int createdAt,
+                required int updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TackleBoxEntriesCompanion.insert(
+                id: id,
+                lureVariantId: lureVariantId,
+                personalPhotoRelativePath: personalPhotoRelativePath,
+                addedAt: addedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TackleBoxEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({lureVariantId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -5002,16 +5901,18 @@ class $$LureVariantsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (lureModelId) {
+                    if (lureVariantId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.lureModelId,
-                                referencedTable: $$LureVariantsTableReferences
-                                    ._lureModelIdTable(db),
-                                referencedColumn: $$LureVariantsTableReferences
-                                    ._lureModelIdTable(db)
-                                    .id,
+                                currentColumn: table.lureVariantId,
+                                referencedTable:
+                                    $$TackleBoxEntriesTableReferences
+                                        ._lureVariantIdTable(db),
+                                referencedColumn:
+                                    $$TackleBoxEntriesTableReferences
+                                        ._lureVariantIdTable(db)
+                                        .id,
                               )
                               as T;
                     }
@@ -5027,19 +5928,19 @@ class $$LureVariantsTableTableManager
       );
 }
 
-typedef $$LureVariantsTableProcessedTableManager =
+typedef $$TackleBoxEntriesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $LureVariantsTable,
-      LureVariantEntity,
-      $$LureVariantsTableFilterComposer,
-      $$LureVariantsTableOrderingComposer,
-      $$LureVariantsTableAnnotationComposer,
-      $$LureVariantsTableCreateCompanionBuilder,
-      $$LureVariantsTableUpdateCompanionBuilder,
-      (LureVariantEntity, $$LureVariantsTableReferences),
-      LureVariantEntity,
-      PrefetchHooks Function({bool lureModelId})
+      $TackleBoxEntriesTable,
+      TackleBoxEntryEntity,
+      $$TackleBoxEntriesTableFilterComposer,
+      $$TackleBoxEntriesTableOrderingComposer,
+      $$TackleBoxEntriesTableAnnotationComposer,
+      $$TackleBoxEntriesTableCreateCompanionBuilder,
+      $$TackleBoxEntriesTableUpdateCompanionBuilder,
+      (TackleBoxEntryEntity, $$TackleBoxEntriesTableReferences),
+      TackleBoxEntryEntity,
+      PrefetchHooks Function({bool lureVariantId})
     >;
 
 class $AppDatabaseManager {
@@ -5055,4 +5956,6 @@ class $AppDatabaseManager {
       $$LureModelsTableTableManager(_db, _db.lureModels);
   $$LureVariantsTableTableManager get lureVariants =>
       $$LureVariantsTableTableManager(_db, _db.lureVariants);
+  $$TackleBoxEntriesTableTableManager get tackleBoxEntries =>
+      $$TackleBoxEntriesTableTableManager(_db, _db.tackleBoxEntries);
 }

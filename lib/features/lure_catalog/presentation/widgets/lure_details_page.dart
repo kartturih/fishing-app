@@ -9,16 +9,34 @@ import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_imag
 ///
 /// A [StatelessWidget]: the [entry] is already fully resolved by whichever
 /// `browse()`/`getEntryById()` call produced it, so there is no load-on-open
-/// query and no repository dependency. No actions beyond Back — the catalog
-/// is shared, read-only product data. See MFS-015 / TD-015.
+/// query and no repository dependency. No actions beyond Back and, optionally,
+/// [actionsBuilder] — the catalog itself is shared, read-only product data.
+///
+/// [actionsBuilder] is a generic, optional extension point (default `null`,
+/// i.e. today's exact behavior) that lets a caller outside this feature
+/// inject AppBar actions without this file importing that feature. It exists
+/// so the Personal Tackle Box feature's "Add to Tackle Box" action (MFS-016)
+/// can be reached from here while `lure_catalog` remains untouched and never
+/// depends on `personal_tackle_box` — see TD-016's Key Design Decision 1.
+/// See MFS-015 / TD-015.
 class LureDetailsPage extends StatelessWidget {
-  const LureDetailsPage({super.key, required this.entry});
+  const LureDetailsPage({super.key, required this.entry, this.actionsBuilder});
 
   final LureCatalogEntry entry;
+  final List<Widget> Function(BuildContext context, LureCatalogEntry entry)?
+  actionsBuilder;
 
-  static Future<void> open(BuildContext context, LureCatalogEntry entry) {
+  static Future<void> open(
+    BuildContext context,
+    LureCatalogEntry entry, {
+    List<Widget> Function(BuildContext context, LureCatalogEntry entry)?
+    actionsBuilder,
+  }) {
     return Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => LureDetailsPage(entry: entry)),
+      MaterialPageRoute(
+        builder: (context) =>
+            LureDetailsPage(entry: entry, actionsBuilder: actionsBuilder),
+      ),
     );
   }
 
@@ -27,7 +45,10 @@ class LureDetailsPage extends StatelessWidget {
     final variant = entry.variant;
 
     return Scaffold(
-      appBar: AppBar(title: Text('${entry.manufacturer} ${entry.modelName}')),
+      appBar: AppBar(
+        title: Text('${entry.manufacturer} ${entry.modelName}'),
+        actions: actionsBuilder?.call(context, entry),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.lg),

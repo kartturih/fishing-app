@@ -6,18 +6,26 @@ import 'package:fishing_app/features/catches/data/local/catches_table.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spots_table.dart';
 import 'package:fishing_app/features/lure_catalog/data/local/lure_models_table.dart';
 import 'package:fishing_app/features/lure_catalog/data/local/lure_variants_table.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/local/tackle_box_entries_table.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [FishingSpots, Catches, CatchPhotos, LureModels, LureVariants],
+  tables: [
+    FishingSpots,
+    Catches,
+    CatchPhotos,
+    LureModels,
+    LureVariants,
+    TackleBoxEntries,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
     : super(executor ?? driftDatabase(name: 'fishing_app'));
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -38,6 +46,9 @@ class AppDatabase extends _$AppDatabase {
         await migrator.createIndex(lureModelsManufacturer);
         await migrator.createIndex(lureModelsLureType);
         await migrator.createIndex(lureVariantsLureModelId);
+      }
+      if (from < 5) {
+        await migrator.createTable(tackleBoxEntries);
       }
     },
     beforeOpen: (details) async {

@@ -16,9 +16,19 @@ import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_deta
 /// every other feature screen in this app is (manual dependency
 /// construction, no Riverpod). See MFS-015 / TD-015.
 class LureCatalogListPage extends StatefulWidget {
-  const LureCatalogListPage({super.key, required this.repository});
+  const LureCatalogListPage({
+    super.key,
+    required this.repository,
+    this.detailsActionsBuilder,
+  });
 
   final LureCatalogRepository repository;
+
+  /// Forwarded verbatim to every `LureDetailsPage` this screen opens. See
+  /// `LureDetailsPage.actionsBuilder` — this file still never imports
+  /// anything from `personal_tackle_box`.
+  final List<Widget> Function(BuildContext context, LureCatalogEntry entry)?
+  detailsActionsBuilder;
 
   @override
   State<LureCatalogListPage> createState() => _LureCatalogListPageState();
@@ -126,7 +136,11 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
   }
 
   Future<void> _openDetails(LureCatalogEntry entry) {
-    return LureDetailsPage.open(context, entry);
+    return LureDetailsPage.open(
+      context,
+      entry,
+      actionsBuilder: widget.detailsActionsBuilder,
+    );
   }
 
   @override
