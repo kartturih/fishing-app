@@ -2,17 +2,17 @@
 
 ## Last Updated
 
-2026-07-19
+2026-07-20
 
 ---
 
 ## Current Phase
 
-Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated.
 
-The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared, read-only Lure Catalog with search and filtering, and a Personal Tackle Box that lets an angler track which catalog lures they actually own, with an optional personal photo per owned lure.
+The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, and the ability to assign one of those owned lures to a Catch, shown in Catch Details.
 
-The project is ready for the next milestone: Assign Lure to Catch (MFS-017).
+No next milestone has been formally chosen yet — no MFS document has been drafted since MFS-018. See `docs/roadmap.md`'s Current Milestone section for the leading candidate.
 
 ---
 
@@ -58,6 +58,8 @@ The project is ready for the next milestone: Assign Lure to Catch (MFS-017).
 * MFS-014: Catch Details View
 * MFS-015: Lure Catalog Foundation
 * MFS-016: Personal Tackle Box Foundation
+* MFS-017: Assign Lure to Catch
+* MFS-018: Lure Catalog UX Improvements
 
 ### Technical Designs
 
@@ -75,6 +77,8 @@ The project is ready for the next milestone: Assign Lure to Catch (MFS-017).
 * TD-014: Catch Details View Implementation
 * TD-015: Lure Catalog Foundation Implementation
 * TD-016: Personal Tackle Box Foundation Implementation
+* TD-017: Assign Lure to Catch Implementation
+* TD-018: Lure Catalog UX Improvements Implementation
 
 ---
 
@@ -143,6 +147,9 @@ The project is ready for the next milestone: Assign Lure to Catch (MFS-017).
 * Catch date and time selection
 * Immediate UI updates
 * Persistent offline CRUD operations
+* Optional lure assignment: a `Catch` may reference one owned `LureVariant` (schema migrated from version 5 to version 6, `lureVariantId` column on `catches`), assignable/changeable/removable from Add Catch and Edit Catch via the existing Personal Tackle Box browsing view
+* The assigned lure survives its `TackleBoxEntry` being later removed from the Personal Tackle Box, and remains resolvable even if the underlying catalog variant is later retired
+* Assigned lure shown read-only in Catch Details (manufacturer, model, distinguishing color/variant detail); a catch with no assigned lure renders cleanly
 
 ### Catch Photos
 
@@ -188,6 +195,10 @@ The project is ready for the next milestone: Assign Lure to Catch (MFS-017).
 * Free-text search treats `%` and `_` as literal characters, not SQL wildcards
 * Filter options (manufacturer/lure type) only ever list values with at least one currently active (non-retired) variant
 * Open, extensible lure type/buoyancy codes with Finnish display labels and a humanized fallback for unrecognized values
+* Lure Catalog browsing list groups by lure model (one row per model, not per color variant), with a "fully owned" badge/hide-owned filter requiring every non-retired variant of a model to be owned
+* Lure Model Details view: model-level information (manufacturer, model, product family, lure type) shown once, followed by a lazily-rendered Color Variants list (image, color, length, weight, owned indicator, add action per variant)
+* Opening a model's details always shows its complete, unfiltered variant set — regardless of what search/filter was active on the browsing list — via a dedicated `LureCatalogRepository.getVariantsForModel()` query, unaffected by search/filter state
+* Full single-variant detail (including running depth, buoyancy, manufacturer color code) remains reachable by tapping a Color Variant row
 * Lure Catalog list and details pages, with loading/empty/error states and image-load fallback to a placeholder
 * A small, hand-authored local seed dataset (4 models, 14 variants) — local-seed-only in this milestone; no network access, cloud sync, or user-created entries
 
@@ -197,8 +208,10 @@ The project is ready for the next milestone: Assign Lure to Catch (MFS-017).
 * Drift persistence (schema migrated from version 4 to version 5: `tackle_box_entries` table, `onDelete: KeyAction.restrict` foreign key to `lure_variants`, unique constraint on `lureVariantId`)
 * Concrete `PersonalTackleBoxRepository` performing its own three-table join (`tackle_box_entries` ⨝ `lure_variants` ⨝ `lure_models`), reusing `lure_catalog`'s existing mapper — one query per screen, no N+1
 * Duplicate-ownership prevention enforced at both the UI (`isOwned` pre-check) and database (unique constraint) layers
-* Explicit "Add to Tackle Box" action reachable from the Lure Catalog's variant details view via a small optional passthrough parameter added to that feature's presentation layer only — the Lure Catalog's domain, data, and repository remain unmodified and fully read-only
-* Optional personal photo capture (camera or gallery) when adding a lure, or skip entirely; application-owned photo storage mirroring Catch Photos' processing (2048px longest side, JPEG quality 85, atomic write) but with one flat file per entry (no per-entry subdirectory, since at most one photo exists)
+* Explicit "Add to Tackle Box" action reachable per-variant from the Lure Catalog's Color Variants list via a small optional passthrough parameter added to that feature's presentation layer only — the Lure Catalog's domain, data, and repository remain unmodified and fully read-only
+* `AddToTackleBoxAction` accepts an optional `initialIsOwned` parameter so a caller that already knows a variant's owned state (e.g. rendering many rows from one already-loaded set) can skip its own `isOwned()` query — avoiding N+1 queries across the Color Variants list; omitted, it queries as before
+* Optional personal photo capture (camera or gallery) when adding a lure, explicit "No Photo," or skip entirely; application-owned photo storage mirroring Catch Photos' processing (2048px longest side, JPEG quality 85, atomic write) but with one flat file per entry (no per-entry subdirectory, since at most one photo exists)
+* The add-photo dialog distinguishes an explicit "No Photo" choice from a dismissal: tapping outside the dialog, the Android system back gesture, and an explicit Cancel option all cancel the entire add with no `TackleBoxEntry` created — only Camera, Gallery, or explicit "No Photo" complete it
 * A narrow, retry-only `attachPhoto` operation lets a user re-attempt a failed photo attach immediately after adding a lure — not a general photo-replace feature
 * Personal Tackle Box browsing view grouped by manufacturer, then model, then variant — never a flat one-row-per-variant list
 * Owned Entry Detail view: resolved catalog details, personal photo (with fallback to the catalog image), and the Remove action
@@ -289,10 +302,33 @@ Verified on physical Android devices.
 * flutter analyze passes; all automated tests pass
 * Physical Android testing completed: add with camera/gallery/no photo, duplicate-add blocked, persistence across the schema-5 migration, remove with file cleanup, airplane mode, both new `MapScreen` entry points
 
+### Assign Lure to Catch
+
+* Schema migration (v5 → v6) verified: `lureVariantId` column added to `catches`, existing data preserved across the upgrade
+* Domain, mapper, and repository tests completed for the new optional reference
+* Add Catch / Edit Catch widget tests completed: assigning, changing, and removing a lure via the reused Personal Tackle Box picker
+* Catch Details rendering verified with and without an assigned lure
+* Historical stability verified: removing a `TackleBoxEntry` does not alter a catch that already referenced its `LureVariant`; a retired variant remains resolvable
+* flutter analyze passes; all automated tests pass
+* Physical Android testing completed
+
+### Lure Catalog UX Improvements
+
+* Lure Catalog browsing list rewritten to group by model (in memory, from the existing `browse()` result); `LureCatalogListItem` renamed and refactored in place to `LureCatalogModelListItem` (no old/new widget left coexisting)
+* Lure Model Details (`LureModelDetailsPage`) and the lazily-rendered Color Variants list (`ColorVariantRow`) added; `LureDetailsPage` reused completely unchanged as the full single-variant detail view
+* `LureCatalogRepository.getVariantsForModel()` added (a documented TD-018 deviation) so opening a model's details always shows its complete variant set even when the browsing list's active search/filter matched only some of them (FR-6) — verified by a dedicated regression test
+* `AddToTackleBoxAction`'s optional `initialIsOwned` parameter lets the Color Variants list render every row's owned state from one already-loaded set, with no per-row query
+* Add-photo dialog corrected: tapping outside, the Android back gesture, and an explicit Cancel option all cancel the add with no `TackleBoxEntry` created; only Camera, Gallery, or explicit "No Photo" complete it
+* `AutomaticKeepAliveClientMixin` added to `LureCatalogListPage` (a documented TD-018 deviation) — search text, manufacturer filter, hide-owned state, and scroll position all verified to survive switching to the Personal Tackle Box tab and back
+* Post-implementation duplication audit completed: no competing grouping logic, navigation path, or leftover pre-refactor widget found
+* Architecture review completed; two implementation deviations documented in TD-018 (`getVariantsForModel()`, `AutomaticKeepAliveClientMixin`)
+* flutter analyze passes; all automated tests pass
+* Physical Android testing completed
+
 ### Quality
 
 * flutter analyze passes, with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`, on constructor parameters whose external names are relied on by callers and cannot be renamed without breaking the public API — see TD-016 Implementation Notes)
-* 380 automated tests passing
+* 455 automated tests passing
 * Architecture review completed
 * Code review completed
 * Physical Android testing completed for all currently implemented Android features
@@ -424,12 +460,13 @@ The application currently supports:
 * Swipeable catch photo gallery
 * One-finger panning of zoomed photos
 * Edge handoff between zoomed photos
-* Read-only Lure Catalog (browse, search, and filter by manufacturer/lure type)
+* Lure Catalog (search and filter by manufacturer/lure type), browsed one row per lure model
 * Finnish-aware, case-insensitive lure search
-* Lure Catalog details view
+* Lure Model Details view with a Color Variants list (per-variant image, color, length, weight, owned indicator, add action); full single-variant detail remains reachable from each row
 * Personal Tackle Box (add, browse grouped by manufacturer/model, and remove owned lures)
-* Optional personal photo per owned lure (camera or gallery, or skip)
+* Optional personal photo per owned lure (camera, gallery, explicit no-photo, or skip/cancel with no lure added)
 * Owned Entry Detail view with resolved catalog details and personal photo
+* Assigning an owned lure to a Catch (Add Catch or Edit Catch), shown read-only in Catch Details
 
 ---
 
@@ -447,6 +484,8 @@ No additional permissions were required for Catch Photos: `image_picker` on Andr
 No additional permissions were required for the Lure Catalog: it reads bundled local assets and the local database only.
 
 No additional permissions were required for the Personal Tackle Box: it reuses the same `image_picker` camera/gallery intents already used by Catch Photos, which require no manifest permission declaration from this app.
+
+No additional permissions were required for Assign Lure to Catch or Lure Catalog UX Improvements: both are presentation/data-layer changes over the existing local database and photo intents, with no new hardware or system capability involved.
 
 ---
 
@@ -478,25 +517,25 @@ No other iOS configuration changes were required, including for the Lure Catalog
 ## Known Limitations
 
 * iOS has not been physically tested for any feature in this project.
-* The Lure Catalog is local-seed data only in this milestone: no network access, no cloud sync, and no user-created catalog entries. It is not yet associated with Catches (planned for MFS-017).
+* The Lure Catalog is local-seed data only: no network access, no cloud sync, and no user-created catalog entries.
 * The Personal Tackle Box intentionally does not support search/filtering within a user's own tackle box, editing/replacing an existing personal photo, multiple photos per entry, notes, condition, or purchase information — all explicitly out of scope for MFS-016 (see its Future Extensions section).
 * A small number of UI/UX refinements were consciously deferred rather than built speculatively, and are candidates for a later, separate polish task (not a change to MFS-016/TD-016 scope): the empty Personal Tackle Box state relies on standard back navigation to reach the Lure Catalog rather than a dedicated shortcut button, and the grouped browsing list shows the catalog image only — the personal photo is shown on the Owned Entry Detail screen.
+* A catch may reference at most one lure (MFS-017); assigning more than one lure to a catch, showing the assigned lure in the catch list, and lure-based statistics are all explicitly out of scope for MFS-017 (see its Out of Scope section).
+* Variant filtering within a single model's Color Variants list, favorite variants, stock/availability status, and quick-add shortcuts that skip Lure Model Details are all explicitly out of scope for MFS-018 (see its Out of Scope section).
 
 ---
 
 ## Next Planned Task
 
-MFS-017: Assign Lure to Catch.
-
-Lets an angler attach a Personal Tackle Box entry to a Catch when logging it, building on the Personal Tackle Box Foundation delivered in MFS-016. Exact scope and technical design have not yet been drafted.
+No next milestone has been formally chosen yet — no MFS document has been drafted since MFS-018 (Lure Catalog UX Improvements). See `docs/roadmap.md`'s Current Milestone section for the leading candidate (Lure-Based Catch Statistics), which does not yet have an assigned MFS number or drafted scope.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 16
+Current Feature Specifications: 18
 
-Current Technical Designs: 14
+Current Technical Designs: 16
 
 Architecture Decision Records: 6
 
@@ -507,8 +546,9 @@ Implemented Core Features:
 * Catch Management
 * Catch Photos
 * Catch Details
-* Lure Catalog
+* Lure Catalog (including MFS-018's model-grouped browsing and Lure Model Details)
 * Personal Tackle Box
+* Assign Lure to Catch
 
 Offline-first: Yes
 
@@ -516,6 +556,6 @@ Physical Android Validation: Completed for all currently implemented features
 
 flutter analyze: Passing with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
 
-Automated Tests: 380 Passing
+Automated Tests: 455 Passing
 
-Database schema version: 5
+Database schema version: 6

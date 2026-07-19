@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture review passed, all automated tests passing (455/455), `flutter analyze` clean (0 new issues), and physical Android verification completed successfully. Two implementation deviations from this document's original design were required; both are recorded in [Implementation Notes](#implementation-notes): `LureCatalogRepository.getVariantsForModel()` (required for FR-6 correctness once testing showed the original in-memory-grouping-only design could not satisfy it) and `AutomaticKeepAliveClientMixin` on `_LureCatalogListPageState` (required to preserve existing tab-switch UX — search text, manufacturer filter, hide-owned state, and scroll position all surviving a switch to the Personal Tackle Box tab and back).
 
 ## Related Specification
 
@@ -519,13 +519,14 @@ Confirm at implementation time that no other file references `LureCatalogListIte
 ## Expected Files To Modify
 
 ```text
-lib/features/lure_catalog/presentation/widgets/lure_catalog_list_page.dart      (grouping, push LureModelDetailsPage, adapt owned/hide-owned semantics)
+lib/features/lure_catalog/presentation/widgets/lure_catalog_list_page.dart      (grouping, push LureModelDetailsPage, adapt owned/hide-owned semantics; added during implementation: AutomaticKeepAliveClientMixin — see Implementation Notes)
 lib/features/lure_catalog/data/lure_catalog_repository.dart                     (added during implementation: new getVariantsForModel() method — see Implementation Notes)
 lib/features/lure_catalog/data/lure_catalog_mapper.dart                        (added during implementation: expose variant-row mapping as a public method, reused by getVariantsForModel())
 lib/features/personal_tackle_box/presentation/widgets/add_to_tackle_box_action.dart  (initialIsOwned parameter, corrected dismissal handling)
 lib/features/personal_tackle_box/presentation/widgets/tackle_box_photo_picker.dart   (TackleBoxPhotoSource.none, explicit Cancel option, showSkipOption parameter)
 lib/features/map/presentation/widgets/lure_tools_page.dart                      (thread the retyped per-variant builder)
 lib/features/map/presentation/map_screen.dart                                   (retype/rename _buildLureDetailsActions to build one per-variant action)
+test/features/map/presentation/widgets/lure_tools_page_test.dart                (rewritten for grouped-list assertions; added during implementation: a dedicated "hide owned" tab-persistence test, and extra seed rows so the scroll-position test still has content to overflow — see Implementation Notes)
 ```
 
 Modify generated Drift files only through code generation — none are expected to change, since no schema changes are made.
@@ -595,6 +596,8 @@ All must pass. Confirm before implementing that no other file references `LureCa
 ---
 
 ## Definition of Done
+
+All criteria below are satisfied as of the completed implementation (see Status).
 
 * The implementation satisfies all requirements in MFS-018.
 * The implementation follows TD-018, or documents and justifies each deviation.

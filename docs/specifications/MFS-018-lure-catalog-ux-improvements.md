@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture-reviewed, all automated tests passing, and physical Android verification completed. See TD-018 for the technical design (including two documented implementation deviations) and `docs/project-status.md` for the verification record.
 
 ## Related
 
@@ -183,7 +183,7 @@ Adding to the Personal Tackle Box continues to originate only from the Lure Cata
 
 - **Model list loading:** while the (now model-grouped) catalog is being read, the browsing view shows a clear loading indicator, exactly as today.
 - **Empty search/filter result:** unchanged from MFS-015 — a clear "no results" message, distinct from loading or error states, shown when no model matches the active search/filter.
-- **Variant list loading within Lure Model Details:** if resolving a model's variants is not instantaneous, the Color Variants section shows its own loading state, independent of the rest of the page (consistent with the independent-loading-section pattern already used elsewhere in this application, e.g. Catch Details' photo/lure sections).
+- **Variant list loading within Lure Model Details:** as implemented, a model's variants are resolved *before* the Lure Model Details view is opened (see TD-018), so the view itself never shows a partial or loading state for its own Color Variants section — by the time it is on screen, its content is already fully resolved. If resolving those variants fails, the browsing list surfaces a clear error message and does not navigate, rather than opening a broken or partially-loaded view.
 - **A model with zero non-retired variants:** not expected to occur — such a model is already excluded from the browsing list (FR-1) — but if reached directly, the Color Variants section shows a clear message rather than an empty-looking blank area.
 - **Add-photo failure states** (permission denial, pick failure): unchanged from MFS-016 — the add still completes without a photo, with a clear message, exactly as already specified. Only the *dismissal* behavior (FR-10) changes, not error handling.
 
@@ -192,7 +192,7 @@ Adding to the Personal Tackle Box continues to originate only from the Lure Cata
 ## Accessibility Expectations
 
 - Each entry in the model-grouped browsing list exposes a semantic label combining manufacturer and model name, mirroring MFS-015's existing accessibility requirement.
-- Each row in the Color Variants list exposes a semantic label combining the color/variant-distinguishing detail and its owned state, mirroring MFS-016's existing accessibility requirement for owned-state badges.
+- Each row in the Color Variants list exposes a semantic label for its color/variant-distinguishing detail; the add action on that same row exposes its own independent accessible label reflecting owned state ("Lisää vieherasiaan" when addable, "Vieherasiassa" when already owned), mirroring MFS-016's existing accessibility requirement for owned-state badges.
 - The add action on each variant row has a clear, unambiguous accessible label distinguishing it from merely viewing the row, consistent with MFS-016's existing requirement for the "Add to Tackle Box" action.
 - The add-photo dialog's Camera / Gallery / No Photo / Cancel options each have a distinct accessible label.
 - Tap targets throughout this milestone meet the application's existing Material 3 sizing conventions, and all text supports standard system text scaling.

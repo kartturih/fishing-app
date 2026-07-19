@@ -15,11 +15,12 @@ The current version supports:
 - Catch photo attachments
 - Dedicated Catch Details view
 - Full-screen photo viewing and zoom
-- Read-only Lure Catalog with search and filtering
+- Lure Catalog with search and filtering, browsed by lure model with a per-model color-variant view
 - Personal Tackle Box for tracking owned lures, with optional personal photos
+- Assigning an owned lure to a catch, shown in Catch Details
 - Persistent Drift/SQLite storage
 
-380 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
+455 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
 
 ## Vision
 

@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-07-19
+2026-07-20
 
 ---
 
@@ -18,18 +18,9 @@
 
 ## 2. Current Milestone
 
-**MFS-017 — Assign Lure to Catch**
+**MFS-017 (Assign Lure to Catch) and MFS-018 (Lure Catalog UX Improvements) are both complete.** MFS-017 let an angler assign an owned lure (referencing the catalog `LureVariant`, not the `TackleBoxEntry` — see MFS-017's Conceptual Relationship) to a `Catch`, displayed in Catch Details. MFS-018 followed it with a presentation-only reorganization of the Lure Catalog and Personal Tackle Box add flow: the browsing list groups by lure model instead of by variant, a new Lure Model Details view lists every color variant of a selected model, and the add-photo dialog no longer silently completes an add on dismissal. Both are architecture-reviewed, fully tested, and physically verified on Android (see `docs/project-status.md`).
 
-* **Status:** Next planned milestone. Not yet specified — no MFS-017 document exists yet, and no functional requirements have been drafted.
-* **Intent:** Let an angler record which owned lure (Personal Tackle Box entry and/or catalog `LureVariant`) was used to make a specific `Catch`, when logging or editing it.
-* **Key dependencies already completed:**
-  * MFS-009 — Catch Foundation (the `Catch` domain model and persistence this feature will extend)
-  * MFS-010/MFS-012 — Add Catch / Edit & Delete Catch (the logging flows this feature will integrate with)
-  * MFS-015 — Lure Catalog Foundation (the `LureVariant` reference data this feature will point to)
-  * MFS-016 — Personal Tackle Box Foundation (the user-owned `TackleBoxEntry` this feature is expected to reference, per its own Future Extensions section)
-* **Why it is next:** It is the only feature explicitly named as "next" with consensus across the documentation — `docs/project-status.md`'s Next Planned Task, MFS-015's Future Extensions, and MFS-016's Related/Future Extensions/Out-of-Scope sections all point to it. It is also the natural completion of the dependency chain already built: Catch → Lure Catalog → Personal Tackle Box → (this milestone) → lure-aware catch data.
-
-Detailed requirements, data model, and UI flow belong in the MFS-017 document itself and are intentionally not anticipated here.
+**No next milestone has been formally chosen yet** — no new MFS document has been drafted since MFS-018. The leading candidate, per existing documentation, is **Lure-Based Catch Statistics** (§3.1 below): it is the dependency chain's natural next step (Catch → Lure Catalog → Personal Tackle Box → Assign Lure to Catch → lure-based statistics) and is explicitly named as "the next milestone" in MFS-017's own Future Extensions section. It has not yet been assigned an MFS number or had its scope drafted, so it is not promoted to Current Milestone here — per this roadmap's own maintenance rule, that happens once an MFS document exists for it.
 
 ---
 
