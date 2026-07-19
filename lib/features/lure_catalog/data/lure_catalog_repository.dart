@@ -199,6 +199,25 @@ class LureCatalogRepository {
     ];
   }
 
+  /// Returns every non-retired variant belonging to [lureModelId], ordered
+  /// by variant id (matching [browse]'s own tertiary sort). Unaffected by
+  /// any search text or filter — always the model's complete variant set.
+  ///
+  /// Added during MFS-018/TD-018 implementation: [browse]'s search filter
+  /// matches at the individual variant row, so a search/filter-narrowed
+  /// `browse()` result cannot be relied on to already contain every variant
+  /// of a matched model in memory. `LureModelDetailsPage` requires the
+  /// complete set regardless of what search/filter surfaced the model
+  /// (MFS-018 FR-6), so its caller queries this method once, at open time,
+  /// instead. See TD-018's Implementation Notes.
+  Future<List<LureVariant>> getVariantsForModel(String lureModelId) async {
+    final query = _database.select(_database.lureVariants)
+      ..where((t) => t.lureModelId.equals(lureModelId) & t.retiredAt.isNull())
+      ..orderBy([(t) => OrderingTerm.asc(t.id)]);
+    final rows = await query.get();
+    return [for (final row in rows) _mapper.variantFromRow(row)];
+  }
+
   /// Looks up a single catalog entry by variant id. Deliberately does not
   /// filter on `retiredAt`: a future reference to a retired variant
   /// (Personal Tackle Box, Assign Lure to Catch) must still resolve.

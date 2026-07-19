@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:fishing_app/app/theme/app_spacing.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_variant.dart';
 import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_filter_bar.dart';
-import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_list_item.dart';
-import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_details_page.dart';
+import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_model_list_item.dart';
+import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_model_details_page.dart';
 
 /// Lure Catalog browse/search/filter entry screen.
 ///
@@ -26,10 +27,15 @@ class LureCatalogListPage extends StatefulWidget {
 
   final LureCatalogRepository repository;
 
-  /// Forwarded verbatim to every `LureDetailsPage` this screen opens. See
-  /// `LureDetailsPage.actionsBuilder` — this file still never imports
-  /// anything from `personal_tackle_box`.
-  final List<Widget> Function(BuildContext context, LureCatalogEntry entry)?
+  /// Generic, optional per-variant extension point forwarded verbatim to
+  /// every `LureModelDetailsPage` this screen opens — see
+  /// `LureModelDetailsPage.variantActionBuilder`. This file still never
+  /// imports anything from `personal_tackle_box`.
+  final Widget Function(
+    BuildContext context,
+    LureCatalogEntry variantEntry, {
+    required bool initialIsOwned,
+  })?
   detailsActionsBuilder;
 
   /// Optional, generic hook for showing which variants are already owned
@@ -51,7 +57,8 @@ class LureCatalogListPage extends StatefulWidget {
   State<LureCatalogListPage> createState() => _LureCatalogListPageState();
 }
 
-class _LureCatalogListPageState extends State<LureCatalogListPage> {
+class _LureCatalogListPageState extends State<LureCatalogListPage>
+    with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
 
   String? _manufacturerFilter;
@@ -69,6 +76,14 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
   /// so an older request that resolves after a newer one cannot overwrite
   /// the newer result with stale data.
   int _requestId = 0;
+
+  /// Keeps this page's search/filter/scroll state alive when it is the
+  /// non-visible tab inside `LureToolsPage`'s `TabBarView` — without this,
+  /// `TabBarView` may dispose and recreate this `State` on switching away
+  /// and back, silently resetting every field above. See TD-018's
+  /// Implementation Notes.
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -181,21 +196,55 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
     unawaited(_refresh());
   }
 
-  Future<void> _openDetails(LureCatalogEntry entry) async {
-    await LureDetailsPage.open(
+  /// Opens `LureModelDetailsPage` for [group]'s model.
+  ///
+  /// Queries `getVariantsForModel` for the model's complete, unfiltered
+  /// variant set rather than reusing [group.variants] — a search or filter
+  /// active on this list may have narrowed [group.variants] to only the
+  /// variant(s) that matched, and MFS-018 FR-6 requires every non-retired
+  /// variant to be shown regardless. See TD-018's Implementation Notes.
+  Future<void> _openModelDetails(_LureModelGroup group) async {
+    final List<LureVariant> variants;
+    try {
+      variants = await widget.repository.getVariantsForModel(
+        group.modelEntry.variant.lureModelId,
+      );
+    } catch (error) {
+      debugPrint('Failed to load lure model variants: $error');
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vieheen tietojen lataaminen epäonnistui.'),
+        ),
+      );
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
+    await LureModelDetailsPage.open(
       context,
-      entry,
-      actionsBuilder: widget.detailsActionsBuilder,
+      modelEntry: group.modelEntry,
+      variants: variants,
+      ownedVariantIds: _ownedVariantIds,
+      variantActionBuilder: widget.detailsActionsBuilder,
     );
-    // The user may have added this (or another) variant to their tackle box
+    // The user may have added a variant of this model to their tackle box
     // while viewing details; refresh so the badge/filter reflect it.
     if (widget.loadOwnedLureVariantIds != null) {
       unawaited(_refreshOwnedVariantIds());
     }
   }
 
+  bool _isFullyOwned(_LureModelGroup group) =>
+      group.variants.every((variant) => _ownedVariantIds.contains(variant.id));
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final content = SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -250,28 +299,66 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
       );
     }
 
-    final visibleEntries = _hideOwned
-        ? _entries
-              .where((entry) => !_ownedVariantIds.contains(entry.id))
-              .toList()
-        : _entries;
+    final groups = _groupByModel(_entries);
+    final visibleGroups = _hideOwned
+        ? groups.where((group) => !_isFullyOwned(group)).toList()
+        : groups;
 
-    if (visibleEntries.isEmpty) {
+    if (visibleGroups.isEmpty) {
       return const Center(child: Text('Ei tuloksia hakuehdoilla.'));
     }
 
     return ListView.builder(
       key: const Key('lureCatalogList'),
-      itemCount: visibleEntries.length,
+      itemCount: visibleGroups.length,
       itemBuilder: (context, index) {
-        final entry = visibleEntries[index];
-        return LureCatalogListItem(
-          key: ValueKey(entry.id),
-          entry: entry,
-          isOwned: _ownedVariantIds.contains(entry.id),
-          onTap: () => _openDetails(entry),
+        final group = visibleGroups[index];
+        return LureCatalogModelListItem(
+          key: ValueKey(group.modelEntry.variant.lureModelId),
+          modelEntry: group.modelEntry,
+          fullyOwned: _isFullyOwned(group),
+          onTap: () => _openModelDetails(group),
         );
       },
     );
   }
+}
+
+/// One lure model's browse-list summary plus all of its (already-loaded,
+/// non-retired) variants. Grouping is keyed by `LureVariant.lureModelId` —
+/// the actual foreign key — not by a `(manufacturer, modelName)` text tuple,
+/// so it cannot be confused by two different models that happen to share
+/// display text. See TD-018 Key Design Decision 1.
+final class _LureModelGroup {
+  _LureModelGroup(this.modelEntry) : variants = [modelEntry.variant];
+
+  final LureCatalogEntry modelEntry;
+  final List<LureVariant> variants;
+}
+
+/// A single linear pass over `browse()`'s already-sorted result (manufacturer
+/// → model, case-insensitive → variant id), grouping adjacent rows into one
+/// summary per model. Every model-level field (`manufacturer`, `modelName`,
+/// `productFamily`, `lureType`, `modelDefaultImageReference`) is identical
+/// across every entry in a group — they all resolve from the same
+/// `LureModel` row — so the first entry encountered for a given model
+/// supplies all of them; no merging logic is needed. Mirrors
+/// `PersonalTackleBoxPage._buildRows`'s existing boundary-detection pattern
+/// (TD-016 Key Design Decision 3). See TD-018 §2.
+List<_LureModelGroup> _groupByModel(List<LureCatalogEntry> entries) {
+  final groups = <_LureModelGroup>[];
+  final groupsByModelId = <String, _LureModelGroup>{};
+
+  for (final entry in entries) {
+    final modelId = entry.variant.lureModelId;
+    final existing = groupsByModelId[modelId];
+    if (existing == null) {
+      final group = _LureModelGroup(entry);
+      groupsByModelId[modelId] = group;
+      groups.add(group);
+    } else {
+      existing.variants.add(entry.variant);
+    }
+  }
+  return groups;
 }

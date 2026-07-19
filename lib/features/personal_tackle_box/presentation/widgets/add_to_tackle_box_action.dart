@@ -16,12 +16,22 @@ import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/ta
 /// its own state: already-owned renders disabled, satisfying MFS-016 FR-6's
 /// "reflect existing ownership state" requirement without any change to the
 /// Lure Catalog screen itself. See MFS-016 / TD-016.
+///
+/// [initialIsOwned] is an optional, backward-compatible extension point
+/// (default `null`, preserving the query-on-init behavior above exactly).
+/// When a caller already knows this variant's owned state — e.g.
+/// `LureModelDetailsPage`, which renders many of these at once from one
+/// already-loaded owned-ids set — it supplies [initialIsOwned] directly, so
+/// this widget skips its own `isOwned()` query entirely. This is what lets
+/// many rows render without one `isOwned()` query per row (TD-018 Key
+/// Design Decisions 4 and 5).
 class AddToTackleBoxAction extends StatefulWidget {
   const AddToTackleBoxAction({
     super.key,
     required this.catalogEntry,
     required this.repository,
     this.photoPicker,
+    this.initialIsOwned,
   });
 
   final LureCatalogEntry catalogEntry;
@@ -29,6 +39,12 @@ class AddToTackleBoxAction extends StatefulWidget {
 
   /// Injectable for tests; production code uses the default.
   final TackleBoxPhotoPicker? photoPicker;
+
+  /// When supplied, this variant's owned state as already known by the
+  /// caller — skips this widget's own `isOwned()` query. When omitted
+  /// (`null`), this widget queries `isOwned()` itself exactly as before
+  /// this parameter existed.
+  final bool? initialIsOwned;
 
   @override
   State<AddToTackleBoxAction> createState() => _AddToTackleBoxActionState();
@@ -38,14 +54,16 @@ class _AddToTackleBoxActionState extends State<AddToTackleBoxAction> {
   late final TackleBoxPhotoPicker _photoPicker =
       widget.photoPicker ?? TackleBoxPhotoPicker();
 
-  bool _isLoadingOwnedState = true;
-  bool _isOwned = false;
+  late bool _isLoadingOwnedState = widget.initialIsOwned == null;
+  late bool _isOwned = widget.initialIsOwned ?? false;
   bool _isBusy = false;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_loadOwnedState());
+    if (widget.initialIsOwned == null) {
+      unawaited(_loadOwnedState());
+    }
   }
 
   Future<void> _loadOwnedState() async {
@@ -73,12 +91,13 @@ class _AddToTackleBoxActionState extends State<AddToTackleBoxAction> {
     }
 
     final source = await showTackleBoxPhotoSourceDialog(context);
-    if (!mounted) {
+    if (!mounted || source == null) {
+      // Cancel, barrier dismissal, or Android back: nothing is added.
       return;
     }
 
     PendingTackleBoxPhoto? pendingPhoto;
-    if (source != null) {
+    if (source != TackleBoxPhotoSource.none) {
       final outcome = source == TackleBoxPhotoSource.camera
           ? await _photoPicker.pickFromCamera()
           : await _photoPicker.pickFromGallery();
@@ -155,7 +174,10 @@ class _AddToTackleBoxActionState extends State<AddToTackleBoxAction> {
   /// only place `PersonalTackleBoxRepository.attachPhoto` is ever called
   /// from. Not a general "replace photo" control.
   Future<void> _retryPhoto(String tackleBoxEntryId) async {
-    final source = await showTackleBoxPhotoSourceDialog(context);
+    final source = await showTackleBoxPhotoSourceDialog(
+      context,
+      showSkipOption: false,
+    );
     if (!mounted || source == null) {
       return;
     }

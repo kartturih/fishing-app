@@ -16,7 +16,7 @@ class LureCatalogMapper {
     required LureModelEntity modelRow,
   }) {
     return LureCatalogEntry(
-      variant: _variantFromRow(variantRow),
+      variant: variantFromRow(variantRow),
       manufacturer: modelRow.manufacturer,
       productFamily: modelRow.productFamily,
       modelName: modelRow.modelName,
@@ -25,7 +25,10 @@ class LureCatalogMapper {
     );
   }
 
-  LureVariant _variantFromRow(LureVariantEntity row) {
+  /// Converts a single `LureVariants` row with no model join, e.g. for
+  /// `LureCatalogRepository.getVariantsForModel()`, whose caller already
+  /// knows the model-level fields. See TD-018's Implementation Notes.
+  LureVariant variantFromRow(LureVariantEntity row) {
     return LureVariant(
       id: row.id,
       lureModelId: row.lureModelId,

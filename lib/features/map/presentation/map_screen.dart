@@ -476,22 +476,28 @@ class _MapScreenState extends State<MapScreen> {
     return {for (final item in items) item.catalogEntry.id};
   }
 
-  /// Builds the "Add to Tackle Box" AppBar action for a Lure Details page.
-  /// `lure_catalog` never imports `personal_tackle_box` itself — this
-  /// closure is the one place the two features meet, built entirely by
-  /// `MapScreen` and threaded in through `LureDetailsPage.actionsBuilder`.
-  /// See TD-016's Key Design Decision 1.
-  List<Widget> _buildLureDetailsActions(
+  /// Builds the "Add to Tackle Box" action for one Color Variant row inside
+  /// Lure Model Details. `lure_catalog` never imports `personal_tackle_box`
+  /// itself — this closure is the one place the two features meet, built
+  /// entirely by `MapScreen` and threaded in through
+  /// `LureModelDetailsPage.variantActionBuilder`. See TD-016's Key Design
+  /// Decision 1 and TD-018's Key Design Decision 8.
+  ///
+  /// [initialIsOwned] is already known by the caller (from the one
+  /// already-loaded owned-ids set), so it is passed straight through — this
+  /// avoids one `isOwned()` query per row (TD-018 Key Design Decisions 4
+  /// and 5).
+  Widget _buildLureDetailsActions(
     BuildContext context,
-    LureCatalogEntry entry,
-  ) {
-    return [
-      AddToTackleBoxAction(
-        key: ValueKey('addToTackleBox-${entry.id}'),
-        catalogEntry: entry,
-        repository: _personalTackleBoxRepository,
-      ),
-    ];
+    LureCatalogEntry entry, {
+    required bool initialIsOwned,
+  }) {
+    return AddToTackleBoxAction(
+      key: ValueKey('addToTackleBox-${entry.id}'),
+      catalogEntry: entry,
+      repository: _personalTackleBoxRepository,
+      initialIsOwned: initialIsOwned,
+    );
   }
 
   void _showLocationFailureMessage(LocationFailureReason reason) {

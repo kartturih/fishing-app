@@ -6,42 +6,40 @@ import 'package:fishing_app/features/lure_catalog/domain/lure_type_labels.dart';
 import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_image.dart';
 
 /// A single row in the Lure Catalog browse list: a thumbnail (or
-/// placeholder) plus manufacturer/model and the variant's distinguishing
-/// detail. Tapping the row opens the read-only Lure Details page.
+/// placeholder) plus manufacturer/model and lure type for one lure model.
+/// Tapping the row opens `LureModelDetailsPage`, where the user chooses a
+/// specific color variant. See MFS-018 / TD-018.
 ///
-/// [isOwned] draws a small badge over the thumbnail when the variant is
-/// already in the user's Personal Tackle Box. This widget takes a plain
-/// `bool` rather than reaching into `personal_tackle_box` itself — the
-/// caller (see `LureCatalogListPage.loadOwnedLureVariantIds`) decides
+/// Renamed and refactored from `LureCatalogListItem` (MFS-015/TD-015), which
+/// rendered one row per variant with a per-variant distinguishing-detail
+/// line. Now that the browsing list groups by model (MFS-018), that line no
+/// longer applies — there is no single color to show for a whole model — so
+/// it has been removed rather than carried forward. See TD-018's Key Design
+/// Decision 9 for why this was a rename-and-refactor of the existing file
+/// rather than a delete-and-recreate.
+///
+/// [fullyOwned] draws a small badge over the thumbnail when every one of
+/// the model's non-retired variants is already in the user's Personal
+/// Tackle Box. This widget takes a plain `bool` rather than reaching into
+/// `personal_tackle_box` itself — the caller (`LureCatalogListPage`) decides
 /// ownership, keeping `lure_catalog` free of any dependency on that
-/// feature. See MFS-015 / TD-015.
-class LureCatalogListItem extends StatelessWidget {
-  const LureCatalogListItem({
+/// feature.
+class LureCatalogModelListItem extends StatelessWidget {
+  const LureCatalogModelListItem({
     super.key,
-    required this.entry,
+    required this.modelEntry,
     required this.onTap,
-    this.isOwned = false,
+    this.fullyOwned = false,
   });
 
-  final LureCatalogEntry entry;
+  final LureCatalogEntry modelEntry;
   final VoidCallback onTap;
-  final bool isOwned;
-
-  String get _distinguishingDetail {
-    final variant = entry.variant;
-    return variant.variantName ??
-        variant.colorName ??
-        variant.manufacturerColorCode ??
-        '';
-  }
+  final bool fullyOwned;
 
   @override
   Widget build(BuildContext context) {
-    final distinguishingDetail = _distinguishingDetail;
-    final baseLabel = distinguishingDetail.isEmpty
-        ? '${entry.manufacturer} ${entry.modelName}'
-        : '${entry.manufacturer} ${entry.modelName} $distinguishingDetail';
-    final semanticLabel = isOwned ? '$baseLabel, omistuksessa' : baseLabel;
+    final baseLabel = '${modelEntry.manufacturer} ${modelEntry.modelName}';
+    final semanticLabel = fullyOwned ? '$baseLabel, omistuksessa' : baseLabel;
 
     return InkWell(
       onTap: onTap,
@@ -58,11 +56,11 @@ class LureCatalogListItem extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   LureImage(
-                    imageReference: entry.effectiveImageReference,
+                    imageReference: modelEntry.modelDefaultImageReference,
                     semanticLabel: baseLabel,
                     size: 56,
                   ),
-                  if (isOwned)
+                  if (fullyOwned)
                     Positioned(
                       right: -2,
                       bottom: -2,
@@ -76,13 +74,14 @@ class LureCatalogListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${entry.manufacturer} ${entry.modelName}',
+                      baseLabel,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
-                    if (distinguishingDetail.isNotEmpty)
-                      Text(distinguishingDetail),
                     Text(
-                      lureTypeDisplayLabel(entry.lureType),
+                      lureTypeDisplayLabel(modelEntry.lureType),
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

@@ -3,12 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_variant.dart';
-import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_list_item.dart';
+import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_model_list_item.dart';
 
 void main() {
-  LureCatalogEntry buildEntry({
-    String? colorName = 'Hot Craw',
-    String? variantName,
+  LureCatalogEntry buildModelEntry({
     String? imageReference,
     String? modelDefaultImageReference,
   }) {
@@ -16,8 +14,7 @@ void main() {
       variant: LureVariant(
         id: 'variant-1',
         lureModelId: 'model-1',
-        colorName: colorName,
-        variantName: variantName,
+        colorName: 'Hot Craw',
         imageReference: imageReference,
         createdAt: DateTime.utc(2026, 1, 1),
         updatedAt: DateTime.utc(2026, 1, 1),
@@ -31,34 +28,41 @@ void main() {
 
   Future<void> pumpItem(
     WidgetTester tester,
-    LureCatalogEntry entry, {
+    LureCatalogEntry modelEntry, {
     VoidCallback? onTap,
-    bool isOwned = false,
+    bool fullyOwned = false,
   }) {
     return tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: LureCatalogListItem(
-            entry: entry,
+          body: LureCatalogModelListItem(
+            modelEntry: modelEntry,
             onTap: onTap ?? () {},
-            isOwned: isOwned,
+            fullyOwned: fullyOwned,
           ),
         ),
       ),
     );
   }
 
-  testWidgets('renders manufacturer, model, and distinguishing text', (
-    tester,
-  ) async {
-    await pumpItem(tester, buildEntry());
+  testWidgets('renders manufacturer and model name', (tester) async {
+    await pumpItem(tester, buildModelEntry());
 
     expect(find.text('Rapala X-Rap Shad XRS08'), findsOneWidget);
-    expect(find.text('Hot Craw'), findsOneWidget);
+  });
+
+  testWidgets('does not render a per-variant distinguishing detail line', (
+    tester,
+  ) async {
+    await pumpItem(tester, buildModelEntry());
+
+    // The model row must not show a single color/variant name — that is
+    // model-level ambiguous now that the list groups by model (MFS-018).
+    expect(find.text('Hot Craw'), findsNothing);
   });
 
   testWidgets('renders the lure type label', (tester) async {
-    await pumpItem(tester, buildEntry());
+    await pumpItem(tester, buildModelEntry());
 
     expect(find.text('Vaappu'), findsOneWidget);
   });
@@ -66,7 +70,7 @@ void main() {
   testWidgets('shows a placeholder icon when no image is available', (
     tester,
   ) async {
-    await pumpItem(tester, buildEntry());
+    await pumpItem(tester, buildModelEntry());
 
     expect(find.byIcon(Icons.phishing), findsOneWidget);
     expect(find.byType(Image), findsNothing);
@@ -82,16 +86,35 @@ void main() {
       // for a non-null reference, not that the asset actually decodes.
       await pumpItem(
         tester,
-        buildEntry(modelDefaultImageReference: 'assets/lure_catalog/x.png'),
+        buildModelEntry(
+          modelDefaultImageReference: 'assets/lure_catalog/x.png',
+        ),
       );
 
       expect(find.byType(Image), findsOneWidget);
     },
   );
 
+  testWidgets('uses the model default image, not a variant-specific override', (
+    tester,
+  ) async {
+    // Unlike the old per-variant row, the model row always shows the
+    // model's own default image — never `variant.imageReference` — since
+    // it represents the whole model, not one specific variant.
+    await pumpItem(
+      tester,
+      buildModelEntry(
+        imageReference: 'assets/lure_catalog/variant-specific.png',
+        modelDefaultImageReference: 'assets/lure_catalog/model-default.png',
+      ),
+    );
+
+    expect(find.byType(Image), findsOneWidget);
+  });
+
   testWidgets('tapping the row invokes onTap', (tester) async {
     var tapped = false;
-    await pumpItem(tester, buildEntry(), onTap: () => tapped = true);
+    await pumpItem(tester, buildModelEntry(), onTap: () => tapped = true);
 
     await tester.tap(find.byType(InkWell));
     await tester.pumpAndSettle();
@@ -100,24 +123,24 @@ void main() {
   });
 
   testWidgets('does not show an owned badge by default', (tester) async {
-    await pumpItem(tester, buildEntry());
+    await pumpItem(tester, buildModelEntry());
 
     expect(find.byKey(const Key('ownedBadge')), findsNothing);
   });
 
-  testWidgets('shows an owned badge when isOwned is true', (tester) async {
-    await pumpItem(tester, buildEntry(), isOwned: true);
+  testWidgets('shows an owned badge when fullyOwned is true', (tester) async {
+    await pumpItem(tester, buildModelEntry(), fullyOwned: true);
 
     expect(find.byKey(const Key('ownedBadge')), findsOneWidget);
   });
 
-  testWidgets('appends ownership to the semantic label when owned', (
+  testWidgets('appends ownership to the semantic label when fully owned', (
     tester,
   ) async {
-    await pumpItem(tester, buildEntry(), isOwned: true);
+    await pumpItem(tester, buildModelEntry(), fullyOwned: true);
 
     expect(
-      find.bySemanticsLabel('Rapala X-Rap Shad XRS08 Hot Craw, omistuksessa'),
+      find.bySemanticsLabel('Rapala X-Rap Shad XRS08, omistuksessa'),
       findsOneWidget,
     );
   });

@@ -42,7 +42,11 @@ class LureToolsPage extends StatelessWidget {
 
   /// Forwarded verbatim to the embedded `LureCatalogListPage`. See
   /// `LureCatalogListPage.detailsActionsBuilder`.
-  final List<Widget> Function(BuildContext context, LureCatalogEntry entry)?
+  final Widget Function(
+    BuildContext context,
+    LureCatalogEntry variantEntry, {
+    required bool initialIsOwned,
+  })?
   lureCatalogDetailsActionsBuilder;
 
   /// Forwarded verbatim to the embedded `LureCatalogListPage`. See

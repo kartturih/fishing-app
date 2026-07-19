@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -110,11 +111,6 @@ void main() {
   testWidgets(
     'switching tabs and back preserves the Lure Catalog manufacturer filter',
     (tester) async {
-      // Deliberately the default (smaller) test viewport, not pumpPage's
-      // oversized one: with every seed entry visible at once, "Abu Garcia"
-      // also matches list rows, so find.text('Abu Garcia').last no longer
-      // reliably resolves to the dropdown menu item. Mirrors the working
-      // pattern in lure_catalog_list_page_test.dart's own filter test.
       await tester.pumpWidget(
         MaterialApp(
           home: LureToolsPage(
@@ -132,9 +128,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Rapala X-Rap Shad XRS08'), findsNothing);
 
-      await tester.tap(find.text('Oma vieherasia'));
+      final tabController = DefaultTabController.of(
+        tester.element(find.byType(TabBar)),
+      );
+      tabController.animateTo(1);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Viehekatalogi'));
+      tabController.animateTo(0);
       await tester.pumpAndSettle();
 
       // The filter selection is still applied: Rapala stays hidden and Abu
@@ -145,8 +144,84 @@ void main() {
   );
 
   testWidgets(
+    'switching tabs and back preserves the Lure Catalog "hide owned" state',
+    (tester) async {
+      // The seed "Abu Garcia Toby" model's 3 variants — owning all of them
+      // makes the model "fully owned" (MFS-018 FR-8), so "hide owned" hides
+      // it. Mirrors lure_catalog_list_page_test.dart's own owned-ids setup.
+      const ownedVariantIds = {
+        '2de7edb3-b772-40c9-a51c-75c5f20c233f',
+        '20aa5fab-19d8-4163-85fd-e0fef63ea3c6',
+        '09fedc45-c024-4008-bcb1-ff1d4a398c66',
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LureToolsPage(
+            lureCatalogRepository: lureCatalogRepository,
+            personalTackleBoxRepository: personalTackleBoxRepository,
+            personalTackleBoxPhotoStorage: storage,
+            loadOwnedLureVariantIds: () async => ownedVariantIds,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Abu Garcia Toby'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('lureCatalogHideOwnedFilter')));
+      await tester.pumpAndSettle();
+      expect(find.text('Abu Garcia Toby'), findsNothing);
+
+      final tabController = DefaultTabController.of(
+        tester.element(find.byType(TabBar)),
+      );
+      tabController.animateTo(1);
+      await tester.pumpAndSettle();
+      tabController.animateTo(0);
+      await tester.pumpAndSettle();
+
+      // "Hide owned" is still active: the fully-owned model stays hidden.
+      expect(find.text('Abu Garcia Toby'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'switching tabs and back preserves the Lure Catalog scroll position',
     (tester) async {
+      // The seed catalog groups down to just 4 models (MFS-018), too few to
+      // overflow even the default test viewport, so there would be nothing
+      // to scroll. Insert enough extra single-variant models to guarantee
+      // overflow regardless of exact row height, mirroring the Finnish
+      // search test's direct-insert pattern in lure_catalog_list_page_test.dart.
+      for (var i = 0; i < 30; i++) {
+        final modelId = 'scroll-test-model-$i';
+        await database
+            .into(database.lureModels)
+            .insert(
+              LureModelsCompanion.insert(
+                id: modelId,
+                manufacturer: 'Scroll Test Manufacturer',
+                modelName: 'Scroll Test Model $i',
+                lureType: 'spoon',
+                searchText: 'scroll test manufacturer scroll test model $i',
+                createdAt: 1,
+                updatedAt: 1,
+              ),
+            );
+        await database
+            .into(database.lureVariants)
+            .insert(
+              LureVariantsCompanion.insert(
+                id: 'scroll-test-variant-$i',
+                lureModelId: modelId,
+                colorName: const Value('Color'),
+                searchText: 'color',
+                createdAt: 1,
+                updatedAt: 1,
+              ),
+            );
+      }
+
       // Deliberately the default (smaller) test viewport, unlike pumpPage's
       // oversized one — the seed catalog must actually overflow for there
       // to be a scroll position to preserve.
