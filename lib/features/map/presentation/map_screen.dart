@@ -20,12 +20,11 @@ import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_name_bottom_sheet.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
-import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_list_page.dart';
+import 'package:fishing_app/features/map/presentation/widgets/lure_tools_page.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/add_to_tackle_box_action.dart';
-import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/personal_tackle_box_page.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -441,19 +440,35 @@ class _MapScreenState extends State<MapScreen> {
   // Temporary navigation entry point: the application currently has no
   // dedicated navigation shell (no drawer, bottom navigation, or home
   // menu), so this is the only existing screen with an AppBar to attach a
-  // link to. This does not make Lure Catalog a Map sub-feature — the
-  // dependency is one-way, for navigation only, and is expected to move
-  // once real app-wide navigation exists. See TD-015's Navigation Entry
-  // Point (Temporary) section.
-  void _openLureCatalog() {
+  // link to. This does not make Lure Catalog / Personal Tackle Box a Map
+  // sub-feature — the dependency is one-way, for navigation only, and is
+  // expected to move once real app-wide navigation exists. See TD-015's
+  // Navigation Entry Point (Temporary) section.
+  //
+  // A single route hosts both screens as tabs (`LureToolsPage`) so
+  // switching between them never requires returning to the map first —
+  // see TD-015/TD-016's Navigation sections for the two screens this
+  // replaces individually opening.
+  void _openLureTools() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => LureCatalogListPage(
-          repository: _lureCatalogRepository,
-          detailsActionsBuilder: _buildLureDetailsActions,
+        builder: (context) => LureToolsPage(
+          lureCatalogRepository: _lureCatalogRepository,
+          lureCatalogDetailsActionsBuilder: _buildLureDetailsActions,
+          loadOwnedLureVariantIds: _loadOwnedLureVariantIds,
+          personalTackleBoxRepository: _personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage: _tackleBoxPhotoStorage,
         ),
       ),
     );
+  }
+
+  /// Backs `LureCatalogListPage`'s owned-badge/hide-owned-filter option.
+  /// `lure_catalog` only ever sees the resulting `Set<String>` of variant
+  /// ids — never a `personal_tackle_box` type.
+  Future<Set<String>> _loadOwnedLureVariantIds() async {
+    final items = await _personalTackleBoxRepository.getAll();
+    return {for (final item in items) item.catalogEntry.id};
   }
 
   /// Builds the "Add to Tackle Box" AppBar action for a Lure Details page.
@@ -472,19 +487,6 @@ class _MapScreenState extends State<MapScreen> {
         repository: _personalTackleBoxRepository,
       ),
     ];
-  }
-
-  // Temporary navigation entry point, same rationale as _openLureCatalog
-  // above. See TD-016's Navigation section.
-  void _openPersonalTackleBox() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => PersonalTackleBoxPage(
-          repository: _personalTackleBoxRepository,
-          photoStorage: _tackleBoxPhotoStorage,
-        ),
-      ),
-    );
   }
 
   void _showLocationFailureMessage(LocationFailureReason reason) {
@@ -511,16 +513,10 @@ class _MapScreenState extends State<MapScreen> {
         title: const Text('Kalastussovellus'),
         actions: [
           IconButton(
-            key: const Key('openLureCatalogButton'),
+            key: const Key('openLureToolsButton'),
             icon: const Icon(Icons.menu_book),
-            tooltip: 'Viehekatalogi',
-            onPressed: _openLureCatalog,
-          ),
-          IconButton(
-            key: const Key('openPersonalTackleBoxButton'),
-            icon: const Icon(Icons.inventory_2_outlined),
-            tooltip: 'Oma vieherasia',
-            onPressed: _openPersonalTackleBox,
+            tooltip: 'Viehekatalogi ja oma vieherasia',
+            onPressed: _openLureTools,
           ),
         ],
       ),

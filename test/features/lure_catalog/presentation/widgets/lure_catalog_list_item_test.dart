@@ -33,11 +33,16 @@ void main() {
     WidgetTester tester,
     LureCatalogEntry entry, {
     VoidCallback? onTap,
+    bool isOwned = false,
   }) {
     return tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: LureCatalogListItem(entry: entry, onTap: onTap ?? () {}),
+          body: LureCatalogListItem(
+            entry: entry,
+            onTap: onTap ?? () {},
+            isOwned: isOwned,
+          ),
         ),
       ),
     );
@@ -92,5 +97,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tapped, isTrue);
+  });
+
+  testWidgets('does not show an owned badge by default', (tester) async {
+    await pumpItem(tester, buildEntry());
+
+    expect(find.byKey(const Key('ownedBadge')), findsNothing);
+  });
+
+  testWidgets('shows an owned badge when isOwned is true', (tester) async {
+    await pumpItem(tester, buildEntry(), isOwned: true);
+
+    expect(find.byKey(const Key('ownedBadge')), findsOneWidget);
+  });
+
+  testWidgets('appends ownership to the semantic label when owned', (
+    tester,
+  ) async {
+    await pumpItem(tester, buildEntry(), isOwned: true);
+
+    expect(
+      find.bySemanticsLabel('Rapala X-Rap Shad XRS08 Hot Craw, omistuksessa'),
+      findsOneWidget,
+    );
   });
 }

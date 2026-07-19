@@ -60,8 +60,9 @@ class _ControllableBrowseLureCatalogRepository extends LureCatalogRepository {
 
 Future<void> pumpListPage(
   WidgetTester tester,
-  LureCatalogRepository repository,
-) async {
+  LureCatalogRepository repository, {
+  Future<Set<String>> Function()? loadOwnedLureVariantIds,
+}) async {
   // Tall enough that every seed item renders without scrolling — the seed
   // catalog has more entries than fit in the default test viewport, and
   // ListView.builder only builds visible children.
@@ -71,9 +72,18 @@ Future<void> pumpListPage(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   await tester.pumpWidget(
-    MaterialApp(home: LureCatalogListPage(repository: repository)),
+    MaterialApp(
+      home: LureCatalogListPage(
+        repository: repository,
+        loadOwnedLureVariantIds: loadOwnedLureVariantIds,
+      ),
+    ),
   );
 }
+
+/// The "Abu Garcia Toby — Silver" seed variant's id, used to exercise
+/// ownership badge/filter behavior against real seed data.
+const _abuGarciaTobySilverId = '2de7edb3-b772-40c9-a51c-75c5f20c233f';
 
 void main() {
   late AppDatabase database;
@@ -314,4 +324,70 @@ void main() {
       expect(find.text('Older Result'), findsNothing);
     },
   );
+
+  testWidgets(
+    'does not show an owned badge or hide-owned filter without an ownership callback',
+    (tester) async {
+      await pumpListPage(tester, repository);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('ownedBadge')), findsNothing);
+      expect(find.byKey(const Key('lureCatalogHideOwnedFilter')), findsNothing);
+    },
+  );
+
+  testWidgets('shows an owned badge for a variant already owned', (
+    tester,
+  ) async {
+    await pumpListPage(
+      tester,
+      repository,
+      loadOwnedLureVariantIds: () async => {_abuGarciaTobySilverId},
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('ownedBadge')), findsOneWidget);
+  });
+
+  testWidgets('enabling "hide owned" removes only the owned variant', (
+    tester,
+  ) async {
+    await pumpListPage(
+      tester,
+      repository,
+      loadOwnedLureVariantIds: () async => {_abuGarciaTobySilverId},
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Silver'), findsOneWidget);
+    expect(find.text('Copper'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('lureCatalogHideOwnedFilter')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Silver'), findsNothing);
+    expect(find.text('Copper'), findsOneWidget);
+  });
+
+  testWidgets('opening details and returning refreshes the owned badge', (
+    tester,
+  ) async {
+    var owned = <String>{};
+    await pumpListPage(
+      tester,
+      repository,
+      loadOwnedLureVariantIds: () async => owned,
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('ownedBadge')), findsNothing);
+
+    // Simulate the variant having been added while details were open.
+    owned = {_abuGarciaTobySilverId};
+
+    await tester.tap(find.text('Silver').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('ownedBadge')), findsOneWidget);
+  });
 }

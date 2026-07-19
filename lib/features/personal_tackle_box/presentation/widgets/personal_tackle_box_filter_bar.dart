@@ -3,16 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:fishing_app/app/theme/app_spacing.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_type_labels.dart';
 
-/// Search field plus manufacturer/lure-type filter controls for the Lure
-/// Catalog browse list. Owns no repository or query logic — [searchController]
-/// is owned by the caller. See MFS-015 / TD-015.
+/// Search field plus manufacturer/lure-type filter controls for the
+/// Personal Tackle Box browsing list — visually mirrors
+/// `LureCatalogFilterBar`'s shape (search field, then a row of two
+/// dropdowns) and reuses its exact lure-type wording/labels, but filters an
+/// already-loaded, in-memory list rather than issuing a repository query:
+/// a user's tackle box is expected to stay small (MFS-016), so there is no
+/// need for a dedicated search/filter query here.
 ///
-/// [hideOwned]/[onHideOwnedChanged] add an optional "Hide owned" toggle.
-/// Both are nullable and the control only renders when both are provided —
-/// the caller (`LureCatalogListPage`) only supplies them once it actually
-/// has ownership data to filter on.
-class LureCatalogFilterBar extends StatelessWidget {
-  const LureCatalogFilterBar({
+/// Model is deliberately not a filter dimension here: the search field
+/// already matches model names (e.g. "Toby", "X-Rap"), so a second,
+/// separate model dropdown would add a control without adding capability.
+/// Owns no filtering logic itself — [searchController] and the option
+/// lists are owned by the caller. See MFS-016 / TD-016.
+class PersonalTackleBoxFilterBar extends StatelessWidget {
+  const PersonalTackleBoxFilterBar({
     super.key,
     required this.searchController,
     required this.onSearchChanged,
@@ -22,8 +27,6 @@ class LureCatalogFilterBar extends StatelessWidget {
     required this.lureTypes,
     required this.selectedLureType,
     required this.onLureTypeChanged,
-    this.hideOwned,
-    this.onHideOwnedChanged,
   });
 
   final TextEditingController searchController;
@@ -34,8 +37,6 @@ class LureCatalogFilterBar extends StatelessWidget {
   final List<String> lureTypes;
   final String? selectedLureType;
   final ValueChanged<String?> onLureTypeChanged;
-  final bool? hideOwned;
-  final ValueChanged<bool>? onHideOwnedChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +44,11 @@ class LureCatalogFilterBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
-          key: const Key('lureCatalogSearchField'),
+          key: const Key('personalTackleBoxSearchField'),
           controller: searchController,
           onChanged: onSearchChanged,
           decoration: const InputDecoration(
-            labelText: 'Hae viehekatalogista',
+            labelText: 'Hae vieherasiasta',
             prefixIcon: Icon(Icons.search),
           ),
         ),
@@ -56,7 +57,7 @@ class LureCatalogFilterBar extends StatelessWidget {
           children: [
             Expanded(
               child: DropdownButtonFormField<String?>(
-                key: const Key('lureCatalogManufacturerFilter'),
+                key: const Key('personalTackleBoxManufacturerFilter'),
                 initialValue: selectedManufacturer,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Valmistaja'),
@@ -74,7 +75,7 @@ class LureCatalogFilterBar extends StatelessWidget {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: DropdownButtonFormField<String?>(
-                key: const Key('lureCatalogLureTypeFilter'),
+                key: const Key('personalTackleBoxLureTypeFilter'),
                 initialValue: selectedLureType,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Vieheen tyyppi'),
@@ -91,16 +92,6 @@ class LureCatalogFilterBar extends StatelessWidget {
             ),
           ],
         ),
-        if (hideOwned != null && onHideOwnedChanged != null)
-          CheckboxListTile(
-            key: const Key('lureCatalogHideOwnedFilter'),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            dense: true,
-            title: const Text('Piilota omistetut'),
-            value: hideOwned,
-            onChanged: (value) => onHideOwnedChanged!(value ?? false),
-          ),
       ],
     );
   }

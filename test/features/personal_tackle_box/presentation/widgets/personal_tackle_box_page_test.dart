@@ -64,6 +64,7 @@ void main() {
     required String manufacturer,
     required String modelName,
     required String colorName,
+    String lureType = 'crankbait',
   }) async {
     await database
         .into(database.lureModels)
@@ -72,7 +73,7 @@ void main() {
             id: modelId,
             manufacturer: manufacturer,
             modelName: modelName,
-            lureType: 'crankbait',
+            lureType: lureType,
             searchText: '$manufacturer $modelName'.toLowerCase(),
             createdAt: 1000,
             updatedAt: 1000,
@@ -100,7 +101,7 @@ void main() {
       ),
       manufacturer: manufacturer,
       modelName: modelName,
-      lureType: 'crankbait',
+      lureType: lureType,
       modelDefaultImageReference: null,
     );
   }
@@ -199,5 +200,165 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(OwnedEntryDetailPage), findsOneWidget);
+  });
+
+  testWidgets('does not show search/filter controls when nothing is owned', (
+    tester,
+  ) async {
+    await pumpPage(tester, repository, storage);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('personalTackleBoxSearchField')), findsNothing);
+  });
+
+  group('search and filters', () {
+    Future<void> seedTwoManufacturers(WidgetTester tester) async {
+      final rapala = await seedCatalogVariant(
+        modelId: 'model-rapala',
+        variantId: 'variant-rapala',
+        manufacturer: 'Rapala',
+        modelName: 'X-Rap 10',
+        colorName: 'Firetiger',
+        lureType: 'crankbait',
+      );
+      final westin = await seedCatalogVariant(
+        modelId: 'model-westin',
+        variantId: 'variant-westin',
+        manufacturer: 'Westin',
+        modelName: 'Swim',
+        colorName: 'Official Roach',
+        lureType: 'swimbait',
+      );
+      await repository.add(catalogEntry: rapala);
+      await repository.add(catalogEntry: westin);
+
+      await pumpPage(tester, repository, storage);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('typing a search term narrows the list', (tester) async {
+      await seedTwoManufacturers(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('personalTackleBoxSearchField')),
+        'Firetiger',
+      );
+      await tester.pumpAndSettle();
+
+      // findsWidgets, not findsOneWidget: the search field's own current
+      // text also matches "Firetiger", in addition to the list row.
+      expect(find.text('Firetiger'), findsWidgets);
+      expect(find.text('Official Roach'), findsNothing);
+    });
+
+    testWidgets('search matches manufacturer text too', (tester) async {
+      await seedTwoManufacturers(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('personalTackleBoxSearchField')),
+        'westin',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Official Roach'), findsOneWidget);
+      expect(find.text('Firetiger'), findsNothing);
+    });
+
+    testWidgets('selecting a manufacturer filter narrows the list', (
+      tester,
+    ) async {
+      await seedTwoManufacturers(tester);
+
+      await tester.tap(
+        find.byKey(const Key('personalTackleBoxManufacturerFilter')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Westin').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Official Roach'), findsOneWidget);
+      expect(find.text('Firetiger'), findsNothing);
+    });
+
+    testWidgets('selecting a lure type filter narrows the list', (
+      tester,
+    ) async {
+      await seedTwoManufacturers(tester);
+
+      await tester.tap(
+        find.byKey(const Key('personalTackleBoxLureTypeFilter')),
+      );
+      await tester.pumpAndSettle();
+      // 'swimbait' -> 'Uimavetouistin' (lure_type_labels.dart).
+      await tester.tap(find.text('Uimavetouistin').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Official Roach'), findsOneWidget);
+      expect(find.text('Firetiger'), findsNothing);
+    });
+
+    testWidgets('clearing the lure type filter restores the wider list', (
+      tester,
+    ) async {
+      await seedTwoManufacturers(tester);
+
+      await tester.tap(
+        find.byKey(const Key('personalTackleBoxLureTypeFilter')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Uimavetouistin').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Firetiger'), findsNothing);
+
+      await tester.tap(
+        find.byKey(const Key('personalTackleBoxLureTypeFilter')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kaikki tyypit').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Firetiger'), findsOneWidget);
+    });
+
+    testWidgets('clearing the manufacturer filter restores the wider list', (
+      tester,
+    ) async {
+      await seedTwoManufacturers(tester);
+
+      await tester.tap(
+        find.byKey(const Key('personalTackleBoxManufacturerFilter')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Westin').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Firetiger'), findsNothing);
+
+      await tester.tap(
+        find.byKey(const Key('personalTackleBoxManufacturerFilter')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kaikki valmistajat').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Firetiger'), findsOneWidget);
+    });
+
+    testWidgets('shows a distinct message when a filter matches nothing', (
+      tester,
+    ) async {
+      await seedTwoManufacturers(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('personalTackleBoxSearchField')),
+        'no such lure exists anywhere',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ei tuloksia hakuehdoilla.'), findsOneWidget);
+      expect(
+        find.textContaining('Et ole vielä lisännyt viehteitä'),
+        findsNothing,
+      );
+    });
   });
 }

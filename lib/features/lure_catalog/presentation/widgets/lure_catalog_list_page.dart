@@ -20,6 +20,8 @@ class LureCatalogListPage extends StatefulWidget {
     super.key,
     required this.repository,
     this.detailsActionsBuilder,
+    this.loadOwnedLureVariantIds,
+    this.embedded = false,
   });
 
   final LureCatalogRepository repository;
@@ -30,6 +32,21 @@ class LureCatalogListPage extends StatefulWidget {
   final List<Widget> Function(BuildContext context, LureCatalogEntry entry)?
   detailsActionsBuilder;
 
+  /// Optional, generic hook for showing which variants are already owned
+  /// (an "owned" badge per row, and a "hide owned" filter). Returns the set
+  /// of owned `LureVariant.id`s. Like [detailsActionsBuilder], this is a
+  /// plain data callback — this file never imports anything from
+  /// `personal_tackle_box`; the caller (currently `MapScreen`) supplies it.
+  /// When omitted, no ownership badge or filter is shown, exactly like
+  /// before this option existed.
+  final Future<Set<String>> Function()? loadOwnedLureVariantIds;
+
+  /// When `true`, this widget renders only its content — no `Scaffold`, no
+  /// `AppBar` — so a host (e.g. a tabbed shell) can supply its own chrome
+  /// around it. Defaults to `false`, preserving this page's standalone,
+  /// directly-pushable behavior unchanged.
+  final bool embedded;
+
   @override
   State<LureCatalogListPage> createState() => _LureCatalogListPageState();
 }
@@ -39,11 +56,13 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
 
   String? _manufacturerFilter;
   String? _lureTypeFilter;
+  bool _hideOwned = false;
   List<String> _manufacturers = [];
   List<String> _lureTypes = [];
   bool _isLoading = true;
   String? _loadError;
   List<LureCatalogEntry> _entries = [];
+  Set<String> _ownedVariantIds = {};
 
   /// Incremented at the start of every [_load]/[_refresh] call. A completing
   /// request only applies its result if it is still the most recent request,
@@ -75,6 +94,7 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
       final manufacturers = await widget.repository.getDistinctManufacturers();
       final lureTypes = await widget.repository.getDistinctLureTypes();
       final entries = await widget.repository.browse();
+      final ownedVariantIds = await _loadOwnedVariantIds();
 
       if (!mounted || requestId != _requestId) {
         return;
@@ -83,6 +103,7 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
         _manufacturers = manufacturers;
         _lureTypes = lureTypes;
         _entries = entries;
+        _ownedVariantIds = ownedVariantIds;
         _isLoading = false;
       });
     } catch (error) {
@@ -121,6 +142,31 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
     }
   }
 
+  Future<Set<String>> _loadOwnedVariantIds() async {
+    final loadOwnedLureVariantIds = widget.loadOwnedLureVariantIds;
+    if (loadOwnedLureVariantIds == null) {
+      return const {};
+    }
+    try {
+      return await loadOwnedLureVariantIds();
+    } catch (error) {
+      debugPrint('Failed to load owned lure variant ids: $error');
+      return const {};
+    }
+  }
+
+  Future<void> _refreshOwnedVariantIds() async {
+    final ownedVariantIds = await _loadOwnedVariantIds();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _ownedVariantIds = ownedVariantIds);
+  }
+
+  void _onHideOwnedChanged(bool value) {
+    setState(() => _hideOwned = value);
+  }
+
   void _onSearchChanged(String value) {
     unawaited(_refresh());
   }
@@ -135,40 +181,57 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
     unawaited(_refresh());
   }
 
-  Future<void> _openDetails(LureCatalogEntry entry) {
-    return LureDetailsPage.open(
+  Future<void> _openDetails(LureCatalogEntry entry) async {
+    await LureDetailsPage.open(
       context,
       entry,
       actionsBuilder: widget.detailsActionsBuilder,
     );
+    // The user may have added this (or another) variant to their tackle box
+    // while viewing details; refresh so the badge/filter reflect it.
+    if (widget.loadOwnedLureVariantIds != null) {
+      unawaited(_refreshOwnedVariantIds());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Viehekatalogi')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              LureCatalogFilterBar(
-                searchController: _searchController,
-                onSearchChanged: _onSearchChanged,
-                manufacturers: _manufacturers,
-                selectedManufacturer: _manufacturerFilter,
-                onManufacturerChanged: _onManufacturerChanged,
-                lureTypes: _lureTypes,
-                selectedLureType: _lureTypeFilter,
-                onLureTypeChanged: _onLureTypeChanged,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Expanded(child: _buildBody()),
-            ],
-          ),
+    final content = SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LureCatalogFilterBar(
+              searchController: _searchController,
+              onSearchChanged: _onSearchChanged,
+              manufacturers: _manufacturers,
+              selectedManufacturer: _manufacturerFilter,
+              onManufacturerChanged: _onManufacturerChanged,
+              lureTypes: _lureTypes,
+              selectedLureType: _lureTypeFilter,
+              onLureTypeChanged: _onLureTypeChanged,
+              hideOwned: widget.loadOwnedLureVariantIds == null
+                  ? null
+                  : _hideOwned,
+              onHideOwnedChanged: widget.loadOwnedLureVariantIds == null
+                  ? null
+                  : _onHideOwnedChanged,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Expanded(child: _buildBody()),
+          ],
         ),
       ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Viehekatalogi')),
+      body: content,
     );
   }
 
@@ -187,18 +250,25 @@ class _LureCatalogListPageState extends State<LureCatalogListPage> {
       );
     }
 
-    if (_entries.isEmpty) {
+    final visibleEntries = _hideOwned
+        ? _entries
+              .where((entry) => !_ownedVariantIds.contains(entry.id))
+              .toList()
+        : _entries;
+
+    if (visibleEntries.isEmpty) {
       return const Center(child: Text('Ei tuloksia hakuehdoilla.'));
     }
 
     return ListView.builder(
       key: const Key('lureCatalogList'),
-      itemCount: _entries.length,
+      itemCount: visibleEntries.length,
       itemBuilder: (context, index) {
-        final entry = _entries[index];
+        final entry = visibleEntries[index];
         return LureCatalogListItem(
           key: ValueKey(entry.id),
           entry: entry,
+          isOwned: _ownedVariantIds.contains(entry.id),
           onTap: () => _openDetails(entry),
         );
       },
