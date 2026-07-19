@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:fishing_app/features/fishing_spots/data/fishing_spots_table.dart';
+import 'package:fishing_app/features/lure_catalog/data/local/lure_variants_table.dart';
 
 @DataClassName('CatchEntity')
 class Catches extends Table {
@@ -21,6 +22,12 @@ class Catches extends Table {
   IntColumn get lengthMillimeters => integer().nullable().check(
     // ignore: recursive_getters
     lengthMillimeters.isNull() | lengthMillimeters.isBiggerThanValue(0),
+  )();
+
+  TextColumn get lureVariantId => text().nullable().references(
+    LureVariants,
+    #id,
+    onDelete: KeyAction.restrict,
   )();
 
   IntColumn get createdAt => integer()();

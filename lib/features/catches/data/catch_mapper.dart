@@ -15,6 +15,7 @@ class CatchMapper {
       caughtAt: DateTime.fromMillisecondsSinceEpoch(row.caughtAt),
       weightGrams: row.weightGrams,
       lengthMillimeters: row.lengthMillimeters,
+      lureVariantId: row.lureVariantId,
       createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
     );
@@ -28,6 +29,7 @@ class CatchMapper {
       caughtAt: catchModel.caughtAt.millisecondsSinceEpoch,
       weightGrams: Value(catchModel.weightGrams),
       lengthMillimeters: Value(catchModel.lengthMillimeters),
+      lureVariantId: Value(catchModel.lureVariantId),
       createdAt: catchModel.createdAt.millisecondsSinceEpoch,
       updatedAt: catchModel.updatedAt.millisecondsSinceEpoch,
     );

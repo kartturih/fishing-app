@@ -23,12 +23,21 @@ import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/pe
 /// loaded [_items] list, in memory — no repository query changes. A user's
 /// tackle box is expected to remain small (MFS-016), so this is sufficient
 /// and avoids adding search/filter methods to `PersonalTackleBoxRepository`.
+///
+/// [onSelect] lets this page double as a lure picker (MFS-017/TD-017): when
+/// provided, tapping a row invokes it instead of pushing
+/// [OwnedEntryDetailPage]. When omitted (the default), behavior is
+/// unchanged from every prior release of this page. This is the only
+/// touch `catches` makes to this feature — `personal_tackle_box` gains no
+/// knowledge of, or dependency on, `catches` from this parameter, since it
+/// is a plain generic callback.
 class PersonalTackleBoxPage extends StatefulWidget {
   const PersonalTackleBoxPage({
     super.key,
     required this.repository,
     required this.photoStorage,
     this.embedded = false,
+    this.onSelect,
   });
 
   final PersonalTackleBoxRepository repository;
@@ -39,6 +48,11 @@ class PersonalTackleBoxPage extends StatefulWidget {
   /// around it. Defaults to `false`, preserving this page's standalone,
   /// directly-pushable behavior unchanged.
   final bool embedded;
+
+  /// When non-null, tapping a row invokes this instead of opening
+  /// [OwnedEntryDetailPage]. Defaults to `null`, preserving this page's
+  /// existing browse-to-detail behavior unchanged.
+  final ValueChanged<TackleBoxItem>? onSelect;
 
   @override
   State<PersonalTackleBoxPage> createState() => _PersonalTackleBoxPageState();
@@ -105,6 +119,15 @@ class _PersonalTackleBoxPageState extends State<PersonalTackleBoxPage> {
     if (removed == true) {
       unawaited(_load());
     }
+  }
+
+  void _onItemTap(TackleBoxItem item) {
+    final onSelect = widget.onSelect;
+    if (onSelect != null) {
+      onSelect(item);
+      return;
+    }
+    unawaited(_openDetails(item));
   }
 
   /// Manufacturers among owned entries, for the filter dropdown.
@@ -282,7 +305,7 @@ class _PersonalTackleBoxPageState extends State<PersonalTackleBoxPage> {
         child: _TackleBoxItemRow(
           key: ValueKey(item.id),
           item: item,
-          onTap: () => _openDetails(item),
+          onTap: () => _onItemTap(item),
         ),
       ),
     };

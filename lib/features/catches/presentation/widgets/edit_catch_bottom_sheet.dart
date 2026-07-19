@@ -16,7 +16,14 @@ import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/assigned_lure_row.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
+import 'package:fishing_app/features/personal_tackle_box/domain/tackle_box_item.dart';
+import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/personal_tackle_box_page.dart';
 
 sealed class EditCatchResult {
   const EditCatchResult();
@@ -44,12 +51,18 @@ class EditCatchBottomSheet extends StatefulWidget {
     required this.catchModel,
     required this.catchRepository,
     required this.catchPhotoRepository,
+    required this.lureCatalogRepository,
+    required this.personalTackleBoxRepository,
+    required this.personalTackleBoxPhotoStorage,
   });
 
   final FishingSpot fishingSpot;
   final Catch catchModel;
   final CatchRepository catchRepository;
   final CatchPhotoRepository catchPhotoRepository;
+  final LureCatalogRepository lureCatalogRepository;
+  final PersonalTackleBoxRepository personalTackleBoxRepository;
+  final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
   static Future<EditCatchResult?> show(
     BuildContext context,
@@ -57,6 +70,9 @@ class EditCatchBottomSheet extends StatefulWidget {
     Catch catchModel,
     CatchRepository catchRepository,
     CatchPhotoRepository catchPhotoRepository,
+    LureCatalogRepository lureCatalogRepository,
+    PersonalTackleBoxRepository personalTackleBoxRepository,
+    TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
   ) {
     return showModalBottomSheet<EditCatchResult>(
       context: context,
@@ -67,6 +83,9 @@ class EditCatchBottomSheet extends StatefulWidget {
         catchModel: catchModel,
         catchRepository: catchRepository,
         catchPhotoRepository: catchPhotoRepository,
+        lureCatalogRepository: lureCatalogRepository,
+        personalTackleBoxRepository: personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
       ),
     );
   }
@@ -98,6 +117,10 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
   final List<PendingCatchPhoto> _pendingPhotos = [];
   final Set<String> _deletingPhotoIds = {};
 
+  bool _isLoadingLure = true;
+  LureCatalogEntry? _selectedLureEntry;
+  bool _isLureUnavailable = false;
+
   bool get _isBusy => _isSaving || _isDeleting;
   bool get _isPhotoBusy => _isPickingPhoto || _deletingPhotoIds.isNotEmpty;
 
@@ -112,6 +135,7 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
   void initState() {
     super.initState();
     unawaited(_loadPhotos());
+    unawaited(_loadAssignedLure());
   }
 
   @override
@@ -195,6 +219,82 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
         pickedTime.hour,
         pickedTime.minute,
       );
+    });
+  }
+
+  /// Resolves the catch's currently assigned lure (if any) into its full
+  /// catalog details, independently of photo loading, mirroring the same
+  /// independent-async-section pattern already used for photos in this file
+  /// (MFS-017/TD-017). A resolution failure or an unresolvable reference
+  /// shows a fallback state rather than blocking the rest of the form.
+  Future<void> _loadAssignedLure() async {
+    final lureVariantId = widget.catchModel.lureVariantId;
+    if (lureVariantId == null) {
+      setState(() {
+        _isLoadingLure = false;
+        _selectedLureEntry = null;
+        _isLureUnavailable = false;
+      });
+      return;
+    }
+
+    setState(() => _isLoadingLure = true);
+
+    try {
+      final entry = await widget.lureCatalogRepository.getEntryById(
+        lureVariantId,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _selectedLureEntry = entry;
+        _isLureUnavailable = entry == null;
+        _isLoadingLure = false;
+      });
+    } catch (error) {
+      debugPrint('Failed to resolve assigned lure: $error');
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _selectedLureEntry = null;
+        _isLureUnavailable = true;
+        _isLoadingLure = false;
+      });
+    }
+  }
+
+  /// Pushes the Personal Tackle Box as a lure picker, reusing its existing
+  /// grouped browsing screen unchanged. The picker already returns full
+  /// catalog details, so no further resolve call is made here (avoiding a
+  /// redundant lookup of the entry the picker just handed over).
+  Future<void> _selectLure() async {
+    if (_isAnyOperationBusy) {
+      return;
+    }
+    final selected = await Navigator.of(context).push<TackleBoxItem>(
+      MaterialPageRoute(
+        builder: (context) => PersonalTackleBoxPage(
+          repository: widget.personalTackleBoxRepository,
+          photoStorage: widget.personalTackleBoxPhotoStorage,
+          onSelect: (item) => Navigator.of(context).pop(item),
+        ),
+      ),
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _selectedLureEntry = selected.catalogEntry;
+      _isLureUnavailable = false;
+    });
+  }
+
+  void _removeLure() {
+    setState(() {
+      _selectedLureEntry = null;
+      _isLureUnavailable = false;
     });
   }
 
@@ -359,6 +459,7 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
         caughtAt: _selectedCaughtAt,
         weightGrams: weightGrams,
         lengthMillimeters: lengthMillimeters,
+        lureVariantId: _selectedLureEntry?.id,
       );
     } catch (error) {
       debugPrint('Failed to update catch: $error');
@@ -541,6 +642,22 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
                   decoration: const InputDecoration(labelText: 'Pituus (cm)'),
                   validator: validateCatchLengthInput,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+                Text('Viehe', style: Theme.of(context).textTheme.labelMedium),
+                const SizedBox(height: AppSpacing.xs),
+                _isLoadingLure
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : AssignedLureRow(
+                        entry: _selectedLureEntry,
+                        isUnavailable: _isLureUnavailable,
+                        onAssign: _isBusy ? null : _selectLure,
+                        onChange: _isBusy ? null : _selectLure,
+                        onRemove: _isBusy ? null : _removeLure,
+                      ),
                 const SizedBox(height: AppSpacing.lg),
                 Text('Kuvat', style: Theme.of(context).textTheme.labelMedium),
                 const SizedBox(height: AppSpacing.xs),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
@@ -19,6 +20,10 @@ import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_variant.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 
 import '../../../../support/fake_image_picker_platform.dart';
 import '../../../../support/test_image_files.dart';
@@ -35,6 +40,7 @@ class _FailingCreateCatchRepository extends CatchRepository {
     required DateTime caughtAt,
     int? weightGrams,
     int? lengthMillimeters,
+    String? lureVariantId,
   }) async {
     createCallCount++;
     throw StateError('simulated create failure');
@@ -49,7 +55,17 @@ class _AddCatchHarness {
     FishingSpot fishingSpot,
     CatchRepository catchRepository,
     CatchPhotoRepository catchPhotoRepository,
+    PersonalTackleBoxRepository personalTackleBoxRepository,
+    TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
   ) async {
+    // Taller than the default test viewport: the form (now including the
+    // MFS-017 lure-assignment row) no longer fits at the default 800x600 in
+    // every test, which left "Tallenna" below the fold and unhittable.
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -61,6 +77,8 @@ class _AddCatchHarness {
                   fishingSpot,
                   catchRepository,
                   catchPhotoRepository,
+                  personalTackleBoxRepository,
+                  personalTackleBoxPhotoStorage,
                 );
               },
               child: const Text('open'),
@@ -86,6 +104,58 @@ Future<void> _addCameraPhoto(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('catchPhotoSourceCamera')));
   await tester.pumpAndSettle();
+}
+
+/// Inserts a `LureModel`/`LureVariant` pair directly into the database and
+/// adds it to the Personal Tackle Box, so a lure is available to select in
+/// the picker. Returns the seeded variant's id.
+Future<String> _seedOwnedLure(
+  AppDatabase database,
+  PersonalTackleBoxRepository personalTackleBoxRepository, {
+  String variantId = 'variant-1',
+}) async {
+  const modelId = 'model-1';
+  await database
+      .into(database.lureModels)
+      .insert(
+        LureModelsCompanion.insert(
+          id: modelId,
+          manufacturer: 'Rapala',
+          modelName: 'X-Rap Shad XRS08',
+          lureType: 'crankbait',
+          searchText: 'rapala x-rap shad xrs08',
+          createdAt: 1000,
+          updatedAt: 1000,
+        ),
+      );
+  await database
+      .into(database.lureVariants)
+      .insert(
+        LureVariantsCompanion.insert(
+          id: variantId,
+          lureModelId: modelId,
+          colorName: const Value('Hot Craw'),
+          searchText: 'hot craw',
+          createdAt: 1000,
+          updatedAt: 1000,
+        ),
+      );
+
+  final catalogEntry = LureCatalogEntry(
+    variant: LureVariant(
+      id: variantId,
+      lureModelId: modelId,
+      colorName: 'Hot Craw',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    ),
+    manufacturer: 'Rapala',
+    modelName: 'X-Rap Shad XRS08',
+    lureType: 'crankbait',
+    modelDefaultImageReference: null,
+  );
+  await personalTackleBoxRepository.add(catalogEntry: catalogEntry);
+  return variantId;
 }
 
 void main() {
@@ -266,8 +336,11 @@ void main() {
     late FishingSpot fishingSpot;
     late Directory storageDir;
     late Directory sourceDir;
+    late Directory tackleBoxStorageDir;
     late FakeImagePickerPlatform fakePicker;
     late ImagePickerPlatform originalPicker;
+    late PersonalTackleBoxRepository personalTackleBoxRepository;
+    late TackleBoxPhotoStorage tackleBoxPhotoStorage;
 
     setUp(() async {
       database = AppDatabase(NativeDatabase.memory());
@@ -278,9 +351,19 @@ void main() {
       sourceDir = Directory.systemTemp.createTempSync(
         'add_catch_photos_source',
       );
+      tackleBoxStorageDir = Directory.systemTemp.createTempSync(
+        'add_catch_tackle_box_storage',
+      );
       catchPhotoRepository = CatchPhotoRepository(
         database,
         CatchPhotoStorage(rootDirectoryProvider: () async => storageDir),
+      );
+      tackleBoxPhotoStorage = TackleBoxPhotoStorage(
+        rootDirectoryProvider: () async => tackleBoxStorageDir,
+      );
+      personalTackleBoxRepository = PersonalTackleBoxRepository(
+        database,
+        tackleBoxPhotoStorage,
       );
       fishingSpotRepository = FishingSpotRepository(database);
       fishingSpot = await fishingSpotRepository.create(
@@ -303,6 +386,9 @@ void main() {
       if (sourceDir.existsSync()) {
         sourceDir.deleteSync(recursive: true);
       }
+      if (tackleBoxStorageDir.existsSync()) {
+        tackleBoxStorageDir.deleteSync(recursive: true);
+      }
     });
 
     testWidgets('shows no photos initially', (tester) async {
@@ -312,6 +398,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       expect(find.byKey(const Key('catchPhotoAddButton')), findsOneWidget);
@@ -325,6 +413,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -344,6 +434,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await _addCameraPhoto(tester);
@@ -366,6 +458,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -386,6 +480,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await _addCameraPhoto(tester);
@@ -405,6 +501,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await _addCameraPhoto(tester);
@@ -425,6 +523,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await _addCameraPhoto(tester);
@@ -448,6 +548,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await _addCameraPhoto(tester);
@@ -476,6 +578,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -497,6 +601,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -531,6 +637,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await _addCameraPhoto(tester);
@@ -555,6 +663,8 @@ void main() {
         fishingSpot,
         failingRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await _addCameraPhoto(tester);
@@ -580,6 +690,8 @@ void main() {
           fishingSpot,
           catchRepository,
           catchPhotoRepository,
+          personalTackleBoxRepository,
+          tackleBoxPhotoStorage,
         );
 
         await _selectSpecies(tester, FishSpecies.pike);
@@ -606,6 +718,8 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -637,6 +751,139 @@ void main() {
         catchCreated.catchModel.id,
       );
       expect(storedPhotos, hasLength(1));
+    });
+  });
+
+  group('lure assignment', () {
+    late AppDatabase database;
+    late CatchRepository catchRepository;
+    late CatchPhotoRepository catchPhotoRepository;
+    late FishingSpotRepository fishingSpotRepository;
+    late FishingSpot fishingSpot;
+    late Directory storageDir;
+    late Directory tackleBoxStorageDir;
+    late PersonalTackleBoxRepository personalTackleBoxRepository;
+    late TackleBoxPhotoStorage tackleBoxPhotoStorage;
+
+    setUp(() async {
+      database = AppDatabase(NativeDatabase.memory());
+      catchRepository = CatchRepository(database);
+      storageDir = Directory.systemTemp.createTempSync(
+        'add_catch_lure_photos_storage',
+      );
+      tackleBoxStorageDir = Directory.systemTemp.createTempSync(
+        'add_catch_lure_tackle_box_storage',
+      );
+      catchPhotoRepository = CatchPhotoRepository(
+        database,
+        CatchPhotoStorage(rootDirectoryProvider: () async => storageDir),
+      );
+      tackleBoxPhotoStorage = TackleBoxPhotoStorage(
+        rootDirectoryProvider: () async => tackleBoxStorageDir,
+      );
+      personalTackleBoxRepository = PersonalTackleBoxRepository(
+        database,
+        tackleBoxPhotoStorage,
+      );
+      fishingSpotRepository = FishingSpotRepository(database);
+      fishingSpot = await fishingSpotRepository.create(
+        name: 'Merrasjärvi',
+        latitude: 61.0,
+        longitude: 25.0,
+      );
+    });
+
+    tearDown(() async {
+      await database.close();
+      if (storageDir.existsSync()) {
+        storageDir.deleteSync(recursive: true);
+      }
+      if (tackleBoxStorageDir.existsSync()) {
+        tackleBoxStorageDir.deleteSync(recursive: true);
+      }
+    });
+
+    testWidgets('selecting a lure via the picker assigns it on save', (
+      tester,
+    ) async {
+      final variantId = await _seedOwnedLure(
+        database,
+        personalTackleBoxRepository,
+      );
+
+      final harness = _AddCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Ei valittua viehettä'), findsOneWidget);
+
+      await tester.tap(find.text('Valitse viehe'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hot Craw'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rapala X-Rap Shad XRS08'), findsOneWidget);
+
+      await _selectSpecies(tester, FishSpecies.pike);
+      await tester.tap(find.text('Tallenna'));
+      await tester.pumpAndSettle();
+
+      final result = harness.result;
+      expect(result, isA<CatchCreated>());
+      expect((result! as CatchCreated).catchModel.lureVariantId, variantId);
+    });
+
+    testWidgets('saving without opening the picker assigns no lure', (
+      tester,
+    ) async {
+      await _seedOwnedLure(database, personalTackleBoxRepository);
+
+      final harness = _AddCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
+      );
+
+      await _selectSpecies(tester, FishSpecies.pike);
+      await tester.tap(find.text('Tallenna'));
+      await tester.pumpAndSettle();
+
+      final result = harness.result;
+      expect(result, isA<CatchCreated>());
+      expect((result! as CatchCreated).catchModel.lureVariantId, isNull);
+    });
+
+    testWidgets('backing out of the picker leaves the selection unchanged', (
+      tester,
+    ) async {
+      await _seedOwnedLure(database, personalTackleBoxRepository);
+
+      final harness = _AddCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
+      );
+
+      await tester.tap(find.text('Valitse viehe'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ei valittua viehettä'), findsOneWidget);
     });
   });
 }

@@ -25,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'fishing_app'));
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -49,6 +49,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 5) {
         await migrator.createTable(tackleBoxEntries);
+      }
+      if (from < 6) {
+        await migrator.addColumn(catches, catches.lureVariantId);
       }
     },
     beforeOpen: (details) async {

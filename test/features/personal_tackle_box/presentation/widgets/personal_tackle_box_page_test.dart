@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -360,5 +360,61 @@ void main() {
         findsNothing,
       );
     });
+  });
+
+  group('onSelect (MFS-017/TD-017 picker mode)', () {
+    testWidgets('invokes onSelect instead of opening OwnedEntryDetailPage', (
+      tester,
+    ) async {
+      final rapala = await seedCatalogVariant(
+        modelId: 'model-rapala',
+        variantId: 'variant-rapala',
+        manufacturer: 'Rapala',
+        modelName: 'X-Rap 10',
+        colorName: 'Firetiger',
+      );
+      await repository.add(catalogEntry: rapala);
+
+      TackleBoxItem? selected;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PersonalTackleBoxPage(
+            repository: repository,
+            photoStorage: storage,
+            onSelect: (item) => selected = item,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Firetiger'));
+      await tester.pumpAndSettle();
+
+      expect(selected, isNotNull);
+      expect(selected!.catalogEntry.id, 'variant-rapala');
+      expect(find.byType(OwnedEntryDetailPage), findsNothing);
+    });
+
+    testWidgets(
+      'omitting onSelect preserves the existing browse-to-detail behavior',
+      (tester) async {
+        final rapala = await seedCatalogVariant(
+          modelId: 'model-rapala',
+          variantId: 'variant-rapala',
+          manufacturer: 'Rapala',
+          modelName: 'X-Rap 10',
+          colorName: 'Firetiger',
+        );
+        await repository.add(catalogEntry: rapala);
+
+        await pumpPage(tester, repository, storage);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Firetiger'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(OwnedEntryDetailPage), findsOneWidget);
+      },
+    );
   });
 }

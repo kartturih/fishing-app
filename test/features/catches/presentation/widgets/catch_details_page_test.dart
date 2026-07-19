@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +18,10 @@ import 'package:fishing_app/features/catches/presentation/widgets/catch_details_
 import 'package:fishing_app/features/catches/presentation/widgets/edit_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 
 import '../../../../support/test_image_files.dart';
 
@@ -31,6 +36,16 @@ class _NonLockingDeleteCatchPhotoStorage extends CatchPhotoStorage {
 
   @override
   Future<void> deleteCatchDirectory(String catchId) async {}
+}
+
+/// A `LureCatalogRepository` whose `getEntryById` always returns `null`,
+/// simulating an unresolvable reference. See the identical helper in
+/// edit_catch_bottom_sheet_test.dart.
+class _NullResolvingLureCatalogRepository extends LureCatalogRepository {
+  _NullResolvingLureCatalogRepository(super.database);
+
+  @override
+  Future<LureCatalogEntry?> getEntryById(String variantId) async => null;
 }
 
 class _FailingDeleteCatchRepository extends CatchRepository {
@@ -64,7 +79,18 @@ Future<void> _openDetails(
   Catch catchModel,
   CatchRepository catchRepository,
   CatchPhotoRepository catchPhotoRepository,
+  LureCatalogRepository lureCatalogRepository,
+  PersonalTackleBoxRepository personalTackleBoxRepository,
+  TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
 ) async {
+  // Taller than the default test viewport: Edit Catch's form (now including
+  // the MFS-017 lure-assignment row) no longer fits at the default 800x600
+  // in every test, which left "Tallenna" below the fold and unhittable.
+  tester.view.physicalSize = const Size(800, 1400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
@@ -76,6 +102,9 @@ Future<void> _openDetails(
               catchModel: catchModel,
               catchRepository: catchRepository,
               catchPhotoRepository: catchPhotoRepository,
+              lureCatalogRepository: lureCatalogRepository,
+              personalTackleBoxRepository: personalTackleBoxRepository,
+              personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
             ),
             child: const Text('open'),
           ),
@@ -93,9 +122,13 @@ void main() {
   late CatchPhotoRepository catchPhotoRepository;
   late Directory storageDir;
   late Directory sourceDir;
+  late Directory tackleBoxStorageDir;
   late FishingSpotRepository fishingSpotRepository;
   late FishingSpot fishingSpot;
   late Catch existingCatch;
+  late LureCatalogRepository lureCatalogRepository;
+  late PersonalTackleBoxRepository personalTackleBoxRepository;
+  late TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
@@ -106,9 +139,20 @@ void main() {
     sourceDir = Directory.systemTemp.createTempSync(
       'catch_details_page_source',
     );
+    tackleBoxStorageDir = Directory.systemTemp.createTempSync(
+      'catch_details_page_tackle_box_storage',
+    );
     catchPhotoRepository = CatchPhotoRepository(
       database,
       CatchPhotoStorage(rootDirectoryProvider: () async => storageDir),
+    );
+    lureCatalogRepository = LureCatalogRepository(database);
+    personalTackleBoxPhotoStorage = TackleBoxPhotoStorage(
+      rootDirectoryProvider: () async => tackleBoxStorageDir,
+    );
+    personalTackleBoxRepository = PersonalTackleBoxRepository(
+      database,
+      personalTackleBoxPhotoStorage,
     );
     fishingSpotRepository = FishingSpotRepository(database);
     fishingSpot = await fishingSpotRepository.create(
@@ -133,6 +177,9 @@ void main() {
     if (sourceDir.existsSync()) {
       sourceDir.deleteSync(recursive: true);
     }
+    if (tackleBoxStorageDir.existsSync()) {
+      tackleBoxStorageDir.deleteSync(recursive: true);
+    }
   });
 
   testWidgets('renders read-only catch information with no editable fields', (
@@ -144,6 +191,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     expect(find.text('Hauki'), findsWidgets);
@@ -169,6 +219,9 @@ void main() {
       bareCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     expect(find.text('Paino'), findsNothing);
@@ -184,6 +237,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     expect(find.byType(Image), findsNothing);
@@ -212,6 +268,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -254,6 +313,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -291,6 +353,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -327,6 +392,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -372,6 +440,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -403,6 +474,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -429,6 +503,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -448,6 +525,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
     expect(find.byType(CatchDetailsPage), findsOneWidget);
 
@@ -465,6 +545,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -481,6 +564,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -498,6 +584,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -527,6 +616,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -552,6 +644,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -573,6 +668,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -610,6 +708,9 @@ void main() {
           existingCatch,
           catchRepository,
           nonLockingRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
         );
         await _pumpUntilSettledWithRealIO(tester);
 
@@ -641,6 +742,9 @@ void main() {
         existingCatch,
         failingRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -657,5 +761,141 @@ void main() {
       );
       expect(failingRepository.deleteCallCount, 1);
     });
+  });
+
+  group('lure display', () {
+    Future<String> seedOwnedLure(
+      AppDatabase database, {
+      String variantId = 'variant-1',
+      bool retired = false,
+    }) async {
+      const modelId = 'model-1';
+      await database
+          .into(database.lureModels)
+          .insertOnConflictUpdate(
+            LureModelsCompanion.insert(
+              id: modelId,
+              manufacturer: 'Rapala',
+              modelName: 'X-Rap Shad XRS08',
+              lureType: 'crankbait',
+              searchText: 'rapala x-rap shad xrs08',
+              createdAt: 1000,
+              updatedAt: 1000,
+            ),
+          );
+      await database
+          .into(database.lureVariants)
+          .insert(
+            LureVariantsCompanion.insert(
+              id: variantId,
+              lureModelId: modelId,
+              colorName: const Value('Hot Craw'),
+              searchText: 'hot craw',
+              retiredAt: retired ? const Value(1000) : const Value.absent(),
+              createdAt: 1000,
+              updatedAt: 1000,
+            ),
+          );
+      return variantId;
+    }
+
+    testWidgets('omits the lure row when no lure is assigned', (tester) async {
+      await _openDetails(
+        tester,
+        fishingSpot,
+        existingCatch,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Viehe'), findsNothing);
+    });
+
+    testWidgets('displays the assigned lure details when present', (
+      tester,
+    ) async {
+      final variantId = await seedOwnedLure(database);
+      final catchWithLure = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        lureVariantId: variantId,
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        catchWithLure,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Viehe'), findsOneWidget);
+      expect(find.text('Rapala X-Rap Shad XRS08'), findsOneWidget);
+    });
+
+    testWidgets('a retired assigned variant still displays normally', (
+      tester,
+    ) async {
+      final variantId = await seedOwnedLure(database, retired: true);
+      final catchWithLure = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        lureVariantId: variantId,
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        catchWithLure,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Rapala X-Rap Shad XRS08'), findsOneWidget);
+    });
+
+    testWidgets(
+      'an unresolvable assigned lureVariantId shows a fallback without crashing',
+      (tester) async {
+        final variantId = await seedOwnedLure(database);
+        final catchWithLure = await catchRepository.update(
+          catchModel: existingCatch,
+          species: existingCatch.species,
+          caughtAt: existingCatch.caughtAt,
+          weightGrams: existingCatch.weightGrams,
+          lengthMillimeters: existingCatch.lengthMillimeters,
+          lureVariantId: variantId,
+        );
+
+        await _openDetails(
+          tester,
+          fishingSpot,
+          catchWithLure,
+          catchRepository,
+          catchPhotoRepository,
+          _NullResolvingLureCatalogRepository(database),
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+        );
+
+        expect(find.text('Viehetiedot eivät ole saatavilla'), findsOneWidget);
+        expect(find.byType(CatchDetailsPage), findsOneWidget);
+      },
+    );
   });
 }

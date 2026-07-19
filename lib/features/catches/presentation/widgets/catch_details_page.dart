@@ -13,8 +13,13 @@ import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/catch_formatters.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/assigned_lure_row.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/edit_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 
 /// Read-only Catch Details screen shown between the Catch list and Edit
 /// Catch.
@@ -25,10 +30,11 @@ import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 /// and pushing a page keeps the Catch list's Bottom Sheet open underneath so
 /// Back/Android-back naturally land on it again. See MFS-014 / TD-014.
 ///
-/// `lure` and `notes` are part of MFS-014's read-only field list but are
-/// intentionally not displayed here: `Catch` has never captured either
-/// field (no column, no input in Add/Edit Catch), so showing them would
-/// require a domain/schema change that is out of scope for this feature.
+/// `notes` is part of MFS-014's read-only field list but is intentionally
+/// not displayed here: `Catch` has never captured it (no column, no input
+/// in Add/Edit Catch), so showing it would require a domain/schema change
+/// that is out of scope for this feature. `lure` is now displayed — see
+/// MFS-017 / TD-017.
 class CatchDetailsPage extends StatefulWidget {
   const CatchDetailsPage({
     super.key,
@@ -36,12 +42,22 @@ class CatchDetailsPage extends StatefulWidget {
     required this.catchModel,
     required this.catchRepository,
     required this.catchPhotoRepository,
+    required this.lureCatalogRepository,
+    required this.personalTackleBoxRepository,
+    required this.personalTackleBoxPhotoStorage,
   });
 
   final FishingSpot fishingSpot;
   final Catch catchModel;
   final CatchRepository catchRepository;
   final CatchPhotoRepository catchPhotoRepository;
+  final LureCatalogRepository lureCatalogRepository;
+
+  /// Held only to forward to [EditCatchBottomSheet] when the user opens the
+  /// editor from the overflow menu — this page never launches the lure
+  /// picker itself (MFS-014's read-only principle, FR-10).
+  final PersonalTackleBoxRepository personalTackleBoxRepository;
+  final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
   /// Pushes Catch Details as a normal [MaterialPageRoute].
   static Future<void> open(
@@ -50,6 +66,9 @@ class CatchDetailsPage extends StatefulWidget {
     required Catch catchModel,
     required CatchRepository catchRepository,
     required CatchPhotoRepository catchPhotoRepository,
+    required LureCatalogRepository lureCatalogRepository,
+    required PersonalTackleBoxRepository personalTackleBoxRepository,
+    required TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
   }) {
     return Navigator.of(context).push(
       MaterialPageRoute(
@@ -58,6 +77,9 @@ class CatchDetailsPage extends StatefulWidget {
           catchModel: catchModel,
           catchRepository: catchRepository,
           catchPhotoRepository: catchPhotoRepository,
+          lureCatalogRepository: lureCatalogRepository,
+          personalTackleBoxRepository: personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
         ),
       ),
     );
@@ -85,10 +107,15 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
   int _currentPhotoIndex = 0;
   bool _isDeleting = false;
 
+  bool _isLoadingLure = true;
+  LureCatalogEntry? _assignedLure;
+  bool _isLureUnavailable = false;
+
   @override
   void initState() {
     super.initState();
     unawaited(_loadPhotos());
+    unawaited(_loadAssignedLure());
   }
 
   @override
@@ -144,6 +171,47 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
     CatchPhotoViewer.open(context, files: files, initialIndex: index);
   }
 
+  /// Resolves the catch's currently assigned lure (if any), independently
+  /// of photo loading. Re-run after a successful edit, since the
+  /// assignment may have changed. See MFS-017 / TD-017.
+  Future<void> _loadAssignedLure() async {
+    final lureVariantId = _catchModel.lureVariantId;
+    if (lureVariantId == null) {
+      setState(() {
+        _isLoadingLure = false;
+        _assignedLure = null;
+        _isLureUnavailable = false;
+      });
+      return;
+    }
+
+    setState(() => _isLoadingLure = true);
+
+    try {
+      final entry = await widget.lureCatalogRepository.getEntryById(
+        lureVariantId,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _assignedLure = entry;
+        _isLureUnavailable = entry == null;
+        _isLoadingLure = false;
+      });
+    } catch (error) {
+      debugPrint('Failed to resolve assigned lure: $error');
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _assignedLure = null;
+        _isLureUnavailable = true;
+        _isLoadingLure = false;
+      });
+    }
+  }
+
   Future<void> _openEdit() async {
     final result = await EditCatchBottomSheet.show(
       context,
@@ -151,6 +219,9 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
       _catchModel,
       widget.catchRepository,
       widget.catchPhotoRepository,
+      widget.lureCatalogRepository,
+      widget.personalTackleBoxRepository,
+      widget.personalTackleBoxPhotoStorage,
     );
 
     if (!mounted || result == null) {
@@ -161,6 +232,7 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
       case CatchUpdated(:final catchModel, :final hasPhotoFailures):
         setState(() => _catchModel = catchModel);
         unawaited(_loadPhotos());
+        unawaited(_loadAssignedLure());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -295,9 +367,33 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
                 'Kellonaika',
                 formatCatchTime(_catchModel.caughtAt),
               ),
+              if (_catchModel.lureVariantId != null) _buildAssignedLureRow(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAssignedLureRow() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Viehe', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: AppSpacing.xs),
+          _isLoadingLure
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : AssignedLureRow(
+                  entry: _assignedLure,
+                  isUnavailable: _isLureUnavailable,
+                ),
+        ],
       ),
     );
   }

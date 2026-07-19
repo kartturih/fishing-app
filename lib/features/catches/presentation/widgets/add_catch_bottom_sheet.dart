@@ -13,7 +13,12 @@ import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/assigned_lure_row.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
+import 'package:fishing_app/features/personal_tackle_box/domain/tackle_box_item.dart';
+import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/personal_tackle_box_page.dart';
 
 sealed class AddCatchResult {
   const AddCatchResult();
@@ -37,17 +42,23 @@ class AddCatchBottomSheet extends StatefulWidget {
     required this.fishingSpot,
     required this.catchRepository,
     required this.catchPhotoRepository,
+    required this.personalTackleBoxRepository,
+    required this.personalTackleBoxPhotoStorage,
   });
 
   final FishingSpot fishingSpot;
   final CatchRepository catchRepository;
   final CatchPhotoRepository catchPhotoRepository;
+  final PersonalTackleBoxRepository personalTackleBoxRepository;
+  final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
   static Future<AddCatchResult?> show(
     BuildContext context,
     FishingSpot fishingSpot,
     CatchRepository catchRepository,
     CatchPhotoRepository catchPhotoRepository,
+    PersonalTackleBoxRepository personalTackleBoxRepository,
+    TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
   ) {
     return showModalBottomSheet<AddCatchResult>(
       context: context,
@@ -57,6 +68,8 @@ class AddCatchBottomSheet extends StatefulWidget {
         fishingSpot: fishingSpot,
         catchRepository: catchRepository,
         catchPhotoRepository: catchPhotoRepository,
+        personalTackleBoxRepository: personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
       ),
     );
   }
@@ -76,6 +89,7 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
   bool _isSaving = false;
   bool _isPickingPhoto = false;
   final List<PendingCatchPhoto> _pendingPhotos = [];
+  TackleBoxItem? _selectedLure;
 
   bool get _isBusy => _isSaving || _isPickingPhoto;
 
@@ -195,6 +209,33 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
     setState(() => _pendingPhotos.remove(pendingPhoto));
   }
 
+  /// Pushes the Personal Tackle Box as a lure picker, reusing its existing
+  /// grouped browsing screen unchanged (MFS-017/TD-017). Only lures already
+  /// owned can be selected; the picker's own empty state offers a path to
+  /// the Lure Catalog when the tackle box is empty.
+  Future<void> _selectLure() async {
+    if (_isSaving) {
+      return;
+    }
+    final selected = await Navigator.of(context).push<TackleBoxItem>(
+      MaterialPageRoute(
+        builder: (context) => PersonalTackleBoxPage(
+          repository: widget.personalTackleBoxRepository,
+          photoStorage: widget.personalTackleBoxPhotoStorage,
+          onSelect: (item) => Navigator.of(context).pop(item),
+        ),
+      ),
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+    setState(() => _selectedLure = selected);
+  }
+
+  void _removeLure() {
+    setState(() => _selectedLure = null);
+  }
+
   void _openViewer(int index) {
     final files = [
       for (final pendingPhoto in _pendingPhotos) File(pendingPhoto.sourcePath),
@@ -237,6 +278,7 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
         caughtAt: _selectedCaughtAt,
         weightGrams: weightGrams,
         lengthMillimeters: lengthMillimeters,
+        lureVariantId: _selectedLure?.catalogEntry.id,
       );
     } catch (error) {
       debugPrint('Failed to save catch: $error');
@@ -361,6 +403,15 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
                   ),
                   decoration: const InputDecoration(labelText: 'Pituus (cm)'),
                   validator: validateCatchLengthInput,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text('Viehe', style: Theme.of(context).textTheme.labelMedium),
+                const SizedBox(height: AppSpacing.xs),
+                AssignedLureRow(
+                  entry: _selectedLure?.catalogEntry,
+                  onAssign: _isSaving ? null : _selectLure,
+                  onChange: _isSaving ? null : _selectLure,
+                  onRemove: _isSaving ? null : _removeLure,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text('Kuvat', style: Theme.of(context).textTheme.labelMedium),

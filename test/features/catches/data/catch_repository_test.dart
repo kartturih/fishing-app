@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,6 +28,39 @@ void main() {
   tearDown(() async {
     await database.close();
   });
+
+  Future<String> insertLureVariant(
+    AppDatabase database, {
+    String id = 'variant-1',
+  }) async {
+    const modelId = 'model-1';
+    await database
+        .into(database.lureModels)
+        .insertOnConflictUpdate(
+          LureModelsCompanion.insert(
+            id: modelId,
+            manufacturer: 'Rapala',
+            modelName: 'X-Rap Shad XRS08',
+            lureType: 'crankbait',
+            searchText: 'rapala x-rap shad xrs08',
+            createdAt: 1000,
+            updatedAt: 1000,
+          ),
+        );
+    await database
+        .into(database.lureVariants)
+        .insert(
+          LureVariantsCompanion.insert(
+            id: id,
+            lureModelId: modelId,
+            colorName: const Value('Hot Craw'),
+            searchText: 'hot craw',
+            createdAt: 1000,
+            updatedAt: 1000,
+          ),
+        );
+    return id;
+  }
 
   group('CatchRepository.create', () {
     test('creates a catch linked to the correct fishing spot', () async {
@@ -364,6 +398,124 @@ void main() {
 
     test('rejects an empty id', () async {
       expect(() => catchRepository.delete(''), throwsArgumentError);
+    });
+  });
+
+  group('CatchRepository lureVariantId', () {
+    test('create persists a provided lureVariantId', () async {
+      final lureVariantId = await insertLureVariant(database);
+
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        lureVariantId: lureVariantId,
+      );
+
+      expect(created.lureVariantId, lureVariantId);
+      final stored = await catchRepository.getById(created.id);
+      expect(stored!.lureVariantId, lureVariantId);
+    });
+
+    test('create stores null when lureVariantId is omitted', () async {
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      expect(created.lureVariantId, isNull);
+    });
+
+    test('create rejects an empty lureVariantId', () async {
+      expect(
+        () => catchRepository.create(
+          fishingSpotId: fishingSpot.id,
+          species: FishSpecies.pike,
+          caughtAt: DateTime(2026, 7, 17),
+          lureVariantId: '',
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('update assigns a lureVariantId to a catch that had none', () async {
+      final lureVariantId = await insertLureVariant(database);
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+        lureVariantId: lureVariantId,
+      );
+
+      expect(updated.lureVariantId, lureVariantId);
+    });
+
+    test('update can change an existing lureVariantId', () async {
+      final firstVariantId = await insertLureVariant(database, id: 'variant-1');
+      final secondVariantId = await insertLureVariant(
+        database,
+        id: 'variant-2',
+      );
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        lureVariantId: firstVariantId,
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+        lureVariantId: secondVariantId,
+      );
+
+      expect(updated.lureVariantId, secondVariantId);
+    });
+
+    test('update clears an existing lureVariantId when omitted', () async {
+      final lureVariantId = await insertLureVariant(database);
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        lureVariantId: lureVariantId,
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+      );
+
+      expect(updated.lureVariantId, isNull);
+      final stored = await catchRepository.getById(original.id);
+      expect(stored!.lureVariantId, isNull);
+    });
+
+    test('update rejects an empty lureVariantId', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      expect(
+        () => catchRepository.update(
+          catchModel: original,
+          species: original.species,
+          caughtAt: original.caughtAt,
+          lureVariantId: '',
+        ),
+        throwsArgumentError,
+      );
     });
   });
 }

@@ -9,7 +9,12 @@ import 'package:fishing_app/core/database/app_database.dart';
 /// A schema-3 snapshot of [AppDatabase] (no `LureModels`/`LureVariants`
 /// tables), used to seed a database file that the real [AppDatabase] then
 /// upgrades to schema 4. Mirrors the identical helper pattern in
-/// catch_photos_database_test.dart.
+/// catch_photos_database_test.dart. `catches` is created with a literal
+/// `CREATE TABLE` matching the real schema-3 shape (no `lure_variant_id`):
+/// the current `Catches` table class already includes that column
+/// (MFS-017/TD-017), so `createTable(catches)` would create it too early,
+/// breaking the schema-6 `addColumn` migration this database is later
+/// upgraded through.
 class _LegacyAppDatabase extends AppDatabase {
   _LegacyAppDatabase(super.executor);
 
@@ -20,7 +25,18 @@ class _LegacyAppDatabase extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) async {
       await migrator.createTable(fishingSpots);
-      await migrator.createTable(catches);
+      await customStatement('''
+        CREATE TABLE catches (
+          id TEXT NOT NULL PRIMARY KEY,
+          fishing_spot_id TEXT NOT NULL REFERENCES fishing_spots (id) ON DELETE CASCADE,
+          species TEXT NOT NULL,
+          caught_at INTEGER NOT NULL,
+          weight_grams INTEGER NULL CHECK (weight_grams IS NULL OR weight_grams > 0),
+          length_millimeters INTEGER NULL CHECK (length_millimeters IS NULL OR length_millimeters > 0),
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      ''');
       await migrator.createTable(catchPhotos);
       await migrator.createIndex(catchPhotosCatchIdSort);
     },

@@ -10,6 +10,7 @@ class Catch {
     required this.updatedAt,
     this.weightGrams,
     this.lengthMillimeters,
+    this.lureVariantId,
   }) : assert(
          weightGrams == null || weightGrams > 0,
          'weightGrams must be greater than zero when provided',
@@ -17,6 +18,10 @@ class Catch {
        assert(
          lengthMillimeters == null || lengthMillimeters > 0,
          'lengthMillimeters must be greater than zero when provided',
+       ),
+       assert(
+         lureVariantId == null || lureVariantId != '',
+         'lureVariantId must not be empty when provided',
        );
 
   final String id;
@@ -25,6 +30,7 @@ class Catch {
   final DateTime caughtAt;
   final int? weightGrams;
   final int? lengthMillimeters;
+  final String? lureVariantId;
   final DateTime createdAt;
   final DateTime updatedAt;
 }

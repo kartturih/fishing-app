@@ -7,6 +7,9 @@ import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 
 sealed class FishingSpotDetailsResult {
   const FishingSpotDetailsResult();
@@ -32,17 +35,26 @@ class FishingSpotDetailsBottomSheet extends StatefulWidget {
     required this.fishingSpot,
     required this.catchRepository,
     required this.catchPhotoRepository,
+    required this.lureCatalogRepository,
+    required this.personalTackleBoxRepository,
+    required this.personalTackleBoxPhotoStorage,
   });
 
   final FishingSpot fishingSpot;
   final CatchRepository catchRepository;
   final CatchPhotoRepository catchPhotoRepository;
+  final LureCatalogRepository lureCatalogRepository;
+  final PersonalTackleBoxRepository personalTackleBoxRepository;
+  final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
   static Future<FishingSpotDetailsResult?> show(
     BuildContext context,
     FishingSpot fishingSpot,
     CatchRepository catchRepository,
     CatchPhotoRepository catchPhotoRepository,
+    LureCatalogRepository lureCatalogRepository,
+    PersonalTackleBoxRepository personalTackleBoxRepository,
+    TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
   ) {
     return showModalBottomSheet<FishingSpotDetailsResult>(
       context: context,
@@ -52,6 +64,9 @@ class FishingSpotDetailsBottomSheet extends StatefulWidget {
         fishingSpot: fishingSpot,
         catchRepository: catchRepository,
         catchPhotoRepository: catchPhotoRepository,
+        lureCatalogRepository: lureCatalogRepository,
+        personalTackleBoxRepository: personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
       ),
     );
   }
@@ -85,6 +100,9 @@ class _FishingSpotDetailsBottomSheetState
       catchModel: catchModel,
       catchRepository: widget.catchRepository,
       catchPhotoRepository: widget.catchPhotoRepository,
+      lureCatalogRepository: widget.lureCatalogRepository,
+      personalTackleBoxRepository: widget.personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage: widget.personalTackleBoxPhotoStorage,
     );
 
     if (!mounted) {

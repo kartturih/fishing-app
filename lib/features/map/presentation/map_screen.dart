@@ -217,6 +217,9 @@ class _MapScreenState extends State<MapScreen> {
       spot,
       _catchRepository,
       _catchPhotoRepository,
+      _lureCatalogRepository,
+      _personalTackleBoxRepository,
+      _tackleBoxPhotoStorage,
     );
     if (!mounted || result == null) {
       return;
@@ -238,6 +241,8 @@ class _MapScreenState extends State<MapScreen> {
       spot,
       _catchRepository,
       _catchPhotoRepository,
+      _personalTackleBoxRepository,
+      _tackleBoxPhotoStorage,
     );
 
     if (result == null || !mounted) {

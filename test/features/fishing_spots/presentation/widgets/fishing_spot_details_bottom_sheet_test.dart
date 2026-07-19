@@ -16,6 +16,9 @@ import 'package:fishing_app/features/catches/presentation/widgets/catch_details_
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_details_bottom_sheet.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 
 // Uses a manually-controlled Completer (instead of a real Timer/Future.delayed)
 // so the test can deterministically observe the loading state and then
@@ -36,7 +39,17 @@ Future<void> _openSheet(
   FishingSpot fishingSpot,
   CatchRepository catchRepository,
   CatchPhotoRepository catchPhotoRepository,
+  LureCatalogRepository lureCatalogRepository,
+  PersonalTackleBoxRepository personalTackleBoxRepository,
+  TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
 ) async {
+  // Taller than the default test viewport: Catch Details' overflow menu and
+  // the MFS-017 lure-assignment row leave less room below the fold.
+  tester.view.physicalSize = const Size(800, 1400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
@@ -48,6 +61,9 @@ Future<void> _openSheet(
                 fishingSpot,
                 catchRepository,
                 catchPhotoRepository,
+                lureCatalogRepository,
+                personalTackleBoxRepository,
+                personalTackleBoxPhotoStorage,
               );
             },
             child: const Text('open'),
@@ -65,8 +81,12 @@ void main() {
   late CatchRepository catchRepository;
   late CatchPhotoRepository catchPhotoRepository;
   late Directory tempDir;
+  late Directory tackleBoxTempDir;
   late FishingSpotRepository fishingSpotRepository;
   late FishingSpot fishingSpot;
+  late LureCatalogRepository lureCatalogRepository;
+  late PersonalTackleBoxRepository personalTackleBoxRepository;
+  late TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
@@ -77,6 +97,17 @@ void main() {
     catchPhotoRepository = CatchPhotoRepository(
       database,
       CatchPhotoStorage(rootDirectoryProvider: () async => tempDir),
+    );
+    tackleBoxTempDir = Directory.systemTemp.createTempSync(
+      'fishing_spot_details_tackle_box_storage',
+    );
+    lureCatalogRepository = LureCatalogRepository(database);
+    personalTackleBoxPhotoStorage = TackleBoxPhotoStorage(
+      rootDirectoryProvider: () async => tackleBoxTempDir,
+    );
+    personalTackleBoxRepository = PersonalTackleBoxRepository(
+      database,
+      personalTackleBoxPhotoStorage,
     );
     fishingSpotRepository = FishingSpotRepository(database);
     fishingSpot = await fishingSpotRepository.create(
@@ -91,6 +122,9 @@ void main() {
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
     }
+    if (tackleBoxTempDir.existsSync()) {
+      tackleBoxTempDir.deleteSync(recursive: true);
+    }
   });
 
   testWidgets('shows a loading indicator while catches are loading', (
@@ -103,6 +137,9 @@ void main() {
       fishingSpot,
       pendingRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     expect(find.text('Ladataan...'), findsOneWidget);
@@ -121,6 +158,9 @@ void main() {
       fishingSpot,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
     await tester.pumpAndSettle();
 
@@ -135,6 +175,9 @@ void main() {
       fishingSpot,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
     await tester.pumpAndSettle();
 
@@ -160,6 +203,9 @@ void main() {
       fishingSpot,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
     await tester.pumpAndSettle();
 
@@ -196,6 +242,9 @@ void main() {
       fishingSpot,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
     await tester.pumpAndSettle();
 
@@ -234,6 +283,9 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await tester.pumpAndSettle();
     }
@@ -296,6 +348,9 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await tester.pumpAndSettle();
 
@@ -316,6 +371,9 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await tester.pumpAndSettle();
 
@@ -336,6 +394,9 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await tester.pumpAndSettle();
 
@@ -357,6 +418,9 @@ void main() {
         fishingSpot,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await tester.pumpAndSettle();
 
@@ -381,6 +445,9 @@ void main() {
       fishingSpot,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
     await tester.pumpAndSettle();
 
@@ -406,6 +473,9 @@ void main() {
       fishingSpot,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
     await tester.pumpAndSettle();
 

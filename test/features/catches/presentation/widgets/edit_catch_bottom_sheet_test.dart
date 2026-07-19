@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,11 @@ import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart
 import 'package:fishing_app/features/catches/presentation/widgets/edit_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
+import 'package:fishing_app/features/lure_catalog/domain/lure_variant.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
+import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 
 import '../../../../support/fake_image_picker_platform.dart';
 import '../../../../support/test_image_files.dart';
@@ -96,10 +102,21 @@ class _FailingUpdateCatchRepository extends CatchRepository {
     required DateTime caughtAt,
     int? weightGrams,
     int? lengthMillimeters,
+    String? lureVariantId,
   }) async {
     updateCallCount++;
     throw StateError('simulated update failure');
   }
+}
+
+/// A `LureCatalogRepository` whose `getEntryById` always returns `null`,
+/// simulating an unresolvable reference for [_EditCatchHarness]'s fallback
+/// test — see the "unresolvable assignment" test below.
+class _NullResolvingLureCatalogRepository extends LureCatalogRepository {
+  _NullResolvingLureCatalogRepository(super.database);
+
+  @override
+  Future<LureCatalogEntry?> getEntryById(String variantId) async => null;
 }
 
 class _FailingDeleteCatchRepository extends CatchRepository {
@@ -127,6 +144,7 @@ class _SlowUpdateCatchRepository extends CatchRepository {
     required DateTime caughtAt,
     int? weightGrams,
     int? lengthMillimeters,
+    String? lureVariantId,
   }) async {
     updateCallCount++;
     await gate.future;
@@ -136,6 +154,7 @@ class _SlowUpdateCatchRepository extends CatchRepository {
       caughtAt: caughtAt,
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
+      lureVariantId: lureVariantId,
     );
   }
 }
@@ -163,7 +182,18 @@ class _EditCatchHarness {
     Catch catchModel,
     CatchRepository catchRepository,
     CatchPhotoRepository catchPhotoRepository,
+    LureCatalogRepository lureCatalogRepository,
+    PersonalTackleBoxRepository personalTackleBoxRepository,
+    TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
   ) async {
+    // Taller than the default test viewport: the form (now including the
+    // MFS-017 lure-assignment row) no longer fits at the default 800x600 in
+    // every test, which left action buttons below the fold and unhittable.
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -176,6 +206,9 @@ class _EditCatchHarness {
                   catchModel,
                   catchRepository,
                   catchPhotoRepository,
+                  lureCatalogRepository,
+                  personalTackleBoxRepository,
+                  personalTackleBoxPhotoStorage,
                 );
               },
               child: const Text('open'),
@@ -201,9 +234,13 @@ void main() {
   late CatchRepository catchRepository;
   late CatchPhotoRepository catchPhotoRepository;
   late Directory tempDir;
+  late Directory tackleBoxTempDir;
   late FishingSpotRepository fishingSpotRepository;
   late FishingSpot fishingSpot;
   late Catch existingCatch;
+  late LureCatalogRepository lureCatalogRepository;
+  late PersonalTackleBoxRepository personalTackleBoxRepository;
+  late TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
@@ -212,6 +249,17 @@ void main() {
     catchPhotoRepository = CatchPhotoRepository(
       database,
       CatchPhotoStorage(rootDirectoryProvider: () async => tempDir),
+    );
+    tackleBoxTempDir = Directory.systemTemp.createTempSync(
+      'edit_catch_tackle_box_storage',
+    );
+    lureCatalogRepository = LureCatalogRepository(database);
+    personalTackleBoxPhotoStorage = TackleBoxPhotoStorage(
+      rootDirectoryProvider: () async => tackleBoxTempDir,
+    );
+    personalTackleBoxRepository = PersonalTackleBoxRepository(
+      database,
+      personalTackleBoxPhotoStorage,
     );
     fishingSpotRepository = FishingSpotRepository(database);
     fishingSpot = await fishingSpotRepository.create(
@@ -233,6 +281,9 @@ void main() {
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
     }
+    if (tackleBoxTempDir.existsSync()) {
+      tackleBoxTempDir.deleteSync(recursive: true);
+    }
   });
 
   group('initial values', () {
@@ -246,6 +297,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       expect(find.text('Merrasjärvi'), findsOneWidget);
@@ -268,6 +322,9 @@ void main() {
         catchWithoutMeasurements,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       final weightField = tester.widget<TextFormField>(
@@ -290,6 +347,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await _selectSpecies(tester, FishSpecies.zander);
@@ -312,6 +372,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.enterText(find.byType(TextFormField).at(0), '2,5');
@@ -330,6 +393,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.enterText(find.byType(TextFormField).at(1), '68.5');
@@ -348,6 +414,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.enterText(find.byType(TextFormField).at(0), '');
@@ -366,6 +435,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.enterText(find.byType(TextFormField).at(1), '');
@@ -384,6 +456,9 @@ void main() {
       existingCatch,
       catchRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.enterText(find.byType(TextFormField).at(0), '0');
@@ -406,6 +481,9 @@ void main() {
       existingCatch,
       failingRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.enterText(find.byType(TextFormField).at(0), '5');
@@ -430,6 +508,9 @@ void main() {
       existingCatch,
       slowRepository,
       catchPhotoRepository,
+      lureCatalogRepository,
+      personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage,
     );
 
     await tester.tap(find.byKey(const Key('editCatchSaveButton')));
@@ -454,6 +535,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('editCatchDeleteButton')));
@@ -473,6 +557,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('editCatchDeleteButton')));
@@ -495,6 +582,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('editCatchDeleteButton')));
@@ -526,6 +616,9 @@ void main() {
         existingCatch,
         failingRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('editCatchDeleteButton')));
@@ -554,6 +647,9 @@ void main() {
         existingCatch,
         slowRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('editCatchDeleteButton')));
@@ -628,6 +724,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       expect(find.byType(Image), findsNothing);
@@ -659,6 +758,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       expect(find.byType(Image), findsNWidgets(2));
@@ -674,6 +776,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -706,6 +811,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       expect(find.byKey(const Key('catchPhotoAddButton')), findsOneWidget);
@@ -729,6 +837,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -763,6 +874,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byIcon(Icons.close));
@@ -791,6 +905,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byIcon(Icons.close));
@@ -833,6 +950,9 @@ void main() {
         existingCatch,
         catchRepository,
         nonLockingRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byIcon(Icons.close));
@@ -870,6 +990,9 @@ void main() {
           existingCatch,
           catchRepository,
           failingRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
         );
 
         await tester.tap(find.byIcon(Icons.close));
@@ -914,6 +1037,9 @@ void main() {
         existingCatch,
         catchRepository,
         slowRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(removeButton);
@@ -955,6 +1081,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -980,6 +1109,9 @@ void main() {
         existingCatch,
         catchRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byType(Image));
@@ -1003,6 +1135,9 @@ void main() {
           existingCatch,
           catchRepository,
           catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
         );
 
         await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -1047,6 +1182,9 @@ void main() {
         existingCatch,
         failingRepository,
         catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -1092,6 +1230,9 @@ void main() {
         existingCatch,
         failingRepository,
         nonLockingPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
       );
 
       await tester.tap(find.byKey(const Key('editCatchDeleteButton')));
@@ -1127,6 +1268,9 @@ void main() {
           existingCatch,
           catchRepository,
           catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
         );
 
         await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -1156,6 +1300,9 @@ void main() {
           existingCatch,
           catchRepository,
           catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
         );
 
         await tester.tap(find.byKey(const Key('catchPhotoAddButton')));
@@ -1197,6 +1344,9 @@ void main() {
             existingCatch,
             catchRepository,
             slowPhotoRepository,
+            lureCatalogRepository,
+            personalTackleBoxRepository,
+            personalTackleBoxPhotoStorage,
           );
 
           await tester.tap(find.byIcon(Icons.close));
@@ -1240,6 +1390,9 @@ void main() {
             existingCatch,
             catchRepository,
             slowPhotoRepository,
+            lureCatalogRepository,
+            personalTackleBoxRepository,
+            personalTackleBoxPhotoStorage,
           );
 
           await tester.tap(find.byIcon(Icons.close));
@@ -1270,6 +1423,9 @@ void main() {
             existingCatch,
             slowRepository,
             catchPhotoRepository,
+            lureCatalogRepository,
+            personalTackleBoxRepository,
+            personalTackleBoxPhotoStorage,
           );
 
           await tester.tap(find.byKey(const Key('editCatchSaveButton')));
@@ -1298,6 +1454,9 @@ void main() {
             existingCatch,
             slowRepository,
             catchPhotoRepository,
+            lureCatalogRepository,
+            personalTackleBoxRepository,
+            personalTackleBoxPhotoStorage,
           );
 
           await tester.tap(find.byKey(const Key('editCatchDeleteButton')));
@@ -1323,5 +1482,204 @@ void main() {
         },
       );
     });
+  });
+
+  group('lure assignment', () {
+    Future<String> seedOwnedLure({String variantId = 'variant-1'}) async {
+      const modelId = 'model-1';
+      await database
+          .into(database.lureModels)
+          .insertOnConflictUpdate(
+            LureModelsCompanion.insert(
+              id: modelId,
+              manufacturer: 'Rapala',
+              modelName: 'X-Rap Shad XRS08',
+              lureType: 'crankbait',
+              searchText: 'rapala x-rap shad xrs08',
+              createdAt: 1000,
+              updatedAt: 1000,
+            ),
+          );
+      await database
+          .into(database.lureVariants)
+          .insert(
+            LureVariantsCompanion.insert(
+              id: variantId,
+              lureModelId: modelId,
+              colorName: const Value('Hot Craw'),
+              searchText: 'hot craw',
+              createdAt: 1000,
+              updatedAt: 1000,
+            ),
+          );
+      final catalogEntry = LureCatalogEntry(
+        variant: LureVariant(
+          id: variantId,
+          lureModelId: modelId,
+          colorName: 'Hot Craw',
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+        manufacturer: 'Rapala',
+        modelName: 'X-Rap Shad XRS08',
+        lureType: 'crankbait',
+        modelDefaultImageReference: null,
+      );
+      await personalTackleBoxRepository.add(catalogEntry: catalogEntry);
+      return variantId;
+    }
+
+    testWidgets('shows no assignment for a catch with none', (tester) async {
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        existingCatch,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Ei valittua viehettä'), findsOneWidget);
+    });
+
+    testWidgets('loads and displays the existing assignment', (tester) async {
+      final variantId = await seedOwnedLure();
+      final catchWithLure = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        lureVariantId: variantId,
+      );
+
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchWithLure,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Rapala X-Rap Shad XRS08'), findsOneWidget);
+    });
+
+    testWidgets('changing the assignment via the picker updates the save', (
+      tester,
+    ) async {
+      final firstVariantId = await seedOwnedLure(variantId: 'variant-1');
+      final secondVariantId = await seedOwnedLure(variantId: 'variant-2');
+      final catchWithLure = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        lureVariantId: firstVariantId,
+      );
+
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchWithLure,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      await tester.tap(find.text('Vaihda').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hot Craw').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+      await tester.pumpAndSettle();
+
+      final updated = (harness.result! as CatchUpdated).catchModel;
+      expect(updated.lureVariantId, secondVariantId);
+    });
+
+    testWidgets('removing the assignment clears it on save', (tester) async {
+      final variantId = await seedOwnedLure();
+      final catchWithLure = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        lureVariantId: variantId,
+      );
+
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchWithLure,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      await tester.tap(find.text('Poista').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+      await tester.pumpAndSettle();
+
+      final updated = (harness.result! as CatchUpdated).catchModel;
+      expect(updated.lureVariantId, isNull);
+    });
+
+    testWidgets(
+      'an unresolvable assignment shows a fallback without blocking save',
+      (tester) async {
+        // The restrict foreign keys make a genuinely orphaned reference
+        // structurally impossible to persist (TD-017 §9), so the
+        // resolution failure itself is simulated at the repository layer
+        // instead — a `LureCatalogRepository` whose `getEntryById` always
+        // returns null, mirroring this file's existing `_Failing`/`_Slow`
+        // subclass convention for CatchRepository.
+        final variantId = await seedOwnedLure();
+        final catchWithLure = await catchRepository.update(
+          catchModel: existingCatch,
+          species: existingCatch.species,
+          caughtAt: existingCatch.caughtAt,
+          weightGrams: existingCatch.weightGrams,
+          lengthMillimeters: existingCatch.lengthMillimeters,
+          lureVariantId: variantId,
+        );
+
+        final harness = _EditCatchHarness();
+        await harness.open(
+          tester,
+          fishingSpot,
+          catchWithLure,
+          catchRepository,
+          catchPhotoRepository,
+          _NullResolvingLureCatalogRepository(database),
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+        );
+
+        expect(find.text('Viehetiedot eivät ole saatavilla'), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+        await tester.pumpAndSettle();
+
+        expect(harness.result, isA<CatchUpdated>());
+      },
+    );
   });
 }

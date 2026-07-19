@@ -17,6 +17,7 @@ class CatchRepository {
     required DateTime caughtAt,
     int? weightGrams,
     int? lengthMillimeters,
+    String? lureVariantId,
   }) async {
     if (fishingSpotId.isEmpty) {
       throw ArgumentError.value(
@@ -29,6 +30,7 @@ class CatchRepository {
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
     );
+    _validateLureVariantId(lureVariantId);
 
     final now = DateTime.now();
     final catchModel = Catch(
@@ -38,6 +40,7 @@ class CatchRepository {
       caughtAt: caughtAt,
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
+      lureVariantId: lureVariantId,
       createdAt: now,
       updatedAt: now,
     );
@@ -54,11 +57,13 @@ class CatchRepository {
     required DateTime caughtAt,
     int? weightGrams,
     int? lengthMillimeters,
+    String? lureVariantId,
   }) async {
     _validateMeasurements(
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
     );
+    _validateLureVariantId(lureVariantId);
 
     final updatedCatch = Catch(
       id: catchModel.id,
@@ -67,6 +72,7 @@ class CatchRepository {
       caughtAt: caughtAt,
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
+      lureVariantId: lureVariantId,
       createdAt: catchModel.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -124,6 +130,16 @@ class CatchRepository {
         lengthMillimeters,
         'lengthMillimeters',
         'must be greater than zero',
+      );
+    }
+  }
+
+  void _validateLureVariantId(String? lureVariantId) {
+    if (lureVariantId != null && lureVariantId.isEmpty) {
+      throw ArgumentError.value(
+        lureVariantId,
+        'lureVariantId',
+        'must not be empty when provided',
       );
     }
   }

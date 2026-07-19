@@ -9,8 +9,13 @@ import 'package:fishing_app/features/catch_photos/data/catch_photo_mapper.dart';
 
 /// A schema-2 snapshot of [AppDatabase] (no `CatchPhotos` table), used to seed
 /// a database file that the real [AppDatabase] then upgrades to schema 3.
-/// Reuses the production-generated `fishingSpots`/`catches` table accessors so
-/// the seeded schema is byte-for-byte what a real pre-upgrade install has.
+/// Reuses the production-generated `fishingSpots` table accessor, but
+/// `catches` is created with a literal `CREATE TABLE` matching the real
+/// schema-2 shape (no `lure_variant_id`): the current `Catches` table class
+/// already includes that column (MFS-017/TD-017), so `createTable(catches)`
+/// would create it too early, breaking the schema-6 `addColumn` migration
+/// this same database is later upgraded through. See the identical fix in
+/// catch_migration_test.dart.
 class _LegacyAppDatabase extends AppDatabase {
   _LegacyAppDatabase(super.executor);
 
@@ -21,7 +26,18 @@ class _LegacyAppDatabase extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) async {
       await migrator.createTable(fishingSpots);
-      await migrator.createTable(catches);
+      await customStatement('''
+        CREATE TABLE catches (
+          id TEXT NOT NULL PRIMARY KEY,
+          fishing_spot_id TEXT NOT NULL REFERENCES fishing_spots (id) ON DELETE CASCADE,
+          species TEXT NOT NULL,
+          caught_at INTEGER NOT NULL,
+          weight_grams INTEGER NULL CHECK (weight_grams IS NULL OR weight_grams > 0),
+          length_millimeters INTEGER NULL CHECK (length_millimeters IS NULL OR length_millimeters > 0),
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      ''');
     },
   );
 }
