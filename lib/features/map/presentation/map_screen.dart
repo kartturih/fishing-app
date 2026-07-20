@@ -25,6 +25,8 @@ import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart'
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/add_to_tackle_box_action.dart';
+import 'package:fishing_app/features/statistics/data/lure_statistics_repository.dart';
+import 'package:fishing_app/features/statistics/presentation/widgets/statistics_page.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -63,6 +65,8 @@ class _MapScreenState extends State<MapScreen> {
       );
   late final PersonalTackleBoxRepository _personalTackleBoxRepository =
       PersonalTackleBoxRepository(_database, _tackleBoxPhotoStorage);
+  late final LureStatisticsRepository _lureStatisticsRepository =
+      LureStatisticsRepository(_database);
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -468,6 +472,20 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // Temporary navigation entry point, following the same pattern as
+  // _openLureTools above (see TD-015's Navigation Entry Point (Temporary)
+  // section and TD-019 §6): the application still has no dedicated
+  // navigation shell, so this is the only existing screen with an AppBar to
+  // attach a link to.
+  void _openStatistics() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            StatisticsPage(repository: _lureStatisticsRepository),
+      ),
+    );
+  }
+
   /// Backs `LureCatalogListPage`'s owned-badge/hide-owned-filter option.
   /// `lure_catalog` only ever sees the resulting `Set<String>` of variant
   /// ids — never a `personal_tackle_box` type.
@@ -528,6 +546,12 @@ class _MapScreenState extends State<MapScreen> {
             icon: const Icon(Icons.menu_book),
             tooltip: 'Viehekatalogi ja oma vieherasia',
             onPressed: _openLureTools,
+          ),
+          IconButton(
+            key: const Key('openStatisticsButton'),
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Tilastot',
+            onPressed: _openStatistics,
           ),
         ],
       ),

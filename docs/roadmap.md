@@ -20,7 +20,7 @@
 
 **MFS-017 (Assign Lure to Catch) and MFS-018 (Lure Catalog UX Improvements) are both complete.** MFS-017 let an angler assign an owned lure (referencing the catalog `LureVariant`, not the `TackleBoxEntry` — see MFS-017's Conceptual Relationship) to a `Catch`, displayed in Catch Details. MFS-018 followed it with a presentation-only reorganization of the Lure Catalog and Personal Tackle Box add flow: the browsing list groups by lure model instead of by variant, a new Lure Model Details view lists every color variant of a selected model, and the add-photo dialog no longer silently completes an add on dismissal. Both are architecture-reviewed, fully tested, and physically verified on Android (see `docs/project-status.md`).
 
-**No next milestone has been formally chosen yet** — no new MFS document has been drafted since MFS-018. The leading candidate, per existing documentation, is **Lure-Based Catch Statistics** (§3.1 below): it is the dependency chain's natural next step (Catch → Lure Catalog → Personal Tackle Box → Assign Lure to Catch → lure-based statistics) and is explicitly named as "the next milestone" in MFS-017's own Future Extensions section. It has not yet been assigned an MFS number or had its scope drafted, so it is not promoted to Current Milestone here — per this roadmap's own maintenance rule, that happens once an MFS document exists for it.
+**No next milestone has been selected yet** — no new MFS document has been drafted since MFS-018. The Near-Term Roadmap (§3 below) lists logical future candidates based on dependency readiness and existing documentation; these entries are informational only and do not represent a decision or commitment. A roadmap item is promoted to Current Milestone only once an MFS document has been drafted and approved for it, per this roadmap's own maintenance rule.
 
 ---
 
@@ -33,33 +33,33 @@ Proposed logical milestones after MFS-017, ordered by dependency readiness and p
 * **Identifier:** Not yet assigned.
 * **Intent:** Surface simple statistics about which owned lures produced catches (e.g. most-used lure, catches per lure/lure type).
 * **Depends on:** MFS-017 (a catch must be able to reference a lure before lure-based statistics can exist), MFS-016 (Personal Tackle Box).
-* **Confidence:** Likely. Explicitly named as an expected direction in MFS-016's Future Extensions ("Lure-based catch statistics ... built on top of the Personal Tackle Box"), and it is the direct, low-ambiguity next step once MFS-017 exists.
+* **Status:** Candidate. Named as an expected direction in MFS-016's Future Extensions ("Lure-based catch statistics ... built on top of the Personal Tackle Box") and in MFS-017's own Future Extensions section. With MFS-016 and MFS-017 both now complete, the dependency chain (Catch → Lure Catalog → Personal Tackle Box → Assign Lure to Catch) is in place, making this a logical future direction — not yet scoped, drafted, or approved as a milestone.
 
 ### 3.2 Catch Notes
 
 * **Identifier:** Not yet assigned.
 * **Intent:** Let an angler attach a free-text note to a catch.
 * **Depends on:** MFS-009 (Catch Foundation) only — already complete; no dependency on MFS-017.
-* **Confidence:** Candidate. Explicitly listed as an expected follow-up in MFS-009's Future Milestones, but not reinforced by any more recent document, and it currently has no assigned priority relative to the other items below.
+* **Status:** Candidate. Explicitly listed as an expected follow-up in MFS-009's Future Milestones, but not reinforced by any more recent document, and it currently has no assigned priority relative to the other items below.
 
 ### 3.3 General Catch / Fishing Statistics and Analytics
 
 * **Identifier:** Not yet assigned.
 * **Intent:** Broader statistics not tied to lures specifically — e.g. catches per fishing spot, per species, or over time.
 * **Depends on:** Catch Management (already complete). Independent of MFS-017, though it would naturally sit alongside 3.1 once lure-based statistics exist.
-* **Confidence:** Candidate. Supported by MFS-009's Future Milestones ("Catch Statistics") and the project charter's long-term goal of learning from the user's own fishing history, but scope and boundaries relative to 3.1 are undefined.
+* **Status:** Candidate. Supported by MFS-009's Future Milestones ("Catch Statistics") and the project charter's long-term goal of learning from the user's own fishing history, but scope and boundaries relative to 3.1 are undefined.
 
 ### 3.4 Weather / Environmental Data on Catches
 
 * **Intent:** Attach environmental context (e.g. weather conditions) to a catch, to help answer "what has worked in similar conditions before" (project charter, Problem Statement).
 * **Depends on:** Catch Foundation (already complete). Would require a new decision on data source, since it is the first candidate that plausibly needs an external data feed — in tension with the offline-first constraint and requiring architectural review (likely a new ADR) before scoping.
-* **Confidence:** Candidate. "Weather information" and "Water conditions" are both explicitly listed as excluded-for-now in MFS-009's Non-Goals (not rejected), and "Environmental data" appears in the README/charter Vision — but no MFS has ever scoped it, and the offline-data-source question is unresolved.
+* **Status:** Candidate. "Weather information" and "Water conditions" are both explicitly listed as excluded-for-now in MFS-009's Non-Goals (not rejected), and "Environmental data" appears in the README/charter Vision — but no MFS has ever scoped it, and the offline-data-source question is unresolved.
 
 ### 3.5 Smart Lure / Fishing Recommendations
 
 * **Intent:** Suggest a lure or approach based on the user's own accumulated catch and tackle-box history.
 * **Depends on:** 3.1 (Lure-Based Catch Statistics) and MFS-016 (Personal Tackle Box) at minimum — there is no history to recommend from until those exist.
-* **Confidence:** Candidate — the most speculative item in this list. Named in MFS-016's Future Extensions and the project charter's long-term vision, and explicitly marked "(future)" in the README Vision section, but with no scope, no data model, and dependencies that are themselves not yet built.
+* **Status:** Candidate — the most speculative item in this list. Named in MFS-016's Future Extensions and the project charter's long-term vision, and explicitly marked "(future)" in the README Vision section, but with no scope, no data model, and dependencies that are themselves not yet built.
 
 ---
 
@@ -112,8 +112,8 @@ This file must be updated:
 
 * after a feature is completed (move it out of "Current Milestone", update "Near-Term Roadmap" sequencing behind it),
 * when the next MFS is chosen (update "Current Milestone" to the newly chosen feature),
-* when dependencies or priorities change (re-order or re-confidence "Near-Term Roadmap" items),
-* when an idea is promoted from Candidate to Likely or Committed (update its confidence level and, if applicable, move it into "Current Milestone" once an MFS is drafted for it), and
+* when dependencies or priorities change (re-order or re-Status "Near-Term Roadmap" items),
+* when an idea is promoted from Candidate to Likely or Committed (update its Status level and, if applicable, move it into "Current Milestone" once an MFS is drafted for it), and
 * whenever `docs/project-status.md`'s "Next Planned Task" changes.
 
 **`docs/roadmap.md` and `docs/project-status.md` must never contradict each other.** `docs/project-status.md` is the authoritative record of what is currently planned next; this file must always name the same feature as its "Current Milestone." If a discrepancy is found, treat `docs/project-status.md` as authoritative and correct this file, not the other way around.
