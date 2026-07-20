@@ -8,11 +8,11 @@
 
 ## Current Phase
 
-Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated.
 
-The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, and the ability to assign one of those owned lures to a Catch, shown in Catch Details.
+The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, and a new Statistics feature surfacing lure-based catch statistics — most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown — computed live from existing catch and lure catalog data with no new persisted statistic.
 
-No next milestone has been formally chosen yet — no MFS document has been drafted since MFS-018. See `docs/roadmap.md`'s Current Milestone section for the leading candidate.
+No next milestone has been formally chosen yet — no MFS document has been drafted since MFS-019. See `docs/roadmap.md`'s Near-Term Roadmap for logical future candidates; none of them represent a decision or commitment.
 
 ---
 
@@ -60,6 +60,7 @@ No next milestone has been formally chosen yet — no MFS document has been draf
 * MFS-016: Personal Tackle Box Foundation
 * MFS-017: Assign Lure to Catch
 * MFS-018: Lure Catalog UX Improvements
+* MFS-019: Lure-Based Catch Statistics
 
 ### Technical Designs
 
@@ -79,6 +80,7 @@ No next milestone has been formally chosen yet — no MFS document has been draf
 * TD-016: Personal Tackle Box Foundation Implementation
 * TD-017: Assign Lure to Catch Implementation
 * TD-018: Lure Catalog UX Improvements Implementation
+* TD-019: Lure-Based Catch Statistics Implementation
 
 ---
 
@@ -219,6 +221,21 @@ No next milestone has been formally chosen yet — no MFS document has been draf
 * A `TackleBoxEntry` referencing a retired catalog variant remains fully visible, viewable, and removable
 * Fully offline; no new external dependencies
 
+### Statistics
+
+* New `statistics` feature, introduced with its first tab: Lure Statistics
+* Framework-independent `LureCatchStatistic`, `LureTypeCatchStatistic`, and `LureStatisticsSummary` read-model types; `lure_catalog`'s `LureCatalogEntry` reused by reference, never duplicated
+* Concrete, read-only `LureStatisticsRepository` performing its own join directly against `catches`/`lure_variants`/`lure_models` (two plain queries — one count, one joined select — no SQL `GROUP BY`), reusing `lure_catalog`'s existing `LureCatalogMapper.entryFromRows()`
+* Every statistic computed live on each open; no cached, stored, or persisted aggregate of any kind
+* Deterministic tie-breaking (manufacturer → model → distinguishing detail → id for lures; lure type code for lure types), so ranking never varies across runs
+* Statistics reflect full catch history independent of current Personal Tackle Box membership: removing a `TackleBoxEntry` never changes a lure's catch count
+* Retired catalog variants and unresolvable lure references are handled without special-casing or crashing
+* Two summary cards (most successful lure, most successful lure type), a per-lure catch-count list, and a per-lure-type catch-count breakdown, presented in `StatisticsPage`'s tabbed shell (structured to hold a future second tab, e.g. General Catch / Fishing Statistics)
+* Summary cards redesigned after physical Android testing: the original three-card row (including a total-linked-catches count) was replaced with two full-width, stacked cards for the two ranking statistics, improving readability for long lure names — a presentation-only refinement with no change to computed data or repository behavior
+* Reachable via a new, temporary `MapScreen` AppBar entry point, following the same pattern already established for the Lure Catalog and Personal Tackle Box
+* No new database table, column, schema version, or migration — schema remains at version 6
+* Fully offline; no new external dependencies
+
 ---
 
 ## Validation
@@ -325,10 +342,17 @@ Verified on physical Android devices.
 * flutter analyze passes; all automated tests pass
 * Physical Android testing completed
 
+### Lure-Based Catch Statistics
+
+* Domain, repository, and widget tests completed, including deterministic tie-break coverage, retired-variant inclusion, historical-stability-after-tackle-box-removal, and a dangling-lure-reference edge case (seeded directly at the SQL layer with foreign key enforcement temporarily disabled, mirroring the technique already established for testing `restrict` foreign keys)
+* Architecture review completed; no schema/migration impact, no change to `catches`, `lure_catalog`, or `personal_tackle_box`
+* flutter analyze passes; all automated tests pass
+* Physical Android testing completed; one UI refinement (removing the total-linked-catches summary card in favor of two full-width ranking cards) was made afterward and re-verified with a full test run
+
 ### Quality
 
 * flutter analyze passes, with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`, on constructor parameters whose external names are relied on by callers and cannot be renamed without breaking the public API — see TD-016 Implementation Notes)
-* 455 automated tests passing
+* 493 automated tests passing
 * Architecture review completed
 * Code review completed
 * Physical Android testing completed for all currently implemented Android features
@@ -421,10 +445,15 @@ lib/
 │   │   └── presentation/
 │   │       └── widgets/
 │   ├── map/
-│   └── personal_tackle_box/
+│   ├── personal_tackle_box/
+│   │   ├── data/
+│   │   │   ├── local/
+│   │   │   └── storage/
+│   │   ├── domain/
+│   │   └── presentation/
+│   │       └── widgets/
+│   └── statistics/
 │       ├── data/
-│       │   ├── local/
-│       │   └── storage/
 │       ├── domain/
 │       └── presentation/
 │           └── widgets/
@@ -467,6 +496,7 @@ The application currently supports:
 * Optional personal photo per owned lure (camera, gallery, explicit no-photo, or skip/cancel with no lure added)
 * Owned Entry Detail view with resolved catalog details and personal photo
 * Assigning an owned lure to a Catch (Add Catch or Edit Catch), shown read-only in Catch Details
+* Lure-based catch statistics: most successful lure and lure type summary cards, a per-lure catch-count list, and a per-lure-type catch-count breakdown, computed live with no stored aggregate
 
 ---
 
@@ -487,6 +517,8 @@ No additional permissions were required for the Personal Tackle Box: it reuses t
 
 No additional permissions were required for Assign Lure to Catch or Lure Catalog UX Improvements: both are presentation/data-layer changes over the existing local database and photo intents, with no new hardware or system capability involved.
 
+No additional permissions were required for Lure-Based Catch Statistics: it reads the existing local database only, with no new hardware or system capability involved.
+
 ---
 
 ## iOS Configuration
@@ -496,7 +528,7 @@ Added for Catch Photos:
 * `NSCameraUsageDescription`
 * `NSPhotoLibraryUsageDescription`
 
-No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos). Physical iOS testing has not been performed (no iOS build target/device in this environment).
+No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos), and for Lure-Based Catch Statistics (a local-database-only feature). Physical iOS testing has not been performed (no iOS build target/device in this environment).
 
 ---
 
@@ -522,20 +554,21 @@ No other iOS configuration changes were required, including for the Lure Catalog
 * A small number of UI/UX refinements were consciously deferred rather than built speculatively, and are candidates for a later, separate polish task (not a change to MFS-016/TD-016 scope): the empty Personal Tackle Box state relies on standard back navigation to reach the Lure Catalog rather than a dedicated shortcut button, and the grouped browsing list shows the catalog image only — the personal photo is shown on the Owned Entry Detail screen.
 * A catch may reference at most one lure (MFS-017); assigning more than one lure to a catch, showing the assigned lure in the catch list, and lure-based statistics are all explicitly out of scope for MFS-017 (see its Out of Scope section).
 * Variant filtering within a single model's Color Variants list, favorite variants, stock/availability status, and quick-add shortcuts that skip Lure Model Details are all explicitly out of scope for MFS-018 (see its Out of Scope section).
+* Graphs/charts, filters, percentages, averages, biggest fish, seasonal/time-based/water/weather statistics, export, and comparison features are all explicitly out of scope for MFS-019 (see its Out of Scope section); the lure list only shows lures with at least one recorded catch (zero-catch lures are a documented future extension, not a bug).
 
 ---
 
 ## Next Planned Task
 
-No next milestone has been formally chosen yet — no MFS document has been drafted since MFS-018 (Lure Catalog UX Improvements). See `docs/roadmap.md`'s Current Milestone section for the leading candidate (Lure-Based Catch Statistics), which does not yet have an assigned MFS number or drafted scope.
+No next milestone has been formally chosen yet — no MFS document has been drafted since MFS-019 (Lure-Based Catch Statistics). Per `docs/roadmap.md`'s Near-Term Roadmap, General Catch / Fishing Statistics and Analytics (§3.2) is the most directly connected next candidate — MFS-019's Statistics feature was deliberately built as a tabbed shell sized to hold a second tab, and TD-019's Future Compatibility section describes this candidate as requiring no restructuring of the existing Lure Statistics tab. This is a candidate only: it has no assigned MFS number, no drafted scope, and has not been started.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 18
+Current Feature Specifications: 19
 
-Current Technical Designs: 16
+Current Technical Designs: 17
 
 Architecture Decision Records: 6
 
@@ -549,6 +582,7 @@ Implemented Core Features:
 * Lure Catalog (including MFS-018's model-grouped browsing and Lure Model Details)
 * Personal Tackle Box
 * Assign Lure to Catch
+* Statistics (Lure Statistics)
 
 Offline-first: Yes
 
@@ -556,6 +590,6 @@ Physical Android Validation: Completed for all currently implemented features
 
 flutter analyze: Passing with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
 
-Automated Tests: 455 Passing
+Automated Tests: 493 Passing
 
 Database schema version: 6

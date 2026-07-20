@@ -18,48 +18,41 @@
 
 ## 2. Current Milestone
 
-**MFS-017 (Assign Lure to Catch) and MFS-018 (Lure Catalog UX Improvements) are both complete.** MFS-017 let an angler assign an owned lure (referencing the catalog `LureVariant`, not the `TackleBoxEntry` — see MFS-017's Conceptual Relationship) to a `Catch`, displayed in Catch Details. MFS-018 followed it with a presentation-only reorganization of the Lure Catalog and Personal Tackle Box add flow: the browsing list groups by lure model instead of by variant, a new Lure Model Details view lists every color variant of a selected model, and the add-photo dialog no longer silently completes an add on dismissal. Both are architecture-reviewed, fully tested, and physically verified on Android (see `docs/project-status.md`).
+**MFS-017 (Assign Lure to Catch), MFS-018 (Lure Catalog UX Improvements), and MFS-019 (Lure-Based Catch Statistics) are all complete.** MFS-017 let an angler assign an owned lure (referencing the catalog `LureVariant`, not the `TackleBoxEntry` — see MFS-017's Conceptual Relationship) to a `Catch`, displayed in Catch Details. MFS-018 followed it with a presentation-only reorganization of the Lure Catalog and Personal Tackle Box add flow: the browsing list groups by lure model instead of by variant, a new Lure Model Details view lists every color variant of a selected model, and the add-photo dialog no longer silently completes an add on dismissal. MFS-019 introduced the new Statistics feature and its first tab, Lure Statistics: two summary cards (most successful lure, most successful lure type), a per-lure catch-count list, and a per-lure-type catch-count breakdown, all computed live from existing catch and lure catalog data with no new persisted statistic, table, or migration. All three are architecture-reviewed, fully tested, and physically verified on Android (see `docs/project-status.md`).
 
-**No next milestone has been selected yet** — no new MFS document has been drafted since MFS-018. The Near-Term Roadmap (§3 below) lists logical future candidates based on dependency readiness and existing documentation; these entries are informational only and do not represent a decision or commitment. A roadmap item is promoted to Current Milestone only once an MFS document has been drafted and approved for it, per this roadmap's own maintenance rule.
+**No next milestone has been selected yet** — no new MFS document has been drafted since MFS-019. The Near-Term Roadmap (§3 below) lists logical future candidates based on dependency readiness and existing documentation; these entries are informational only and do not represent a decision or commitment. A roadmap item is promoted to Current Milestone only once an MFS document has been drafted and approved for it, per this roadmap's own maintenance rule.
 
 ---
 
 ## 3. Near-Term Roadmap
 
-Proposed logical milestones after MFS-017, ordered by dependency readiness and product value. None of these are scoped yet; none are committed beyond MFS-017.
+Proposed logical milestones after MFS-019, ordered by dependency readiness and product value. None of these are scoped yet; none are committed beyond MFS-019.
 
-### 3.1 Lure-Based Catch Statistics
-
-* **Identifier:** Not yet assigned.
-* **Intent:** Surface simple statistics about which owned lures produced catches (e.g. most-used lure, catches per lure/lure type).
-* **Depends on:** MFS-017 (a catch must be able to reference a lure before lure-based statistics can exist), MFS-016 (Personal Tackle Box).
-* **Status:** Candidate. Named as an expected direction in MFS-016's Future Extensions ("Lure-based catch statistics ... built on top of the Personal Tackle Box") and in MFS-017's own Future Extensions section. With MFS-016 and MFS-017 both now complete, the dependency chain (Catch → Lure Catalog → Personal Tackle Box → Assign Lure to Catch) is in place, making this a logical future direction — not yet scoped, drafted, or approved as a milestone.
-
-### 3.2 Catch Notes
+### 3.1 Catch Notes
 
 * **Identifier:** Not yet assigned.
 * **Intent:** Let an angler attach a free-text note to a catch.
-* **Depends on:** MFS-009 (Catch Foundation) only — already complete; no dependency on MFS-017.
+* **Depends on:** MFS-009 (Catch Foundation) only — already complete; no dependency on MFS-017 or MFS-019.
 * **Status:** Candidate. Explicitly listed as an expected follow-up in MFS-009's Future Milestones, but not reinforced by any more recent document, and it currently has no assigned priority relative to the other items below.
 
-### 3.3 General Catch / Fishing Statistics and Analytics
+### 3.2 General Catch / Fishing Statistics and Analytics
 
 * **Identifier:** Not yet assigned.
 * **Intent:** Broader statistics not tied to lures specifically — e.g. catches per fishing spot, per species, or over time.
-* **Depends on:** Catch Management (already complete). Independent of MFS-017, though it would naturally sit alongside 3.1 once lure-based statistics exist.
-* **Status:** Candidate. Supported by MFS-009's Future Milestones ("Catch Statistics") and the project charter's long-term goal of learning from the user's own fishing history, but scope and boundaries relative to 3.1 are undefined.
+* **Depends on:** Catch Management (already complete). Independent of MFS-017.
+* **Status:** Candidate. Supported by MFS-009's Future Milestones ("Catch Statistics") and the project charter's long-term goal of learning from the user's own fishing history. Now that MFS-019 (Lure-Based Catch Statistics) is complete, this candidate has a direct, documented landing spot: MFS-019's own Statistics feature was deliberately built as a tabbed shell (`StatisticsPage`) sized to hold more than one tab, and TD-019's Future Compatibility section explicitly describes this candidate as a second tab requiring no restructuring of the existing Lure Statistics tab. This is architectural readiness, not a scoping or scheduling decision — the candidate still has no assigned MFS number and has not been scoped or started.
 
-### 3.4 Weather / Environmental Data on Catches
+### 3.3 Weather / Environmental Data on Catches
 
 * **Intent:** Attach environmental context (e.g. weather conditions) to a catch, to help answer "what has worked in similar conditions before" (project charter, Problem Statement).
 * **Depends on:** Catch Foundation (already complete). Would require a new decision on data source, since it is the first candidate that plausibly needs an external data feed — in tension with the offline-first constraint and requiring architectural review (likely a new ADR) before scoping.
 * **Status:** Candidate. "Weather information" and "Water conditions" are both explicitly listed as excluded-for-now in MFS-009's Non-Goals (not rejected), and "Environmental data" appears in the README/charter Vision — but no MFS has ever scoped it, and the offline-data-source question is unresolved.
 
-### 3.5 Smart Lure / Fishing Recommendations
+### 3.4 Smart Lure / Fishing Recommendations
 
 * **Intent:** Suggest a lure or approach based on the user's own accumulated catch and tackle-box history.
-* **Depends on:** 3.1 (Lure-Based Catch Statistics) and MFS-016 (Personal Tackle Box) at minimum — there is no history to recommend from until those exist.
-* **Status:** Candidate — the most speculative item in this list. Named in MFS-016's Future Extensions and the project charter's long-term vision, and explicitly marked "(future)" in the README Vision section, but with no scope, no data model, and dependencies that are themselves not yet built.
+* **Depends on:** MFS-019 (Lure-Based Catch Statistics) and MFS-016 (Personal Tackle Box) at minimum. Both are now complete, so a lure/catch history exists to recommend from — but this candidate's own scope, data model, and priority remain entirely undefined.
+* **Status:** Candidate — the most speculative item in this list. Named in MFS-016's Future Extensions and the project charter's long-term vision, and explicitly marked "(future)" in the README Vision section. Its dependencies are now built, which removes a blocker but is not itself a scoping or scheduling decision.
 
 ---
 
@@ -71,10 +64,10 @@ Broader future directions, well beyond the near-term list above. These are theme
 * **Account support.** Listed as out of scope for the MVP in the project charter and in MFS-004/MFS-006, but noted there as something that "may be added in future versions." A likely prerequisite for cloud synchronization and multi-device use.
 * **Multi-device use.** Not separately documented, but a natural corollary of cloud synchronization and account support once both exist — the local-first data model would need a defined sync/conflict strategy first.
 * **Sharing / community features.** The project charter explicitly excludes "Community features" from the MVP (future candidate); MFS-013 separately excludes "photo sharing" for Catch Photos. Any shared-catch or shared-fishing-spot capability would fall under this same, currently out-of-scope theme.
-* **Expanded recommendation engine.** The narrower "Smart Lure / Fishing Recommendations" candidate in the near-term list (3.5) is the first step; the project charter's long-term goal describes a broader "smart fishing companion that learns from the user's own fishing history," which is a larger, later theme than any single near-term milestone.
+* **Expanded recommendation engine.** The narrower "Smart Lure / Fishing Recommendations" candidate in the near-term list (§3.4) is the first step; the project charter's long-term goal describes a broader "smart fishing companion that learns from the user's own fishing history," which is a larger, later theme than any single near-term milestone.
 * **Richer maps.** MFS-001's Future Extensions already names offline map storage, environmental overlays, custom layers, and route recording as expected later map capabilities. Depth or other environmental overlays would fall under this same theme.
 * **Import / export.** Listed as out of scope in MFS-005 and MFS-006, with no committed future date — a plausible later data-portability feature.
-* **Advanced analytics.** A deeper, longer-horizon extension of the near-term statistics candidates (3.1, 3.3) — trend analysis across seasons, locations, or conditions, once enough catch history and (if built) environmental data exist.
+* **Advanced analytics.** A deeper, longer-horizon extension of the completed Lure-Based Catch Statistics milestone (MFS-019) and the near-term General Catch / Fishing Statistics candidate (§3.2) — trend analysis across seasons, locations, or conditions, once enough catch history and (if built) environmental data exist.
 
 ---
 

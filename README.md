@@ -18,9 +18,10 @@ The current version supports:
 - Lure Catalog with search and filtering, browsed by lure model with a per-model color-variant view
 - Personal Tackle Box for tracking owned lures, with optional personal photos
 - Assigning an owned lure to a catch, shown in Catch Details
+- Lure-based catch statistics (most successful lure and lure type, per-lure and per-lure-type catch counts), computed live with no stored aggregate
 - Persistent Drift/SQLite storage
 
-455 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
+493 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
 
 ## Vision
 
