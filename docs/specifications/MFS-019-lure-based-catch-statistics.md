@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture-reviewed, all automated tests passing, `flutter analyze` clean, and physical Android verification completed, including one post-testing presentation refinement (the original three-card summary row replaced with two full-width ranking cards). See TD-019 for the technical design and `docs/project-status.md` for the verification record.
 
 ## Related
 

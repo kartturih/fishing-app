@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-07-20
+2026-07-21
 
 ---
 
@@ -18,21 +18,21 @@
 
 ## 2. Current Milestone
 
-**MFS-017 (Assign Lure to Catch), MFS-018 (Lure Catalog UX Improvements), and MFS-019 (Lure-Based Catch Statistics) are all complete.** MFS-017 let an angler assign an owned lure (referencing the catalog `LureVariant`, not the `TackleBoxEntry` — see MFS-017's Conceptual Relationship) to a `Catch`, displayed in Catch Details. MFS-018 followed it with a presentation-only reorganization of the Lure Catalog and Personal Tackle Box add flow: the browsing list groups by lure model instead of by variant, a new Lure Model Details view lists every color variant of a selected model, and the add-photo dialog no longer silently completes an add on dismissal. MFS-019 introduced the new Statistics feature and its first tab, Lure Statistics: two summary cards (most successful lure, most successful lure type), a per-lure catch-count list, and a per-lure-type catch-count breakdown, all computed live from existing catch and lure catalog data with no new persisted statistic, table, or migration. All three are architecture-reviewed, fully tested, and physically verified on Android (see `docs/project-status.md`).
+**No next milestone has been selected yet.** MFS-017 (Assign Lure to Catch), MFS-018 (Lure Catalog UX Improvements), MFS-019 (Lure-Based Catch Statistics), and MFS-020 (General Catch Statistics) are all complete. MFS-017 let an angler assign an owned lure (referencing the catalog `LureVariant`, not the `TackleBoxEntry` — see MFS-017's Conceptual Relationship) to a `Catch`, displayed in Catch Details. MFS-018 followed it with a presentation-only reorganization of the Lure Catalog and Personal Tackle Box add flow: the browsing list groups by lure model instead of by variant, a new Lure Model Details view lists every color variant of a selected model, and the add-photo dialog no longer silently completes an add on dismissal. MFS-019 introduced the new Statistics feature and its first tab, Lure Statistics: two summary cards (most successful lure, most successful lure type), a per-lure catch-count list, and a per-lure-type catch-count breakdown, all computed live from existing catch and lure catalog data with no new persisted statistic, table, or migration. MFS-020 added the Statistics feature's first tab, Catches — moving Lure Statistics to the second tab position, unchanged in every other respect — presenting a Top 3 Largest Catches list ranked by weight (each entry opening the existing Catch Details view, MFS-014, and presented as a medal-bordered "Hall of Fame" after three rounds of post-testing presentation refinement), summary statistics (total catches, most caught species, rendered as equal-height cards), and a full per-species catch-count list. All four are architecture-reviewed, fully tested (535/535 automated tests), and physically verified on Android (see `docs/project-status.md`).
 
-**MFS-020 (General Catch Statistics) has now been drafted and is the current milestone.** It adds the Statistics feature's first tab, Catches — a Top 3 Largest Catches list ranked by weight (each entry opening the existing Catch Details view, MFS-014), summary statistics (total catches, most caught species), and a full per-species catch-count list — with MFS-019's existing Lure Statistics tab moving to the second tab position, unchanged in every other respect. No Technical Design has been drafted for MFS-020 yet, and no implementation has begun; per this roadmap's own maintenance rule, it remains "current" rather than "complete" until that work is done and validated.
+This roadmap simply lists logical future candidates below (§3); those entries are informational only, not a decision or commitment. A milestone becomes the Current Milestone only once an MFS has been drafted and approved for it.
 
 ---
 
 ## 3. Near-Term Roadmap
 
-Proposed logical milestones after MFS-019, ordered by dependency readiness and product value. None of these are scoped yet; none are committed beyond MFS-019.
+Proposed logical milestones after MFS-020, ordered by dependency readiness and product value. None of these are scoped yet; none are committed beyond MFS-020.
 
 ### 3.1 MFS-021 Candidate – Species Statistics
 
 * **Identifier:** Informally labeled "MFS-021" in this entry's own title, as a placeholder for tracking purposes only — this is **not** an assigned, drafted, or approved specification number. It becomes the actual next specification number only if and when this idea is drafted, consistent with every other identifier in this roadmap.
 * **Intent:** Let an angler tap a species row in MFS-020's Species List to open a dedicated Species Statistics page: a species summary, the record (largest) catch for that species, average weight and length, total catches of that species, every catch of that species sorted by weight, and — per catch — an optional photo, date, and fishing location. Tapping a catch there opens the existing Catch Details page, exactly as MFS-020's own Top 3 Largest Catches list already does.
-* **Depends on:** MFS-020 (General Catch Statistics) — currently drafted, not yet implemented. MFS-020's Species List rows are already visually designed to be tappable, but MFS-020 explicitly does not wire that tap to any navigation; this candidate is exactly that follow-up.
+* **Depends on:** MFS-020 (General Catch Statistics) — now complete. MFS-020's Species List rows are already visually designed to be tappable, but MFS-020 explicitly does not wire that tap to any navigation; this candidate is exactly that follow-up.
 * **Status:** Candidate. Named here only because MFS-020 deliberately anticipated it in its row styling — it has not been scoped, drafted, or approved, and this roadmap entry is informational only, not a commitment or a decision to build it next.
 
 ### 3.2 Catch Notes
@@ -67,7 +67,7 @@ Broader future directions, well beyond the near-term list above. These are theme
 * **Expanded recommendation engine.** The narrower "Smart Lure / Fishing Recommendations" candidate in the near-term list (§3.4) is the first step; the project charter's long-term goal describes a broader "smart fishing companion that learns from the user's own fishing history," which is a larger, later theme than any single near-term milestone.
 * **Richer maps.** MFS-001's Future Extensions already names offline map storage, environmental overlays, custom layers, and route recording as expected later map capabilities. Depth or other environmental overlays would fall under this same theme.
 * **Import / export.** Listed as out of scope in MFS-005 and MFS-006, with no committed future date — a plausible later data-portability feature.
-* **Advanced analytics.** A deeper, longer-horizon extension of the completed Lure-Based Catch Statistics milestone (MFS-019) and the newly-drafted General Catch Statistics milestone (MFS-020) — trend analysis across seasons, locations, or conditions, once enough catch history and (if built) environmental data exist.
+* **Advanced analytics.** A deeper, longer-horizon extension of the completed Lure-Based Catch Statistics (MFS-019) and General Catch Statistics (MFS-020) milestones — trend analysis across seasons, locations, or conditions, once enough catch history and (if built) environmental data exist.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture review passed, all automated tests passing (535/535), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed successfully. No architectural deviations from this document were required in production code. Three rounds of presentation-only refinement were made after physical Android testing and are recorded in [Implementation Notes](#implementation-notes): equal-height summary cards, a medal-bordered "Hall of Fame" redesign of the Top 3 Largest Catches list (replacing the original left-side rank badge), and a brightened gold border with a subtle warm first-place tint.
 
 ## Related Specification
 
@@ -766,7 +766,33 @@ Confirm at implementation time that the live schema version is still `6` before 
 
 ## Implementation Notes
 
-To be completed during implementation, following the established convention of recording any deviation from this document here, with justification.
+No architectural deviations from this document were required in production code. Three rounds of presentation-only refinement were made after physical Android testing of the original design (§5's plain `StatisticsSummaryCard` stack and `RankedLargestCatchRow`'s small left-side `CircleAvatar` badge). None changed `GeneralCatchStatisticsRepository`, any domain model, navigation, or `CatchListItem`, which remains reused completely unchanged throughout.
+
+### Presentation refinement: Equal-height summary cards
+
+**What changed.** The two `StatisticsSummaryCard`s at the top of the Catches tab are wrapped in `IntrinsicHeight` with `CrossAxisAlignment.stretch` (previously `.start`), so both cards always share the taller card's height regardless of how much text either one holds.
+
+**Why.** Physical Android testing showed the two cards rendering at visibly different heights whenever the "most caught species" value was long — an uneven, unbalanced grid appearance.
+
+**What did not change.** `StatisticsSummaryCard` itself is untouched; the fix is entirely in `GeneralCatchStatisticsTab`'s call site, per this document's own "no unnecessary abstractions" principle — no new summary card widget was introduced.
+
+### Presentation refinement: "Hall of Fame" redesign of the Top 3 Largest Catches list
+
+**What changed.** `RankedLargestCatchRow` (§5) was redesigned twice after physical Android testing, converging on the following final design:
+
+* The small left-side `CircleAvatar` badge next to `CatchListItem` was removed. `CatchListItem` itself remains completely unmodified and unmoved — it is still the sole widget rendering photo, species, weight, length, and date, and its `onTap` still opens Catch Details exactly as originally designed (Key Design Decision 7).
+* Each entry is now a `Card` with a full, medal-colored border — gold for 1st, silver for 2nd, bronze for 3rd — instead of a colored badge sitting beside a plain row.
+* The rank number is a small circular badge that floats above the card, centered horizontally, overlapping the card's top border by half its own height ("the card wearing its rank"). This is built with `Stack(alignment: Alignment.topCenter)` around two *non-positioned* children — the badge, and the card wrapped in `Padding(top: badgeRadius)` — rather than a `Positioned` widget with a negative offset. Because both children are aligned (not manually offset), the badge's space is genuinely reserved in layout and can never paint over a neighboring card or the section header above it.
+* 1st place is modestly more prominent: a thicker border (3px vs. 2px), higher elevation (4 vs. 1), slightly larger badge and internal padding, and — after the final refinement round — a very subtle warm-tinted card background, produced by blending the medal gold color at 6% alpha onto `colorScheme.surface` (`Color.alphaBlend`), replacing an earlier, less deliberate `colorScheme.surfaceContainerHigh` tint. The blend is theme-derived (adapts to light/dark mode) rather than a fixed literal background.
+* The medal gold border color was brightened from an initial dark goldenrod (`0xFFB8860B`) to Material Amber 700 (`0xFFFFA000`), reading clearly as "gold" rather than "bronze."
+* Each card is centered on the page via `Center` + `ConstrainedBox(maxWidth: 560)`, removing the visual left-alignment the old badge implied. On typical phone widths this has no visible effect, since the card already fills the available width.
+* No emoji and no trophy icon are used anywhere, per this document's original rationale for a plain numbered badge (Key Design Decision 7) — only the number and the medal-colored border/badge communicate rank.
+
+**Why.** Physical Android testing found the original left-side numbered badge visually weak and the Top 3 section too similar to an ordinary list, not distinct enough from the rest of the page.
+
+**Accessibility preserved.** The badge's `Semantics(label: '$rank. sija', excludeSemantics: true)` is unchanged in content from the original design — it still exposes "1. sija"/"2. sija"/"3. sija" (§7). One fix was required to preserve it: `Card`'s implicit `semanticContainer: true` was found to merge the badge's label into `CatchListItem`'s own tap-semantics node once the badge moved inside the `Card`. Adding `container: true` to the badge's own `Semantics` widget restores it as an independent semantics node, verified via `debugDumpSemanticsTree()` and the existing `bySemanticsLabel('$rank. sija')` test.
+
+**Testing.** `ranked_largest_catch_row_test.dart` and `general_catch_statistics_tab_test.dart` (§12) were updated to assert against the new structure — badge background color and card border color/width/elevation distinctness per rank, equal-height/side-by-side summary card layout, and a narrow-screen (320px) render with no overflow — in addition to the pre-existing rank, semantics, and navigation assertions, all of which continue to pass unchanged in intent.
 
 ---
 
@@ -799,20 +825,22 @@ All must pass. Confirm the schema version is unaffected (still `6`) before and a
 
 ## Definition of Done
 
+All criteria below are satisfied as of the completed implementation (see Status).
+
 * The implementation satisfies all requirements in MFS-020.
 * The implementation follows TD-020, or documents and justifies each deviation.
 * The Statistics feature shows two tabs, Catches first and Lure Statistics second, with Catches as the default.
 * The Top 3 Largest Catches list shows up to three catches, ordered by weight descending, with deterministic tie-breaking, excluding any catch with no recorded weight.
-* Each Top 3 Largest Catches entry visibly shows its rank (1/2/3) via `RankedLargestCatchRow`'s badge, so first/second/third place is immediately distinguishable without reading catch details.
+* Each Top 3 Largest Catches entry visibly shows its rank (1/2/3) via `RankedLargestCatchRow`'s floating, medal-colored badge, so first/second/third place is immediately distinguishable without reading catch details.
 * Selecting a Top 3 Largest Catches entry opens the existing Catch Details view for the correct catch and its correct fishing spot.
-* The total catches and most caught species summary cards show correct values, with a clear "no data yet" state where applicable.
+* The total catches and most caught species summary cards show correct values, with a clear "no data yet" state where applicable, and render at equal height.
 * The Species List shows every species present in the user's catch history, with correct counts, sorted by catch count descending, with deterministic tie-breaking.
 * Species List rows are visually distinct as future-navigable but perform no action when tapped, and are not exposed as buttons to assistive technology.
 * Statistics are computed fresh on every load — no cached, stored, or persisted aggregate exists anywhere.
 * No new Drift table, column, schema version, or migration was introduced.
 * `catches`, `catch_photos`, `fishing_spots`, `lure_catalog`, and `personal_tackle_box` are functionally and structurally unchanged; the Lure Statistics tab is functionally unchanged.
 * Every capability works with no network connection.
-* `dart format .`, `flutter analyze`, and `flutter test` all pass.
+* `dart format .`, `flutter analyze`, and `flutter test` all pass (535/535 tests, 8 pre-existing/accepted info-level lints).
 * Architecture review is completed.
-* Physical Android testing is completed.
-* Documentation (`docs/project-status.md`) is updated in a separate, subsequent step — not part of this document's own completion.
+* Physical Android testing is completed, including verification of the three post-testing presentation refinements recorded in [Implementation Notes](#implementation-notes).
+* Documentation (`docs/project-status.md`, `docs/roadmap.md`) is updated in a separate, subsequent step — not part of this document's own completion.

@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture-reviewed, all automated tests passing (535/535), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed, including three rounds of post-testing presentation refinement (equal-height summary cards, a medal-bordered "Hall of Fame" redesign of the Top 3 Largest Catches list, and a brightened gold border with a subtle warm first-place tint). See TD-020 for the technical design (including the presentation refinements, recorded in its Implementation Notes) and `docs/project-status.md` for the verification record.
 
 ## Related
 
