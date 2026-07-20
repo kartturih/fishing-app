@@ -25,6 +25,7 @@ import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart'
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/add_to_tackle_box_action.dart';
+import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/lure_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_page.dart';
 
@@ -67,6 +68,10 @@ class _MapScreenState extends State<MapScreen> {
       PersonalTackleBoxRepository(_database, _tackleBoxPhotoStorage);
   late final LureStatisticsRepository _lureStatisticsRepository =
       LureStatisticsRepository(_database);
+  late final GeneralCatchStatisticsRepository
+  _generalCatchStatisticsRepository = GeneralCatchStatisticsRepository(
+    _database,
+  );
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -480,8 +485,15 @@ class _MapScreenState extends State<MapScreen> {
   void _openStatistics() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) =>
-            StatisticsPage(repository: _lureStatisticsRepository),
+        builder: (context) => StatisticsPage(
+          generalCatchStatisticsRepository: _generalCatchStatisticsRepository,
+          lureStatisticsRepository: _lureStatisticsRepository,
+          catchRepository: _catchRepository,
+          catchPhotoRepository: _catchPhotoRepository,
+          lureCatalogRepository: _lureCatalogRepository,
+          personalTackleBoxRepository: _personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage: _tackleBoxPhotoStorage,
+        ),
       ),
     );
   }

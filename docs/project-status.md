@@ -12,7 +12,7 @@ Fishing Spot management is complete. Catch management foundation is complete. Ca
 
 The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, and a new Statistics feature surfacing lure-based catch statistics — most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown — computed live from existing catch and lure catalog data with no new persisted statistic.
 
-No next milestone has been formally chosen yet — no MFS document has been drafted since MFS-019. See `docs/roadmap.md`'s Near-Term Roadmap for logical future candidates; none of them represent a decision or commitment.
+**MFS-020 (General Catch Statistics) has now been drafted and is the current milestone.** It adds the Statistics feature's first tab, Catches — a Top 3 Largest Catches list ranked by weight (each entry opening the existing Catch Details view), summary statistics (total catches, most caught species), and a full per-species catch-count list — with MFS-019's existing Lure Statistics tab moving to the second tab position, unchanged in every other respect. No Technical Design has been drafted yet, and no implementation has begun. See `docs/roadmap.md`'s Current Milestone section for the same summary, and its Near-Term Roadmap for logical future candidates beyond MFS-020; none of those represent a decision or commitment.
 
 ---
 
@@ -61,6 +61,7 @@ No next milestone has been formally chosen yet — no MFS document has been draf
 * MFS-017: Assign Lure to Catch
 * MFS-018: Lure Catalog UX Improvements
 * MFS-019: Lure-Based Catch Statistics
+* MFS-020: General Catch Statistics (Draft — not yet implemented)
 
 ### Technical Designs
 
@@ -560,13 +561,13 @@ No other iOS configuration changes were required, including for the Lure Catalog
 
 ## Next Planned Task
 
-No next milestone has been formally chosen yet — no MFS document has been drafted since MFS-019 (Lure-Based Catch Statistics). Per `docs/roadmap.md`'s Near-Term Roadmap, General Catch / Fishing Statistics and Analytics (§3.2) is the most directly connected next candidate — MFS-019's Statistics feature was deliberately built as a tabbed shell sized to hold a second tab, and TD-019's Future Compatibility section describes this candidate as requiring no restructuring of the existing Lure Statistics tab. This is a candidate only: it has no assigned MFS number, no drafted scope, and has not been started.
+MFS-020 (General Catch Statistics) has been drafted and is the current milestone — see `docs/roadmap.md`'s Current Milestone section for the same summary. No Technical Design has been drafted for it yet, and no implementation has begun. Per this project's Development Workflow, drafting a Technical Design is the next step, followed by implementation.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 19
+Current Feature Specifications: 20
 
 Current Technical Designs: 17
 

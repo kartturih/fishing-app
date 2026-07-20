@@ -10,8 +10,8 @@ import 'package:fishing_app/features/statistics/domain/lure_distinguishing_detai
 import 'package:fishing_app/features/statistics/domain/lure_statistics_summary.dart';
 import 'package:fishing_app/features/statistics/domain/lure_type_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/lure_catch_statistic_row.dart';
-import 'package:fishing_app/features/statistics/presentation/widgets/lure_statistics_summary_card.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/lure_type_catch_statistic_row.dart';
+import 'package:fishing_app/features/statistics/presentation/widgets/statistics_summary_card.dart';
 
 const String _noDataYetText = 'Ei vielä tietoja';
 
@@ -110,12 +110,12 @@ class _LureStatisticsTabState extends State<LureStatisticsTab> {
       key: const Key('lureStatisticsList'),
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        LureStatisticsSummaryCard(
+        StatisticsSummaryCard(
           title: 'Menestynein viehe',
           value: _mostSuccessfulLureText(summary.mostSuccessfulLure),
         ),
         const SizedBox(height: AppSpacing.sm),
-        LureStatisticsSummaryCard(
+        StatisticsSummaryCard(
           title: 'Menestynein viehetyyppi',
           value: _mostSuccessfulLureTypeText(summary.mostSuccessfulLureType),
         ),
