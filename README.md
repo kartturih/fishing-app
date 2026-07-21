@@ -19,9 +19,10 @@ The current version supports:
 - Personal Tackle Box for tracking owned lures, with optional personal photos
 - Assigning an owned lure to a catch, shown in Catch Details
 - Lure-based catch statistics (most successful lure and lure type, per-lure and per-lure-type catch counts), computed live with no stored aggregate
+- General, per-species, and per-fishing-spot catch statistics (Top 3 Largest Catches, most caught species, catch-count breakdowns, a record catch and full catch list per species/fishing spot), computed live with no stored aggregate
 - Persistent Drift/SQLite storage
 
-493 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
+640 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
 
 ## Vision
 

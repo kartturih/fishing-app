@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture-reviewed, all automated tests passing (640/640), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed. Two lifecycle bugs were found during physical Android testing and fixed: `CatchDetailsPage` could pop before its own in-flight delete completed if the user navigated away independently while it was running, and `GeneralCatchStatisticsTab` did not reload after returning from either Fishing Spot Statistics or Species Statistics, leaving its own totals/lists stale. Neither changed this document's functional requirements. See TD-022 for the technical design and its Implementation Notes for full detail, and `docs/project-status.md` for the verification record.
 
 ## Related
 

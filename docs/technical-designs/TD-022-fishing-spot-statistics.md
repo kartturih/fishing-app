@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture review passed, all automated tests passing (640/640), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed successfully. One UX refinement and two lifecycle bugs were found and corrected during review, and are detailed below: `CatchCountRow`'s chevron is now conditional on `onTap` (an approved UX refinement, not an architectural change); `CatchDetailsPage` could pop before its own in-flight delete had completed if the user navigated away independently while it was running, closed with an explicit `CatchDetailsResult` and a `PopScope` guard; and `GeneralCatchStatisticsTab` did not reload its own summary after returning from either child statistics page, closed by applying this document's own established post-navigation-refresh pattern to `_openSpeciesStatistics`/`_openFishingSpotStatistics`. None of the three changed this document's repository, domain, navigation, or database design.
 
 ## Related Specification
 
@@ -558,7 +558,35 @@ Confirm at implementation time that the live schema version is still `6` before 
 
 ## Implementation Notes
 
-To be completed during implementation, following the established convention of recording any deviation from this document here, with justification.
+No architectural deviations from this document's repository, domain, navigation, or database design were required. One UX refinement and two lifecycle bugs were found and corrected during review, before physical Android sign-off, and are recorded below.
+
+### UX refinement: `CatchCountRow`'s chevron is conditional on `onTap`
+
+**What changed.** §5's `CatchCountRow` originally specified a chevron shown unchanged regardless of `onTap`. During architecture review, the chevron was made conditional: it renders only when `onTap` is non-null.
+
+**Why.** A chevron conventionally signals "tap to navigate." The Species Breakdown (§5, MFS-022 FR-7) is intentionally static — showing a chevron there would misleadingly imply navigation that does not exist. The Species List and Fishing Spot List, both tappable, are unaffected.
+
+**What did not change.** Semantics (`button: true` only when `onTap` is non-null) were already correct and untouched; only the chevron's visibility changed. No feature-specific logic was added to `CatchCountRow` — it still only reacts to whether `onTap` is `null`.
+
+**Testing.** `catch_count_row_test.dart` asserts the chevron is present when `onTap` is non-null and absent when it is `null`, alongside the existing button-semantics assertions for both cases.
+
+### Lifecycle fix: `CatchDetailsPage` could pop before its own delete completed
+
+**What changed.** `CatchDetailsPage` gained an explicit `CatchDetailsResult` (`CatchDetailsUnchanged`/`CatchDetailsUpdated`/`CatchDetailsDeleted`), mirroring `EditCatchResult`'s existing three-outcome shape. `CatchDetailsPage.open()` now returns `Future<CatchDetailsResult>` instead of `Future<void>`. Its `Scaffold` is wrapped in `PopScope<CatchDetailsResult>(canPop: false, onPopInvokedWithResult: ...)`: while a delete is in flight (`_isDeleting`), any back-button/system-gesture pop attempt is ignored; otherwise it computes and pops with the current result. `_confirmDelete`'s and `_openEdit`'s `CatchDeleted` pop calls are direct, explicit `Navigator.pop(CatchDetailsDeleted(...))` calls, made only after the deletion has already been awaited to completion, and are unaffected by `canPop` (only `maybePop`-based system/back-button attempts are gated).
+
+**Why.** Physical Android testing found that deleting a catch from Fishing Spot Statistics sometimes left the deleted catch visible until Statistics was closed and reopened. `CatchDetailsPage` showed no loading indicator during its own await chain (photo cleanup, then the catch row delete), so an impatient back-tap while that was still in flight triggered an independent, ungated `Navigator.maybePop()` that popped the page immediately — resolving the caller's `await CatchDetailsPage.open(...)` and triggering its reload *before* the deletion had actually completed, with nothing to correct it afterward. A dedicated regression test (`catch_details_page_test.dart`) reproduces this exactly: a controllable delete delay plus a back-tap mid-delete, confirmed to fail without the fix and pass with it.
+
+**Convention followed, not invented.** The explicit result type follows the same pattern `EditCatchResult` already established (MFS-014/MFS-017); `PopScope` is the standard Flutter mechanism for gating back-navigation during an in-flight operation. No reactive Drift stream, Riverpod, Provider, timer, or reload loop was introduced.
+
+### Lifecycle fix: `GeneralCatchStatisticsTab` did not refresh after returning from a child statistics page
+
+**What changed.** `GeneralCatchStatisticsTab._openSpeciesStatistics` and `_openFishingSpotStatistics` now await their pushed page, check `mounted`, and call `_load()` again — the exact `await → mounted → _load()` shape `FishingSpotStatisticsPage`/`SpeciesStatisticsPage._openCatchDetails` already use for their own Catch Details visits (Key Design Decision 9).
+
+**Why.** Physical Android testing found that after deleting a catch inside Fishing Spot Statistics and returning through it to General Catch Statistics, the tab's own total, Fishing Spot List, and Species List remained stale until Statistics was closed and reopened. Both methods previously awaited their pushed page's `Future` and returned with no follow-up — the child page correctly refreshed itself, but nothing told the parent tab to do the same.
+
+**Convention followed, not invented; deliberately unconditional.** The reload is unconditional, not deletion-specific, so it also covers a weight edit affecting Top 3, a species change affecting the Species List and most-caught-species card, and the final catch at a fishing spot or of a species being removed — any change the child page could have made, not only the one first observed.
+
+**Testing.** `general_catch_statistics_tab_test.dart` gained real-navigation regression tests for both entry points (menu → confirm dialog → delete, not a direct repository call), an ordinary open-and-back-with-no-changes case, and a disposed-mid-reload case proving no `setState` after dispose.
 
 ---
 
