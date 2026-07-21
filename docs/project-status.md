@@ -8,11 +8,11 @@
 
 ## Current Phase
 
-Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated. General Catch Statistics (MFS-020 / TD-020) is implemented, architecture-reviewed, and validated.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated. General Catch Statistics (MFS-020 / TD-020) is implemented, architecture-reviewed, and validated. Species Statistics (MFS-021 / TD-021) is implemented, architecture-reviewed, lifecycle-reviewed, and validated.
 
-The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, and a full per-species catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate.
+The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, and a full per-species catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate. Tapping a species in the Catches tab's Species List now opens a pushed Species Statistics page (MFS-021) for that species: its total catch count, a Record Catch card, and its full Catch List (reusing the existing Catch list row), each entry opening the existing Catch Details view and refreshing Species Statistics automatically on return.
 
-**MFS-020 (General Catch Statistics) is now implemented, architecture-reviewed, and validated — see the Statistics section below.** No next milestone has been selected yet. See `docs/roadmap.md`'s Near-Term Roadmap for logical future candidates; none of those represent a decision or commitment.
+**MFS-021 (Species Statistics) is now implemented, architecture-reviewed, lifecycle-reviewed, and validated — see the Statistics section below.** No next milestone has been selected yet. See `docs/roadmap.md`'s Near-Term Roadmap for logical future candidates; none of those represent a decision or commitment.
 
 ---
 
@@ -62,6 +62,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * MFS-018: Lure Catalog UX Improvements
 * MFS-019: Lure-Based Catch Statistics
 * MFS-020: General Catch Statistics
+* MFS-021: Species Statistics
 
 ### Technical Designs
 
@@ -83,6 +84,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * TD-018: Lure Catalog UX Improvements Implementation
 * TD-019: Lure-Based Catch Statistics Implementation
 * TD-020: General Catch Statistics Implementation
+* TD-021: Species Statistics Implementation
 
 ---
 
@@ -226,9 +228,10 @@ The application now supports full offline CRUD operations for both Fishing Spots
 ### Statistics
 
 * `statistics` feature with two tabs: **Catches** (general catch statistics, MFS-020, first/default tab) and **Lure Statistics** (MFS-019, second tab, functionally unchanged by MFS-020 other than its tab position)
-* Both tabs compute every statistic live on each open; no cached, stored, or persisted aggregate of any kind anywhere in the feature
+* A pushed **Species Statistics** page (MFS-021), reached by tapping a species row in the Catches tab's Species List — not a third tab
+* Every tab/page computes its statistics live on each open; no cached, stored, or persisted aggregate of any kind anywhere in the feature
 * Reachable via a new, temporary `MapScreen` AppBar entry point, following the same pattern already established for the Lure Catalog and Personal Tackle Box
-* No new database table, column, schema version, or migration from either tab — schema remains at version 6
+* No new database table, column, schema version, or migration from any tab or page — schema remains at version 6
 * Fully offline; no new external dependencies
 
 #### Lure Statistics (MFS-019)
@@ -249,13 +252,19 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * Deterministic tie-breaking (weight → caughtAt → createdAt → id for largest catches; catch count → species identifier for species), so ranking never varies across runs
 * Top 3 Largest Catches: the three catches with the greatest recorded weight, descending; a catch with no recorded weight is never included
 * Two summary cards, rendered at equal height (total catches, most caught species — species name as the primary value, catch count as secondary text)
-* A full Species List (species and catch count, sorted by catch count descending); rows are visually prepared for a future per-species statistics page (MFS-021 Candidate) but perform no navigation in this milestone, and are not exposed to assistive technology as buttons
+* A full Species List (species and catch count, sorted by catch count descending); rows were visually prepared for a future per-species statistics page (now delivered by MFS-021 — see the Species Statistics subsection below) but performed no navigation and were not exposed to assistive technology as buttons within this milestone's own scope
 * Selecting a Top 3 Largest Catches entry opens the existing, unmodified Catch Details view (MFS-014) for that catch
 * Presentation redesigned after physical Android testing, entirely within the presentation layer with no change to the repository, domain models, or navigation: each Top 3 entry reuses `catches`' own `CatchListItem` completely unmodified, now presented inside a "Hall of Fame" card with a full gold/silver/bronze medal-colored border and a floating rank badge centered above the card's top border; 1st place has a thicker border, higher elevation, and a subtle warm-tinted background blended from the medal gold onto the theme's own surface color
 
-#### Species Statistics (MFS-021, Candidate)
+#### Species Statistics (MFS-021)
 
-Not yet drafted or approved — see `docs/roadmap.md`'s Near-Term Roadmap. MFS-020's Species List rows are designed to anticipate it but perform no navigation.
+* Framework-independent `SpeciesCatchEntry` (a `Catch` paired with its `FishingSpot`, unlike `LargestCatch` allowing no recorded weight) and `SpeciesStatisticsSummary` (a species plus its full, already-sorted catch list, with `totalCatches`/`recordCatch` as derived getters) read-model types
+* Concrete, read-only `SpeciesStatisticsRepository` performing one species-filtered joined query directly against `catches`/`fishing_spots`, resolving every returned catch's fishing spot (not only the Record Catch's), so any Catch List entry can open Catch Details with no additional lookup
+* Deterministic ordering: recorded weight descending (a catch with no recorded weight sorts after every catch that has one), then catch date descending, then catch id ascending — applied to both the Record Catch and the full Catch List, since the Record Catch is simply the first entry of that same ordered list, never separately computed
+* Wires up the navigation MFS-020's Species List rows were built to anticipate: rows are now real, tappable buttons (explicit `Semantics(button: true)`, added after a widget test showed `InkWell` alone does not expose button semantics) opening the new page for that species
+* `SpeciesStatisticsPage`, pushed via the existing `Navigator.push`/`MaterialPageRoute` pattern (mirroring `CatchDetailsPage.open()`), shows a total-catches summary card, a `RecordCatchCard` (photo, weight/length, date, and fishing spot — each rendering cleanly when absent), and a full Catch List reusing `CatchListItem` completely unmodified
+* Lifecycle fix found during review: the page previously loaded its summary once, in `initState`, so edits/deletes made from Catch Details were not reflected on return. Fixed by following the existing `FishingSpotDetailsBottomSheet` convention — `await CatchDetailsPage.open(...)`, check `mounted`, then reload — rather than introducing a new navigation-result type or state-management mechanism; covers both the Record Catch card and every Catch List entry from one change
+* No new Drift table, column, schema version, or migration; `GeneralCatchStatisticsRepository`, `LureStatisticsRepository`, `LargestCatch`, and `GeneralCatchStatisticsSummary` are unmodified
 
 ---
 
@@ -377,12 +386,23 @@ Verified on physical Android devices.
 * flutter analyze passes; all automated tests pass (535/535)
 * Physical Android testing completed across three rounds, each re-verified with a full test run afterward: (1) equal-height summary cards and an initial numbered-badge Top 3 redesign; (2) a full "Hall of Fame" redesign — medal-colored card borders, a rank badge floating above and centered on each card's top border, and centered card layout; (3) a brightened gold border and a subtle warm-tinted background for the 1st-place card
 
+### Species Statistics
+
+* Domain, repository, and widget tests completed, including deterministic ordering coverage (weight descending, missing-weight-sorts-last, catch date descending, catch id ascending), Record Catch derivation from the already-sorted list, fishing-spot resolution for every catch (not only the Record Catch), and recomputation after a catch of that species is created, edited, deleted, or reassigned to a different species
+* Navigation-wiring tests confirm Species List rows now open Species Statistics for the correct species, and both the Record Catch card and Catch List entries open Catch Details for the correct catch and fishing spot
+* Lifecycle review found that the page did not refresh after returning from Catch Details; fixed by reusing the existing `FishingSpotDetailsBottomSheet` reload convention (see the Species Statistics subsection above). Four widget tests cover it directly: an edit reflected on return via the Record Catch card path, a delete reflected on return, a Record Catch/ordering swap reflected on return via the Catch List path, and no `setState` after the page is disposed while a post-return reload is still pending
+* Accessibility correction found during testing: `SpeciesCatchStatisticRow` and `RecordCatchCard` needed an explicit `Semantics(button: true)` — an `InkWell` alone does not expose button semantics — verified by a dedicated semantics test
+* Architecture review completed; no schema/migration impact, no change to `catches`, `catch_photos`, `fishing_spots`, `lure_catalog`, or `personal_tackle_box`; `GeneralCatchStatisticsRepository`, `LureStatisticsRepository`, `LargestCatch`, and `GeneralCatchStatisticsSummary` unmodified; `CatchListItem` reused completely unmodified
+* flutter analyze passes; all automated tests pass (575/575)
+* Physical Android testing completed
+
 ### Quality
 
 * flutter analyze passes, with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`, on constructor parameters whose external names are relied on by callers and cannot be renamed without breaking the public API — see TD-016 Implementation Notes)
-* 535 automated tests passing
+* 575 automated tests passing
 * Architecture review completed
 * Code review completed
+* Lifecycle review completed for Species Statistics (MFS-021)
 * Physical Android testing completed for all currently implemented Android features
 
 ---
@@ -526,6 +546,7 @@ The application currently supports:
 * Assigning an owned lure to a Catch (Add Catch or Edit Catch), shown read-only in Catch Details
 * Lure-based catch statistics: most successful lure and lure type summary cards, a per-lure catch-count list, and a per-lure-type catch-count breakdown, computed live with no stored aggregate
 * General catch statistics: a Top 3 Largest Catches "Hall of Fame" (medal-bordered cards, each opening the existing Catch Details view), equal-height total-catches/most-caught-species summary cards, and a full per-species catch-count list, computed live across the angler's entire catch history with no stored aggregate
+* Species statistics: tapping a species in the Catches tab's Species List opens a pushed page showing that species' total catch count, a Record Catch card (photo, weight/length, date, fishing spot), and its full Catch List (reusing the existing Catch list row), each entry opening the existing Catch Details view — the page refreshes automatically after returning from Catch Details
 
 ---
 
@@ -546,7 +567,7 @@ No additional permissions were required for the Personal Tackle Box: it reuses t
 
 No additional permissions were required for Assign Lure to Catch or Lure Catalog UX Improvements: both are presentation/data-layer changes over the existing local database and photo intents, with no new hardware or system capability involved.
 
-No additional permissions were required for Lure-Based Catch Statistics or General Catch Statistics: both read the existing local database only, with no new hardware or system capability involved.
+No additional permissions were required for Lure-Based Catch Statistics, General Catch Statistics, or Species Statistics: all three read the existing local database only, with no new hardware or system capability involved.
 
 ---
 
@@ -557,7 +578,7 @@ Added for Catch Photos:
 * `NSCameraUsageDescription`
 * `NSPhotoLibraryUsageDescription`
 
-No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos), and for Lure-Based Catch Statistics and General Catch Statistics (both local-database-only features). Physical iOS testing has not been performed (no iOS build target/device in this environment).
+No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos), and for Lure-Based Catch Statistics, General Catch Statistics, and Species Statistics (all three local-database-only features). Physical iOS testing has not been performed (no iOS build target/device in this environment).
 
 ---
 
@@ -589,15 +610,15 @@ No other iOS configuration changes were required, including for the Lure Catalog
 
 ## Next Planned Task
 
-MFS-020 (General Catch Statistics) is complete — implemented, architecture-reviewed, all automated tests passing, `flutter analyze` clean, and physically verified on Android, including three rounds of post-testing presentation refinement. No next milestone has been selected yet. Per this project's Development Workflow, the next step is choosing and drafting the next MFS; see `docs/roadmap.md`'s Near-Term Roadmap for logical candidates (none of which are a decision or commitment).
+MFS-021 (Species Statistics) is complete — implemented, architecture-reviewed, lifecycle-reviewed, all automated tests passing (575/575), `flutter analyze` clean, and physically verified on Android. No next milestone has been selected yet. Per this project's Development Workflow, the next step is choosing and drafting the next MFS; see `docs/roadmap.md`'s Near-Term Roadmap for logical candidates (none of which are a decision or commitment).
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 20
+Current Feature Specifications: 21
 
-Current Technical Designs: 18
+Current Technical Designs: 19
 
 Architecture Decision Records: 6
 
@@ -611,7 +632,7 @@ Implemented Core Features:
 * Lure Catalog (including MFS-018's model-grouped browsing and Lure Model Details)
 * Personal Tackle Box
 * Assign Lure to Catch
-* Statistics (Catches — general catch statistics; Lure Statistics)
+* Statistics (Catches — general catch statistics; Species Statistics; Lure Statistics)
 
 Offline-first: Yes
 
@@ -619,6 +640,6 @@ Physical Android Validation: Completed for all currently implemented features
 
 flutter analyze: Passing with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
 
-Automated Tests: 535 Passing
+Automated Tests: 575 Passing
 
 Database schema version: 6

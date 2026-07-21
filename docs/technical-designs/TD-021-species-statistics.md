@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture review passed, lifecycle review passed, all automated tests passing (575/575), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed successfully. Two implementation-level notes were recorded during review and are detailed below: a test-driven accessibility correction (explicit `Semantics(button: true)` on `SpeciesCatchStatisticRow` and `RecordCatchCard`) and a lifecycle-review-driven fix (`SpeciesStatisticsPage` now reloads after returning from Catch Details, following the existing `FishingSpotDetailsBottomSheet` convention). Neither changed this document's repository, domain, navigation, or database design.
 
 ## Related Specification
 
@@ -676,7 +676,49 @@ Confirm at implementation time that the live schema version is still `6` before 
 
 ## Implementation Notes
 
-To be completed during implementation, following the established convention of recording any deviation from this document here, with justification.
+No architectural deviations from this document's repository, domain, navigation, or database design were required. Two implementation-level notes were found and corrected during review, before approval, and are recorded below.
+
+### Accessibility correction: explicit `Semantics(button: true)`
+
+**What changed.** `SpeciesCatchStatisticRow` and `RecordCatchCard` (§5) both wrap their content in an explicit `Semantics(button: true, ...)`, rather than relying on the ancestor `InkWell` alone to expose button semantics as this document originally assumed.
+
+**Why.** A widget test asserting `flagsCollection.isButton` on `SpeciesCatchStatisticRow` failed against the actual Flutter semantics tree: wrapping content in a plain `InkWell` does not, by itself, mark the resulting semantics node as a button. This was caught by the test suite required by §11, before physical Android testing, not discovered later.
+
+**What did not change.** This is a test-driven accessibility correction, not an architectural change — no repository, domain model, navigation, or query logic is affected. The semantic *label* text (species name and catch count for the row; species, weight/length, date, and location for the card) is exactly as originally specified; only the explicit `button: true` flag was added.
+
+**Testing.** `species_catch_statistic_row_test.dart` asserts `flagsCollection.isButton` is `true` for the combined label; `record_catch_card_test.dart` asserts the card's combined semantic label. Both pass.
+
+### Lifecycle fix: refresh after returning from Catch Details
+
+**What changed.** `SpeciesStatisticsPage._openCatchDetails` (§5) now awaits `CatchDetailsPage.open(...)`, checks `mounted`, and calls `_load()` again:
+
+```dart
+Future<void> _openCatchDetails(SpeciesCatchEntry entry) async {
+  await CatchDetailsPage.open(
+    context,
+    fishingSpot: entry.fishingSpot,
+    catchModel: entry.catchModel,
+    catchRepository: widget.catchRepository,
+    catchPhotoRepository: widget.catchPhotoRepository,
+    lureCatalogRepository: widget.lureCatalogRepository,
+    personalTackleBoxRepository: widget.personalTackleBoxRepository,
+    personalTackleBoxPhotoStorage: widget.personalTackleBoxPhotoStorage,
+  );
+
+  if (!mounted) {
+    return;
+  }
+  await _load();
+}
+```
+
+**Why.** A lifecycle review found that `SpeciesStatisticsPage` loaded its summary exactly once, in `initState`. Because the page remains mounted underneath a pushed `CatchDetailsPage`, returning from it — after an edit (weight, date, or species), or a delete — did not re-run `initState`, so the total count, Record Catch, and Catch List could be left stale until the page was reopened from scratch.
+
+**Convention followed, not invented.** `CatchDetailsPage.open()` has no typed changed-result — it returns a bare `Future<void>` from `Navigator.push`, with nothing to branch on ("edited" vs. "deleted" vs. "just viewed"). Rather than introduce a new navigation-result type or state-management mechanism to make that distinction, the fix reuses the exact pattern already shipped in `FishingSpotDetailsBottomSheet._openCatchDetails` (`lib/features/fishing_spots/presentation/widgets/fishing_spot_details_bottom_sheet.dart`): unconditionally reload after the awaited call returns, guarded by `mounted`. No reactive Drift stream, Riverpod, Provider, route observer, or caching was introduced — `_load()` is the exact same method `initState` already calls, called a second time.
+
+**What did not change.** `SpeciesStatisticsRepository`, its query, and its ordering are untouched. Both the Record Catch card and every Catch List entry call this same `_openCatchDetails`, so the fix covers both navigation paths from a single change point.
+
+**Testing.** Four widget tests were added to `species_statistics_page_test.dart`: (1) editing a catch's weight via a direct repository call while Catch Details is open, then confirming the new value on return (Record Catch card path); (2) deleting a catch while Catch Details is open, then confirming the empty state on return; (3) editing a catch so the Record Catch and Catch List order swap, exercised via the Catch List navigation path; (4) disposing the page while a post-return reload is still in flight (using a repository double that resolves once, then never completes) and confirming no `setState`-after-dispose exception when that pending call is later resolved.
 
 ---
 

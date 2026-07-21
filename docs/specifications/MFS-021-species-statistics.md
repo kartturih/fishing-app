@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture-reviewed, lifecycle-reviewed, all automated tests passing (575/575), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed. See TD-021 for the technical design (including a test-driven accessibility correction and a lifecycle-review-driven refresh fix, both recorded in its Implementation Notes) and `docs/project-status.md` for the verification record.
 
 ## Related
 
