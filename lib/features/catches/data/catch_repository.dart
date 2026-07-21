@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/features/catches/data/catch_mapper.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
+import 'package:fishing_app/features/catches/domain/catch_notes_limits.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 
 class CatchRepository {
@@ -18,6 +19,7 @@ class CatchRepository {
     int? weightGrams,
     int? lengthMillimeters,
     String? lureVariantId,
+    String? notes,
   }) async {
     if (fishingSpotId.isEmpty) {
       throw ArgumentError.value(
@@ -31,6 +33,7 @@ class CatchRepository {
       lengthMillimeters: lengthMillimeters,
     );
     _validateLureVariantId(lureVariantId);
+    final normalizedNotes = _normalizeNotes(notes);
 
     final now = DateTime.now();
     final catchModel = Catch(
@@ -41,6 +44,7 @@ class CatchRepository {
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
       lureVariantId: lureVariantId,
+      notes: normalizedNotes,
       createdAt: now,
       updatedAt: now,
     );
@@ -58,12 +62,14 @@ class CatchRepository {
     int? weightGrams,
     int? lengthMillimeters,
     String? lureVariantId,
+    String? notes,
   }) async {
     _validateMeasurements(
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
     );
     _validateLureVariantId(lureVariantId);
+    final normalizedNotes = _normalizeNotes(notes);
 
     final updatedCatch = Catch(
       id: catchModel.id,
@@ -73,6 +79,7 @@ class CatchRepository {
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
       lureVariantId: lureVariantId,
+      notes: normalizedNotes,
       createdAt: catchModel.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -142,6 +149,28 @@ class CatchRepository {
         'must not be empty when provided',
       );
     }
+  }
+
+  /// The single canonical implementation of MFS-023's normalization rule,
+  /// reused by both [create] and [update] — see TD-023 Key Design Decision 2.
+  ///
+  /// Validates [rawNotes] against [maxCatchNotesLength] *before* trimming
+  /// (per MFS-023's explicit raw-input-length rule), then trims leading/
+  /// trailing whitespace, preserving internal whitespace and line breaks
+  /// exactly. Converts an empty-after-trim result to `null`.
+  String? _normalizeNotes(String? rawNotes) {
+    if (rawNotes == null) {
+      return null;
+    }
+    if (rawNotes.length > maxCatchNotesLength) {
+      throw ArgumentError.value(
+        rawNotes,
+        'notes',
+        'must not exceed $maxCatchNotesLength characters',
+      );
+    }
+    final trimmed = rawNotes.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   String _generateId() => 'catch-${DateTime.now().microsecondsSinceEpoch}';

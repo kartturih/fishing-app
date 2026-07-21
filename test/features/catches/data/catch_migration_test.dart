@@ -52,6 +52,51 @@ class _LegacyAppDatabase extends AppDatabase {
   );
 }
 
+/// A schema-6 snapshot of [AppDatabase]'s `catches` table (`lure_variant_id`
+/// present, but no `notes` column), used to seed a database file that the
+/// real [AppDatabase] then upgrades to schema 7 (MFS-023/TD-023).
+///
+/// The current `Catches` table class already includes `notes`, so
+/// `migrator.createTable(catches)` cannot represent the pre-migration shape —
+/// it would create the column that shouldn't exist yet. The legacy `catches`
+/// table is therefore created with a literal `CREATE TABLE` statement
+/// matching the real schema-6 shape instead, mirroring `_LegacyAppDatabase`
+/// above.
+class _LegacySchema6AppDatabase extends AppDatabase {
+  _LegacySchema6AppDatabase(super.executor);
+
+  @override
+  int get schemaVersion => 6;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (migrator) async {
+      await migrator.createTable(fishingSpots);
+      await customStatement('''
+        CREATE TABLE catches (
+          id TEXT NOT NULL PRIMARY KEY,
+          fishing_spot_id TEXT NOT NULL REFERENCES fishing_spots (id) ON DELETE CASCADE,
+          species TEXT NOT NULL,
+          caught_at INTEGER NOT NULL,
+          weight_grams INTEGER NULL CHECK (weight_grams IS NULL OR weight_grams > 0),
+          length_millimeters INTEGER NULL CHECK (length_millimeters IS NULL OR length_millimeters > 0),
+          lure_variant_id TEXT NULL REFERENCES lure_variants (id),
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      ''');
+      await migrator.createTable(catchPhotos);
+      await migrator.createIndex(catchPhotosCatchIdSort);
+      await migrator.createTable(lureModels);
+      await migrator.createTable(lureVariants);
+      await migrator.createIndex(lureModelsManufacturer);
+      await migrator.createIndex(lureModelsLureType);
+      await migrator.createIndex(lureVariantsLureModelId);
+      await migrator.createTable(tackleBoxEntries);
+    },
+  );
+}
+
 void main() {
   group('schema migration', () {
     late Directory tempDir;
@@ -141,6 +186,81 @@ void main() {
         upgraded.catches,
       )..where((t) => t.id.equals('catch-1'))).getSingle();
       expect(updated.lureVariantId, 'variant-1');
+    });
+
+    test('upgrades a v6 database and preserves existing data', () async {
+      final legacyDb = _LegacySchema6AppDatabase(NativeDatabase(dbFile));
+      await legacyDb
+          .into(legacyDb.fishingSpots)
+          .insert(
+            FishingSpotsCompanion.insert(
+              id: 'spot-1',
+              name: 'Old Spot',
+              latitude: 61.0,
+              longitude: 25.0,
+              createdAt: 1000,
+            ),
+          );
+      await legacyDb
+          .into(legacyDb.lureModels)
+          .insert(
+            LureModelsCompanion.insert(
+              id: 'model-1',
+              manufacturer: 'Rapala',
+              modelName: 'X-Rap Shad XRS08',
+              lureType: 'crankbait',
+              searchText: 'rapala x-rap shad xrs08',
+              createdAt: 1000,
+              updatedAt: 1000,
+            ),
+          );
+      await legacyDb
+          .into(legacyDb.lureVariants)
+          .insert(
+            LureVariantsCompanion.insert(
+              id: 'variant-1',
+              lureModelId: 'model-1',
+              colorName: const Value('Hot Craw'),
+              searchText: 'hot craw',
+              createdAt: 1000,
+              updatedAt: 1000,
+            ),
+          );
+      // Inserted via the legacy (8-column) shape - no notes column yet.
+      await legacyDb.customStatement('''
+        INSERT INTO catches (
+          id, fishing_spot_id, species, caught_at, weight_grams,
+          length_millimeters, lure_variant_id, created_at, updated_at
+        ) VALUES (
+          'catch-1', 'spot-1', 'pike', 2000, 1500, 600, 'variant-1', 2000, 2000
+        )
+      ''');
+      await legacyDb.close();
+
+      final upgraded = AppDatabase(NativeDatabase(dbFile));
+      addTearDown(upgraded.close);
+
+      final spots = await upgraded.select(upgraded.fishingSpots).get();
+      final catches = await upgraded.select(upgraded.catches).get();
+      expect(spots, hasLength(1));
+      expect(catches, hasLength(1));
+      // The pre-existing row survives the upgrade, lureVariantId intact,
+      // notes = null.
+      expect(catches.single.id, 'catch-1');
+      expect(catches.single.weightGrams, 1500);
+      expect(catches.single.lureVariantId, 'variant-1');
+      expect(catches.single.notes, isNull);
+
+      // The new column is immediately usable after upgrade.
+      await (upgraded.update(
+        upgraded.catches,
+      )..where((t) => t.id.equals('catch-1'))).write(
+        const CatchesCompanion(notes: Value('Tuulinen ilta järvellä.')),
+      );
+      final updated = await (upgraded.select(
+        upgraded.catches,
+      )..where((t) => t.id.equals('catch-1'))).getSingle();
+      expect(updated.notes, 'Tuulinen ilta järvellä.');
     });
   });
 

@@ -30,6 +30,8 @@ class Catches extends Table {
     onDelete: KeyAction.restrict,
   )();
 
+  TextColumn get notes => text().nullable()();
+
   IntColumn get createdAt => integer()();
 
   IntColumn get updatedAt => integer()();

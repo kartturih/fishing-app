@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
+import 'package:fishing_app/features/catches/domain/catch_notes_limits.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
@@ -516,6 +517,200 @@ void main() {
         ),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('CatchRepository notes', () {
+    test('create stores null when notes is omitted', () async {
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      expect(created.notes, isNull);
+    });
+
+    test('create persists a normal notes value', () async {
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        notes: 'Tuulinen ilta, hauki iski laineeseen.',
+      );
+
+      expect(created.notes, 'Tuulinen ilta, hauki iski laineeseen.');
+      final stored = await catchRepository.getById(created.id);
+      expect(stored!.notes, 'Tuulinen ilta, hauki iski laineeseen.');
+    });
+
+    test('create persists notes at exactly the limit', () async {
+      final notes = 'a' * maxCatchNotesLength;
+
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        notes: notes,
+      );
+
+      expect(created.notes, hasLength(maxCatchNotesLength));
+    });
+
+    test('create rejects notes longer than the limit', () async {
+      final notes = 'a' * (maxCatchNotesLength + 1);
+
+      expect(
+        () => catchRepository.create(
+          fishingSpotId: fishingSpot.id,
+          species: FishSpecies.pike,
+          caughtAt: DateTime(2026, 7, 17),
+          notes: notes,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('create trims leading and trailing whitespace from notes', () async {
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        notes: '  Iso hauki illalla.  ',
+      );
+
+      expect(created.notes, 'Iso hauki illalla.');
+    });
+
+    test('create preserves internal spaces and line breaks in notes', () async {
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        notes: 'Ensimmäinen rivi.\nToinen  rivi.',
+      );
+
+      expect(created.notes, 'Ensimmäinen rivi.\nToinen  rivi.');
+    });
+
+    test('create stores null when notes is whitespace-only', () async {
+      final created = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        notes: '   \n  ',
+      );
+
+      expect(created.notes, isNull);
+    });
+
+    test('update can add notes to a catch that had none', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+        notes: 'Uusi muistiinpano.',
+      );
+
+      expect(updated.notes, 'Uusi muistiinpano.');
+      final stored = await catchRepository.getById(original.id);
+      expect(stored!.notes, 'Uusi muistiinpano.');
+    });
+
+    test('update can change an existing notes value', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        notes: 'Vanha muistiinpano.',
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+        notes: 'Päivitetty muistiinpano.',
+      );
+
+      expect(updated.notes, 'Päivitetty muistiinpano.');
+    });
+
+    test('update clears an existing notes value when omitted', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        notes: 'Poistettava muistiinpano.',
+      );
+
+      final updated = await catchRepository.update(
+        catchModel: original,
+        species: original.species,
+        caughtAt: original.caughtAt,
+      );
+
+      expect(updated.notes, isNull);
+      final stored = await catchRepository.getById(original.id);
+      expect(stored!.notes, isNull);
+    });
+
+    test(
+      'update clears an existing notes value when whitespace-only',
+      () async {
+        final original = await catchRepository.create(
+          fishingSpotId: fishingSpot.id,
+          species: FishSpecies.pike,
+          caughtAt: DateTime(2026, 7, 17),
+          notes: 'Poistettava muistiinpano.',
+        );
+
+        final updated = await catchRepository.update(
+          catchModel: original,
+          species: original.species,
+          caughtAt: original.caughtAt,
+          notes: '   ',
+        );
+
+        expect(updated.notes, isNull);
+      },
+    );
+
+    test('update rejects notes longer than the limit', () async {
+      final original = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+      final notes = 'a' * (maxCatchNotesLength + 1);
+
+      expect(
+        () => catchRepository.update(
+          catchModel: original,
+          species: original.species,
+          caughtAt: original.caughtAt,
+          notes: notes,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('getByFishingSpotId returns the correct notes value', () async {
+      await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        notes: 'Muistiinpano listauksessa.',
+      );
+
+      final catches = await catchRepository.getByFishingSpotId(fishingSpot.id);
+
+      expect(catches.single.notes, 'Muistiinpano listauksessa.');
     });
   });
 }

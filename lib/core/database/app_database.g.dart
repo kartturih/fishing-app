@@ -2109,6 +2109,15 @@ class $CatchesTable extends Catches with TableInfo<$CatchesTable, CatchEntity> {
       'REFERENCES lure_variants (id) ON DELETE RESTRICT',
     ),
   );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2140,6 +2149,7 @@ class $CatchesTable extends Catches with TableInfo<$CatchesTable, CatchEntity> {
     weightGrams,
     lengthMillimeters,
     lureVariantId,
+    notes,
     createdAt,
     updatedAt,
   ];
@@ -2214,6 +2224,12 @@ class $CatchesTable extends Catches with TableInfo<$CatchesTable, CatchEntity> {
         ),
       );
     }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -2267,6 +2283,10 @@ class $CatchesTable extends Catches with TableInfo<$CatchesTable, CatchEntity> {
         DriftSqlType.string,
         data['${effectivePrefix}lure_variant_id'],
       ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -2292,6 +2312,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
   final int? weightGrams;
   final int? lengthMillimeters;
   final String? lureVariantId;
+  final String? notes;
   final int createdAt;
   final int updatedAt;
   const CatchEntity({
@@ -2302,6 +2323,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
     this.weightGrams,
     this.lengthMillimeters,
     this.lureVariantId,
+    this.notes,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -2320,6 +2342,9 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
     }
     if (!nullToAbsent || lureVariantId != null) {
       map['lure_variant_id'] = Variable<String>(lureVariantId);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
     }
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
@@ -2341,6 +2366,9 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
       lureVariantId: lureVariantId == null && nullToAbsent
           ? const Value.absent()
           : Value(lureVariantId),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -2359,6 +2387,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
       weightGrams: serializer.fromJson<int?>(json['weightGrams']),
       lengthMillimeters: serializer.fromJson<int?>(json['lengthMillimeters']),
       lureVariantId: serializer.fromJson<String?>(json['lureVariantId']),
+      notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
@@ -2374,6 +2403,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
       'weightGrams': serializer.toJson<int?>(weightGrams),
       'lengthMillimeters': serializer.toJson<int?>(lengthMillimeters),
       'lureVariantId': serializer.toJson<String?>(lureVariantId),
+      'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
     };
@@ -2387,6 +2417,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
     Value<int?> weightGrams = const Value.absent(),
     Value<int?> lengthMillimeters = const Value.absent(),
     Value<String?> lureVariantId = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
     int? createdAt,
     int? updatedAt,
   }) => CatchEntity(
@@ -2401,6 +2432,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
     lureVariantId: lureVariantId.present
         ? lureVariantId.value
         : this.lureVariantId,
+    notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -2421,6 +2453,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
       lureVariantId: data.lureVariantId.present
           ? data.lureVariantId.value
           : this.lureVariantId,
+      notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -2436,6 +2469,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
           ..write('weightGrams: $weightGrams, ')
           ..write('lengthMillimeters: $lengthMillimeters, ')
           ..write('lureVariantId: $lureVariantId, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2451,6 +2485,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
     weightGrams,
     lengthMillimeters,
     lureVariantId,
+    notes,
     createdAt,
     updatedAt,
   );
@@ -2465,6 +2500,7 @@ class CatchEntity extends DataClass implements Insertable<CatchEntity> {
           other.weightGrams == this.weightGrams &&
           other.lengthMillimeters == this.lengthMillimeters &&
           other.lureVariantId == this.lureVariantId &&
+          other.notes == this.notes &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2477,6 +2513,7 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
   final Value<int?> weightGrams;
   final Value<int?> lengthMillimeters;
   final Value<String?> lureVariantId;
+  final Value<String?> notes;
   final Value<int> createdAt;
   final Value<int> updatedAt;
   final Value<int> rowid;
@@ -2488,6 +2525,7 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
     this.weightGrams = const Value.absent(),
     this.lengthMillimeters = const Value.absent(),
     this.lureVariantId = const Value.absent(),
+    this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2500,6 +2538,7 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
     this.weightGrams = const Value.absent(),
     this.lengthMillimeters = const Value.absent(),
     this.lureVariantId = const Value.absent(),
+    this.notes = const Value.absent(),
     required int createdAt,
     required int updatedAt,
     this.rowid = const Value.absent(),
@@ -2517,6 +2556,7 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
     Expression<int>? weightGrams,
     Expression<int>? lengthMillimeters,
     Expression<String>? lureVariantId,
+    Expression<String>? notes,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
     Expression<int>? rowid,
@@ -2529,6 +2569,7 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
       if (weightGrams != null) 'weight_grams': weightGrams,
       if (lengthMillimeters != null) 'length_millimeters': lengthMillimeters,
       if (lureVariantId != null) 'lure_variant_id': lureVariantId,
+      if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2543,6 +2584,7 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
     Value<int?>? weightGrams,
     Value<int?>? lengthMillimeters,
     Value<String?>? lureVariantId,
+    Value<String?>? notes,
     Value<int>? createdAt,
     Value<int>? updatedAt,
     Value<int>? rowid,
@@ -2555,6 +2597,7 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
       weightGrams: weightGrams ?? this.weightGrams,
       lengthMillimeters: lengthMillimeters ?? this.lengthMillimeters,
       lureVariantId: lureVariantId ?? this.lureVariantId,
+      notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2585,6 +2628,9 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
     if (lureVariantId.present) {
       map['lure_variant_id'] = Variable<String>(lureVariantId.value);
     }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -2607,6 +2653,7 @@ class CatchesCompanion extends UpdateCompanion<CatchEntity> {
           ..write('weightGrams: $weightGrams, ')
           ..write('lengthMillimeters: $lengthMillimeters, ')
           ..write('lureVariantId: $lureVariantId, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -4969,6 +5016,7 @@ typedef $$CatchesTableCreateCompanionBuilder =
       Value<int?> weightGrams,
       Value<int?> lengthMillimeters,
       Value<String?> lureVariantId,
+      Value<String?> notes,
       required int createdAt,
       required int updatedAt,
       Value<int> rowid,
@@ -4982,6 +5030,7 @@ typedef $$CatchesTableUpdateCompanionBuilder =
       Value<int?> weightGrams,
       Value<int?> lengthMillimeters,
       Value<String?> lureVariantId,
+      Value<String?> notes,
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<int> rowid,
@@ -5077,6 +5126,11 @@ class $$CatchesTableFilterComposer
 
   ColumnFilters<int> get lengthMillimeters => $composableBuilder(
     column: $table.lengthMillimeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5196,6 +5250,11 @@ class $$CatchesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -5280,6 +5339,9 @@ class $$CatchesTableAnnotationComposer
     column: $table.lengthMillimeters,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5398,6 +5460,7 @@ class $$CatchesTableTableManager
                 Value<int?> weightGrams = const Value.absent(),
                 Value<int?> lengthMillimeters = const Value.absent(),
                 Value<String?> lureVariantId = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5409,6 +5472,7 @@ class $$CatchesTableTableManager
                 weightGrams: weightGrams,
                 lengthMillimeters: lengthMillimeters,
                 lureVariantId: lureVariantId,
+                notes: notes,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -5422,6 +5486,7 @@ class $$CatchesTableTableManager
                 Value<int?> weightGrams = const Value.absent(),
                 Value<int?> lengthMillimeters = const Value.absent(),
                 Value<String?> lureVariantId = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 required int createdAt,
                 required int updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -5433,6 +5498,7 @@ class $$CatchesTableTableManager
                 weightGrams: weightGrams,
                 lengthMillimeters: lengthMillimeters,
                 lureVariantId: lureVariantId,
+                notes: notes,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

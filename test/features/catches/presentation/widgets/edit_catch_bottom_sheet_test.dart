@@ -15,6 +15,7 @@ import 'package:fishing_app/features/catch_photos/domain/pending_catch_photo.dar
 import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_photo_viewer.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
+import 'package:fishing_app/features/catches/domain/catch_notes_limits.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/edit_catch_bottom_sheet.dart';
@@ -103,6 +104,7 @@ class _FailingUpdateCatchRepository extends CatchRepository {
     int? weightGrams,
     int? lengthMillimeters,
     String? lureVariantId,
+    String? notes,
   }) async {
     updateCallCount++;
     throw StateError('simulated update failure');
@@ -145,6 +147,7 @@ class _SlowUpdateCatchRepository extends CatchRepository {
     int? weightGrams,
     int? lengthMillimeters,
     String? lureVariantId,
+    String? notes,
   }) async {
     updateCallCount++;
     await gate.future;
@@ -155,6 +158,7 @@ class _SlowUpdateCatchRepository extends CatchRepository {
       weightGrams: weightGrams,
       lengthMillimeters: lengthMillimeters,
       lureVariantId: lureVariantId,
+      notes: notes,
     );
   }
 }
@@ -1679,6 +1683,313 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(harness.result, isA<CatchUpdated>());
+      },
+    );
+  });
+
+  group('notes', () {
+    testWidgets('prefills the existing note', (tester) async {
+      final catchWithNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        notes: 'Aiempi muistiinpano.',
+      );
+
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchWithNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      final notesField = tester.widget<TextFormField>(
+        find.byKey(const Key('editCatchNotesField')),
+      );
+      expect(notesField.controller!.text, 'Aiempi muistiinpano.');
+    });
+
+    testWidgets('shows an empty field when there is no existing note', (
+      tester,
+    ) async {
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        existingCatch,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      final notesField = tester.widget<TextFormField>(
+        find.byKey(const Key('editCatchNotesField')),
+      );
+      expect(notesField.controller!.text, isEmpty);
+    });
+
+    testWidgets('a note can be added where none existed', (tester) async {
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        existingCatch,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('editCatchNotesField')),
+        'Uusi muistiinpano.',
+      );
+      await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+      await tester.pumpAndSettle();
+
+      final updated = (harness.result! as CatchUpdated).catchModel;
+      expect(updated.notes, 'Uusi muistiinpano.');
+    });
+
+    testWidgets('an existing note can be changed', (tester) async {
+      final catchWithNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        notes: 'Vanha muistiinpano.',
+      );
+
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchWithNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('editCatchNotesField')),
+        'Päivitetty muistiinpano.',
+      );
+      await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+      await tester.pumpAndSettle();
+
+      final updated = (harness.result! as CatchUpdated).catchModel;
+      expect(updated.notes, 'Päivitetty muistiinpano.');
+    });
+
+    testWidgets('an existing note can be cleared by deleting all its text', (
+      tester,
+    ) async {
+      final catchWithNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        notes: 'Poistettava muistiinpano.',
+      );
+
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchWithNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      await tester.enterText(find.byKey(const Key('editCatchNotesField')), '');
+      await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+      await tester.pumpAndSettle();
+
+      final updated = (harness.result! as CatchUpdated).catchModel;
+      expect(updated.notes, isNull);
+    });
+
+    testWidgets('a note of exactly 1000 characters saves successfully', (
+      tester,
+    ) async {
+      final harness = _EditCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        existingCatch,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      final notes = 'a' * maxCatchNotesLength;
+      await tester.enterText(
+        find.byKey(const Key('editCatchNotesField')),
+        notes,
+      );
+      await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+      await tester.pumpAndSettle();
+
+      final updated = (harness.result! as CatchUpdated).catchModel;
+      expect(updated.notes, hasLength(maxCatchNotesLength));
+    });
+
+    testWidgets(
+      'over-limit input (1001 characters) blocks saving and preserves the text',
+      (tester) async {
+        final repository = _FailingUpdateCatchRepository(database);
+        final harness = _EditCatchHarness();
+        await harness.open(
+          tester,
+          fishingSpot,
+          existingCatch,
+          repository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+        );
+
+        final overLimitNotes = 'a' * (maxCatchNotesLength + 1);
+        await tester.enterText(
+          find.byKey(const Key('editCatchNotesField')),
+          overLimitNotes,
+        );
+
+        // Step 2: the field still contains the full over-limit text.
+        final fieldWidget = tester.widget<TextFormField>(
+          find.byKey(const Key('editCatchNotesField')),
+        );
+        expect(
+          fieldWidget.controller!.text,
+          hasLength(maxCatchNotesLength + 1),
+        );
+
+        // Step 3: attempt to save.
+        await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+        await tester.pumpAndSettle();
+
+        // Step 4: saving does not occur; validation blocked the save before
+        // the repository was ever reached, and the stored catch is
+        // unchanged.
+        expect(harness.result, isNull);
+        expect(repository.updateCallCount, 0);
+        final stored = await catchRepository.getById(existingCatch.id);
+        expect(stored!.notes, existingCatch.notes);
+
+        // Step 5: the Finnish validation message is shown.
+        expect(
+          find.text('Muistiinpanot voivat olla enintään 1000 merkkiä.'),
+          findsOneWidget,
+        );
+
+        // Step 6: the entered content remains available for correction.
+        final fieldAfterFailure = tester.widget<TextFormField>(
+          find.byKey(const Key('editCatchNotesField')),
+        );
+        expect(
+          fieldAfterFailure.controller!.text,
+          hasLength(maxCatchNotesLength + 1),
+        );
+      },
+    );
+
+    testWidgets(
+      'Catch save failure preserves the newly entered multiline note',
+      (tester) async {
+        final catchWithNotes = await catchRepository.update(
+          catchModel: existingCatch,
+          species: existingCatch.species,
+          caughtAt: existingCatch.caughtAt,
+          weightGrams: existingCatch.weightGrams,
+          lengthMillimeters: existingCatch.lengthMillimeters,
+          notes: 'Vanha muistiinpano.',
+        );
+        final failingRepository = _FailingUpdateCatchRepository(database);
+        final distinctiveNote =
+            'Uusi havainto illalta.\nVesi oli erittäin kirkasta.';
+
+        final harness = _EditCatchHarness();
+        await harness.open(
+          tester,
+          fishingSpot,
+          catchWithNotes,
+          failingRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('editCatchNotesField')),
+          distinctiveNote,
+        );
+        await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+        await tester.pumpAndSettle();
+
+        // The repository was called exactly once, and its failure kept the
+        // sheet open with no CatchUpdated result.
+        expect(failingRepository.updateCallCount, 1);
+        expect(harness.result, isNull);
+        expect(find.byType(EditCatchBottomSheet), findsOneWidget);
+
+        // The complete newly entered note, including its line break,
+        // remains in the field.
+        final notesField = tester.widget<TextFormField>(
+          find.byKey(const Key('editCatchNotesField')),
+        );
+        expect(notesField.controller!.text, distinctiveNote);
+      },
+    );
+
+    testWidgets(
+      'saving a note change still produces the existing CatchUpdated contract',
+      (tester) async {
+        final harness = _EditCatchHarness();
+        await harness.open(
+          tester,
+          fishingSpot,
+          existingCatch,
+          catchRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('editCatchNotesField')),
+          'Muutettu muistiinpano.',
+        );
+        await tester.tap(find.byKey(const Key('editCatchSaveButton')));
+        await tester.pumpAndSettle();
+
+        final result = harness.result;
+        expect(result, isA<CatchUpdated>());
+        final updated = result! as CatchUpdated;
+        expect(updated.catchModel.notes, 'Muutettu muistiinpano.');
+        expect(updated.photoFailureCount, 0);
+        expect(updated.hasPhotoFailures, isFalse);
       },
     );
   });

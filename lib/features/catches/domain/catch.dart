@@ -1,3 +1,4 @@
+import 'package:fishing_app/features/catches/domain/catch_notes_limits.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 
 class Catch {
@@ -11,6 +12,7 @@ class Catch {
     this.weightGrams,
     this.lengthMillimeters,
     this.lureVariantId,
+    this.notes,
   }) : assert(
          weightGrams == null || weightGrams > 0,
          'weightGrams must be greater than zero when provided',
@@ -22,6 +24,14 @@ class Catch {
        assert(
          lureVariantId == null || lureVariantId != '',
          'lureVariantId must not be empty when provided',
+       ),
+       assert(
+         notes == null || notes != '',
+         'notes must not be empty when provided',
+       ),
+       assert(
+         notes == null || notes.length <= maxCatchNotesLength,
+         'notes must not exceed $maxCatchNotesLength characters',
        );
 
   final String id;
@@ -31,6 +41,7 @@ class Catch {
   final int? weightGrams;
   final int? lengthMillimeters;
   final String? lureVariantId;
+  final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
 }

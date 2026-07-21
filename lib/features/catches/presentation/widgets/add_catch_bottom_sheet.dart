@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 
 import 'package:fishing_app/app/theme/app_spacing.dart';
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
@@ -11,6 +12,7 @@ import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_pho
 import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_photo_viewer.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
+import 'package:fishing_app/features/catches/domain/catch_notes_limits.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/assigned_lure_row.dart';
@@ -82,6 +84,7 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _weightController = TextEditingController();
   final _lengthController = TextEditingController();
+  final _notesController = TextEditingController();
   final _catchPhotoPicker = CatchPhotoPicker();
 
   FishSpecies? _selectedSpecies;
@@ -103,6 +106,7 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
   void dispose() {
     _weightController.dispose();
     _lengthController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -279,6 +283,7 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
         weightGrams: weightGrams,
         lengthMillimeters: lengthMillimeters,
         lureVariantId: _selectedLure?.catalogEntry.id,
+        notes: _notesController.text,
       );
     } catch (error) {
       debugPrint('Failed to save catch: $error');
@@ -428,6 +433,28 @@ class _AddCatchBottomSheetState extends State<AddCatchBottomSheet> {
                   onOpenViewer: _openViewer,
                 ),
                 const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Muistiinpanot',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                TextFormField(
+                  key: const Key('addCatchNotesField'),
+                  controller: _notesController,
+                  enabled: !_isSaving,
+                  minLines: 3,
+                  maxLines: 8,
+                  keyboardType: TextInputType.multiline,
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLength: maxCatchNotesLength,
+                  maxLengthEnforcement: MaxLengthEnforcement.none,
+                  decoration: const InputDecoration(
+                    alignLabelWithHint: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: validateCatchNotesInput,
+                ),
+                const SizedBox(height: AppSpacing.lg),
                 Row(
                   children: [
                     Expanded(
@@ -509,6 +536,14 @@ String? validateCatchLengthInput(String? value) {
     return 'Pituuden täytyy olla suurempi kuin 0';
   }
 
+  return null;
+}
+
+String? validateCatchNotesInput(String? value) {
+  final text = value ?? '';
+  if (text.length > maxCatchNotesLength) {
+    return 'Muistiinpanot voivat olla enintään $maxCatchNotesLength merkkiä.';
+  }
   return null;
 }
 

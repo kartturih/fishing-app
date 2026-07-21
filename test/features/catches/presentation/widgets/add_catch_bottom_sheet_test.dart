@@ -15,6 +15,7 @@ import 'package:fishing_app/features/catch_photos/domain/catch_photo_limits.dart
 import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_photo_viewer.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
+import 'package:fishing_app/features/catches/domain/catch_notes_limits.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
@@ -41,6 +42,7 @@ class _FailingCreateCatchRepository extends CatchRepository {
     int? weightGrams,
     int? lengthMillimeters,
     String? lureVariantId,
+    String? notes,
   }) async {
     createCallCount++;
     throw StateError('simulated create failure');
@@ -884,6 +886,273 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ei valittua viehettä'), findsOneWidget);
+    });
+  });
+
+  group('notes', () {
+    late AppDatabase database;
+    late CatchRepository catchRepository;
+    late CatchPhotoRepository catchPhotoRepository;
+    late FishingSpotRepository fishingSpotRepository;
+    late FishingSpot fishingSpot;
+    late Directory storageDir;
+    late Directory tackleBoxStorageDir;
+    late PersonalTackleBoxRepository personalTackleBoxRepository;
+    late TackleBoxPhotoStorage tackleBoxPhotoStorage;
+
+    setUp(() async {
+      database = AppDatabase(NativeDatabase.memory());
+      catchRepository = CatchRepository(database);
+      storageDir = Directory.systemTemp.createTempSync(
+        'add_catch_notes_photos_storage',
+      );
+      tackleBoxStorageDir = Directory.systemTemp.createTempSync(
+        'add_catch_notes_tackle_box_storage',
+      );
+      catchPhotoRepository = CatchPhotoRepository(
+        database,
+        CatchPhotoStorage(rootDirectoryProvider: () async => storageDir),
+      );
+      tackleBoxPhotoStorage = TackleBoxPhotoStorage(
+        rootDirectoryProvider: () async => tackleBoxStorageDir,
+      );
+      personalTackleBoxRepository = PersonalTackleBoxRepository(
+        database,
+        tackleBoxPhotoStorage,
+      );
+      fishingSpotRepository = FishingSpotRepository(database);
+      fishingSpot = await fishingSpotRepository.create(
+        name: 'Merrasjärvi',
+        latitude: 61.0,
+        longitude: 25.0,
+      );
+    });
+
+    tearDown(() async {
+      await database.close();
+      if (storageDir.existsSync()) {
+        storageDir.deleteSync(recursive: true);
+      }
+      if (tackleBoxStorageDir.existsSync()) {
+        tackleBoxStorageDir.deleteSync(recursive: true);
+      }
+    });
+
+    testWidgets(
+      'notes field is positioned after photos, before the action row',
+      (tester) async {
+        final harness = _AddCatchHarness();
+        await harness.open(
+          tester,
+          fishingSpot,
+          catchRepository,
+          catchPhotoRepository,
+          personalTackleBoxRepository,
+          tackleBoxPhotoStorage,
+        );
+
+        final photosLabelY = tester.getCenter(find.text('Kuvat')).dy;
+        final notesLabelY = tester.getCenter(find.text('Muistiinpanot')).dy;
+        final saveButtonY = tester.getCenter(find.text('Tallenna')).dy;
+
+        expect(photosLabelY, lessThan(notesLabelY));
+        expect(notesLabelY, lessThan(saveButtonY));
+      },
+    );
+
+    testWidgets('leaving notes empty and saving succeeds with notes == null', (
+      tester,
+    ) async {
+      final harness = _AddCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
+      );
+
+      await _selectSpecies(tester, FishSpecies.pike);
+      await tester.tap(find.text('Tallenna'));
+      await tester.pumpAndSettle();
+
+      final result = harness.result;
+      expect(result, isA<CatchCreated>());
+      expect((result! as CatchCreated).catchModel.notes, isNull);
+    });
+
+    testWidgets('a multi-line note saves with line breaks intact', (
+      tester,
+    ) async {
+      final harness = _AddCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('addCatchNotesField')),
+        'Ensimmäinen rivi.\nToinen rivi.',
+      );
+      await _selectSpecies(tester, FishSpecies.pike);
+      await tester.tap(find.text('Tallenna'));
+      await tester.pumpAndSettle();
+
+      final result = harness.result;
+      expect(result, isA<CatchCreated>());
+      expect(
+        (result! as CatchCreated).catchModel.notes,
+        'Ensimmäinen rivi.\nToinen rivi.',
+      );
+    });
+
+    testWidgets('the character counter reflects the notes limit', (
+      tester,
+    ) async {
+      final harness = _AddCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
+      );
+
+      expect(find.text('0/1000'), findsOneWidget);
+    });
+
+    testWidgets('a note of exactly 1000 characters saves successfully', (
+      tester,
+    ) async {
+      final harness = _AddCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        catchRepository,
+        catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
+      );
+
+      final notes = 'a' * maxCatchNotesLength;
+      await tester.enterText(
+        find.byKey(const Key('addCatchNotesField')),
+        notes,
+      );
+      await _selectSpecies(tester, FishSpecies.pike);
+      await tester.tap(find.text('Tallenna'));
+      await tester.pumpAndSettle();
+
+      final result = harness.result;
+      expect(result, isA<CatchCreated>());
+      expect(
+        (result! as CatchCreated).catchModel.notes,
+        hasLength(maxCatchNotesLength),
+      );
+    });
+
+    testWidgets(
+      'over-limit input (1001 characters) blocks saving and preserves the text',
+      (tester) async {
+        final repository = _FailingCreateCatchRepository(database);
+        final harness = _AddCatchHarness();
+        await harness.open(
+          tester,
+          fishingSpot,
+          repository,
+          catchPhotoRepository,
+          personalTackleBoxRepository,
+          tackleBoxPhotoStorage,
+        );
+
+        final overLimitNotes = 'a' * (maxCatchNotesLength + 1);
+        await tester.enterText(
+          find.byKey(const Key('addCatchNotesField')),
+          overLimitNotes,
+        );
+        await _selectSpecies(tester, FishSpecies.pike);
+
+        // Step 2: the field still contains the full over-limit text -
+        // MaxLengthEnforcement.none does not block typing/pasting past the
+        // limit.
+        final fieldWidget = tester.widget<TextFormField>(
+          find.byKey(const Key('addCatchNotesField')),
+        );
+        expect(
+          fieldWidget.controller!.text,
+          hasLength(maxCatchNotesLength + 1),
+        );
+
+        // Step 3: attempt to save.
+        await tester.tap(find.text('Tallenna'));
+        await tester.pumpAndSettle();
+
+        // Step 4: saving does not occur, and validation blocked the save
+        // before the repository was ever reached.
+        expect(harness.result, isNull);
+        expect(repository.createCallCount, 0);
+
+        // Step 5: the Finnish validation message is shown.
+        expect(
+          find.text('Muistiinpanot voivat olla enintään 1000 merkkiä.'),
+          findsOneWidget,
+        );
+
+        // Step 6: the entered content remains available for correction.
+        final fieldAfterFailure = tester.widget<TextFormField>(
+          find.byKey(const Key('addCatchNotesField')),
+        );
+        expect(
+          fieldAfterFailure.controller!.text,
+          hasLength(maxCatchNotesLength + 1),
+        );
+      },
+    );
+
+    testWidgets('Catch save failure preserves the entered multiline note', (
+      tester,
+    ) async {
+      final failingRepository = _FailingCreateCatchRepository(database);
+      final distinctiveNote =
+          'Tuulinen ilta järvellä.\nHauki iski syvältä laineeseen.';
+
+      final harness = _AddCatchHarness();
+      await harness.open(
+        tester,
+        fishingSpot,
+        failingRepository,
+        catchPhotoRepository,
+        personalTackleBoxRepository,
+        tackleBoxPhotoStorage,
+      );
+
+      await _selectSpecies(tester, FishSpecies.pike);
+      await tester.enterText(
+        find.byKey(const Key('addCatchNotesField')),
+        distinctiveNote,
+      );
+
+      await tester.tap(find.text('Tallenna'));
+      await tester.pumpAndSettle();
+
+      // The repository was called exactly once, and its failure kept the
+      // sheet open with no result.
+      expect(failingRepository.createCallCount, 1);
+      expect(harness.result, isNull);
+      expect(find.byType(AddCatchBottomSheet), findsOneWidget);
+
+      // The complete note, including its line break, remains in the
+      // field for correction or retry.
+      final notesField = tester.widget<TextFormField>(
+        find.byKey(const Key('addCatchNotesField')),
+      );
+      expect(notesField.controller!.text, distinctiveNote);
     });
   });
 }

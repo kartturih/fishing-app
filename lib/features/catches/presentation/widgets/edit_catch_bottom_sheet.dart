@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 
 import 'package:fishing_app/app/theme/app_spacing.dart';
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
@@ -13,6 +14,7 @@ import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_pho
 import 'package:fishing_app/features/catch_photos/presentation/widgets/catch_photo_viewer.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
+import 'package:fishing_app/features/catches/domain/catch_notes_limits.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
@@ -102,6 +104,9 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
   late final _lengthController = TextEditingController(
     text: _initialMeasurementText(widget.catchModel.lengthMillimeters, 10, 1),
   );
+  late final _notesController = TextEditingController(
+    text: widget.catchModel.notes ?? '',
+  );
   final _catchPhotoPicker = CatchPhotoPicker();
 
   late FishSpecies? _selectedSpecies = widget.catchModel.species;
@@ -142,6 +147,7 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
   void dispose() {
     _weightController.dispose();
     _lengthController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -460,6 +466,7 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
         weightGrams: weightGrams,
         lengthMillimeters: lengthMillimeters,
         lureVariantId: _selectedLureEntry?.id,
+        notes: _notesController.text,
       );
     } catch (error) {
       debugPrint('Failed to update catch: $error');
@@ -675,6 +682,28 @@ class _EditCatchBottomSheetState extends State<EditCatchBottomSheet> {
                   onRemovePending: _removePendingPhoto,
                   onDeleteExisting: _deleteExistingPhoto,
                   onOpenViewer: _openViewer,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Muistiinpanot',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                TextFormField(
+                  key: const Key('editCatchNotesField'),
+                  controller: _notesController,
+                  enabled: !_isBusy,
+                  minLines: 3,
+                  maxLines: 8,
+                  keyboardType: TextInputType.multiline,
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLength: maxCatchNotesLength,
+                  maxLengthEnforcement: MaxLengthEnforcement.none,
+                  decoration: const InputDecoration(
+                    alignLabelWithHint: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: validateCatchNotesInput,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Row(

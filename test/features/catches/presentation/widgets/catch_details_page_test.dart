@@ -973,4 +973,221 @@ void main() {
       },
     );
   });
+
+  group('notes', () {
+    testWidgets('omits the notes section when the catch has no note', (
+      tester,
+    ) async {
+      await _openDetails(
+        tester,
+        fishingSpot,
+        existingCatch,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Muistiinpanot'), findsNothing);
+      expect(find.byType(SelectableText), findsNothing);
+    });
+
+    testWidgets('displays the note in full when present', (tester) async {
+      final catchWithNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        notes: 'Tuulinen ilta, hauki iski laineeseen.',
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        catchWithNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Muistiinpanot'), findsOneWidget);
+      expect(
+        find.text('Tuulinen ilta, hauki iski laineeseen.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('preserves line breaks in a multi-line note', (tester) async {
+      final catchWithNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        notes: 'Ensimmäinen rivi.\nToinen rivi.',
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        catchWithNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      final notesWidget = tester.widget<SelectableText>(
+        find.byType(SelectableText),
+      );
+      expect(notesWidget.data, 'Ensimmäinen rivi.\nToinen rivi.');
+    });
+
+    testWidgets('a long note wraps without truncation', (tester) async {
+      final longNote = 'a' * 500;
+      final catchWithNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        notes: longNote,
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        catchWithNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      final notesWidget = tester.widget<SelectableText>(
+        find.byType(SelectableText),
+      );
+      expect(notesWidget.data, longNote);
+      expect(notesWidget.maxLines, isNull);
+    });
+
+    testWidgets('the note text is selectable', (tester) async {
+      final catchWithNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        notes: 'Valittava muistiinpano.',
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        catchWithNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.byType(SelectableText), findsOneWidget);
+      expect(
+        tester.widget<SelectableText>(find.byType(SelectableText)).data,
+        'Valittava muistiinpano.',
+      );
+    });
+
+    testWidgets('the notes section appears after the lure row', (tester) async {
+      const modelId = 'model-1';
+      const variantId = 'variant-1';
+      await database
+          .into(database.lureModels)
+          .insertOnConflictUpdate(
+            LureModelsCompanion.insert(
+              id: modelId,
+              manufacturer: 'Rapala',
+              modelName: 'X-Rap Shad XRS08',
+              lureType: 'crankbait',
+              searchText: 'rapala x-rap shad xrs08',
+              createdAt: 1000,
+              updatedAt: 1000,
+            ),
+          );
+      await database
+          .into(database.lureVariants)
+          .insert(
+            LureVariantsCompanion.insert(
+              id: variantId,
+              lureModelId: modelId,
+              colorName: const Value('Hot Craw'),
+              searchText: 'hot craw',
+              createdAt: 1000,
+              updatedAt: 1000,
+            ),
+          );
+      final catchWithLureAndNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        lureVariantId: variantId,
+        notes: 'Muistiinpano vieheen jälkeen.',
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        catchWithLureAndNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      final lureLabelY = tester.getCenter(find.text('Viehe')).dy;
+      final notesLabelY = tester.getCenter(find.text('Muistiinpanot')).dy;
+
+      expect(lureLabelY, lessThan(notesLabelY));
+    });
+
+    testWidgets('existing rows remain unaffected when a note is present', (
+      tester,
+    ) async {
+      final catchWithNotes = await catchRepository.update(
+        catchModel: existingCatch,
+        species: existingCatch.species,
+        caughtAt: existingCatch.caughtAt,
+        weightGrams: existingCatch.weightGrams,
+        lengthMillimeters: existingCatch.lengthMillimeters,
+        notes: 'Sivuvaikutuksia ei pitäisi olla.',
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        catchWithNotes,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+      );
+
+      expect(find.text('Hauki'), findsWidgets);
+      expect(find.text('3.2 kg'), findsOneWidget);
+      expect(find.text('78 cm'), findsOneWidget);
+      expect(find.text('14.7.2026'), findsOneWidget);
+      expect(find.text('18.34'), findsOneWidget);
+    });
+  });
 }

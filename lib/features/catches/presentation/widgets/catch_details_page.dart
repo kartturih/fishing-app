@@ -63,11 +63,8 @@ final class CatchDetailsDeleted extends CatchDetailsResult {
 /// and pushing a page keeps the Catch list's Bottom Sheet open underneath so
 /// Back/Android-back naturally land on it again. See MFS-014 / TD-014.
 ///
-/// `notes` is part of MFS-014's read-only field list but is intentionally
-/// not displayed here: `Catch` has never captured it (no column, no input
-/// in Add/Edit Catch), so showing it would require a domain/schema change
-/// that is out of scope for this feature. `lure` is now displayed — see
-/// MFS-017 / TD-017.
+/// `lure` is displayed — see MFS-017 / TD-017. `notes` is displayed as the
+/// final section, when present — see MFS-023 / TD-023.
 class CatchDetailsPage extends StatefulWidget {
   const CatchDetailsPage({
     super.key,
@@ -449,6 +446,7 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
                   formatCatchTime(_catchModel.caughtAt),
                 ),
                 if (_catchModel.lureVariantId != null) _buildAssignedLureRow(),
+                if (_catchModel.notes != null) _buildNotesRow(),
               ],
             ),
           ),
@@ -475,6 +473,23 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
                   entry: _assignedLure,
                   isUnavailable: _isLureUnavailable,
                 ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesRow() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Muistiinpanot', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: AppSpacing.xs),
+          SelectableText(
+            _catchModel.notes!,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
         ],
       ),
     );
