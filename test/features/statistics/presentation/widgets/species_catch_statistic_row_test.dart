@@ -13,8 +13,10 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: SpeciesCatchStatisticRow(statistic: statistic)),
+      MaterialApp(
+        home: Scaffold(
+          body: SpeciesCatchStatisticRow(statistic: statistic, onTap: () {}),
+        ),
       ),
     );
 
@@ -23,7 +25,33 @@ void main() {
     expect(find.byIcon(Icons.chevron_right), findsOneWidget);
   });
 
-  testWidgets('exposes no button semantics', (tester) async {
+  testWidgets('tapping the row invokes onTap', (tester) async {
+    const statistic = SpeciesCatchStatistic(
+      species: FishSpecies.pike,
+      catchCount: 4,
+    );
+    var tapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SpeciesCatchStatisticRow(
+            statistic: statistic,
+            onTap: () => tapped = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(SpeciesCatchStatisticRow));
+    await tester.pumpAndSettle();
+
+    expect(tapped, isTrue);
+  });
+
+  testWidgets('exposes button semantics with the combined label', (
+    tester,
+  ) async {
     const statistic = SpeciesCatchStatistic(
       species: FishSpecies.perch,
       catchCount: 2,
@@ -31,15 +59,17 @@ void main() {
     final handle = tester.ensureSemantics();
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: SpeciesCatchStatisticRow(statistic: statistic)),
+      MaterialApp(
+        home: Scaffold(
+          body: SpeciesCatchStatisticRow(statistic: statistic, onTap: () {}),
+        ),
       ),
     );
 
     final semantics = tester.getSemantics(
       find.bySemanticsLabel('Ahven, 2 saalista'),
     );
-    expect(semantics.flagsCollection.isButton, isFalse);
+    expect(semantics.flagsCollection.isButton, isTrue);
     handle.dispose();
   });
 }

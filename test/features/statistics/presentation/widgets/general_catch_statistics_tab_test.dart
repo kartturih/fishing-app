@@ -17,12 +17,14 @@ import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.d
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
+import 'package:fishing_app/features/statistics/data/species_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/domain/general_catch_statistics_summary.dart';
 import 'package:fishing_app/features/statistics/domain/largest_catch.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/general_catch_statistics_tab.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/ranked_largest_catch_row.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/species_catch_statistic_row.dart';
+import 'package:fishing_app/features/statistics/presentation/widgets/species_statistics_page.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_summary_card.dart';
 
 /// Never completes `getGeneralCatchStatistics`, so the loading state can be
@@ -85,6 +87,7 @@ void main() {
   late LureCatalogRepository lureCatalogRepository;
   late TackleBoxPhotoStorage tackleBoxPhotoStorage;
   late PersonalTackleBoxRepository personalTackleBoxRepository;
+  late SpeciesStatisticsRepository speciesStatisticsRepository;
 
   setUp(() {
     database = AppDatabase(NativeDatabase.memory());
@@ -104,6 +107,7 @@ void main() {
       database,
       tackleBoxPhotoStorage,
     );
+    speciesStatisticsRepository = SpeciesStatisticsRepository(database);
   });
 
   tearDown(() async {
@@ -122,6 +126,7 @@ void main() {
         home: Scaffold(
           body: GeneralCatchStatisticsTab(
             repository: repository,
+            speciesStatisticsRepository: speciesStatisticsRepository,
             catchRepository: catchRepository,
             catchPhotoRepository: catchPhotoRepository,
             lureCatalogRepository: lureCatalogRepository,
@@ -308,38 +313,51 @@ void main() {
     },
   );
 
-  testWidgets('tapping a Species List row performs no navigation', (
-    tester,
-  ) async {
-    final summary = GeneralCatchStatisticsSummary(
-      totalCatches: 1,
-      largestCatches: const [],
-      speciesCatchCounts: const [
-        SpeciesCatchStatistic(species: FishSpecies.pike, catchCount: 1),
-      ],
-    );
-    final repository = _StaticRepository(database, summary);
+  testWidgets(
+    'tapping a Species List row opens Species Statistics for the correct '
+    'species (MFS-021)',
+    (tester) async {
+      final fishingSpotRepository = FishingSpotRepository(database);
+      final fishingSpot = await fishingSpotRepository.create(
+        name: 'Test Spot',
+        latitude: 61.0,
+        longitude: 25.0,
+      );
+      await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        weightGrams: 2000,
+      );
 
-    await pumpTab(tester, repository);
-    await tester.pumpAndSettle();
+      final summary = GeneralCatchStatisticsSummary(
+        totalCatches: 1,
+        largestCatches: const [],
+        speciesCatchCounts: const [
+          SpeciesCatchStatistic(species: FishSpecies.pike, catchCount: 1),
+        ],
+      );
+      final repository = _StaticRepository(database, summary);
 
-    // Scoped to SpeciesCatchStatisticRow: an unscoped "Hauki" finder would
-    // also match the most-caught-species summary card's own primary value
-    // text (species name and catch count now render as separate texts).
-    await tester.tap(
-      find.descendant(
-        of: find.byType(SpeciesCatchStatisticRow),
-        matching: find.text('Hauki'),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await pumpTab(tester, repository);
+      await tester.pumpAndSettle();
 
-    // Still on the same screen — no navigation occurred. "Hauki" now
-    // appears twice (the species row and the most-caught-species summary
-    // card's primary value), so this checks presence, not uniqueness.
-    expect(find.text('Hauki'), findsWidgets);
-    expect(find.byType(GeneralCatchStatisticsTab), findsOneWidget);
-  });
+      // Scoped to SpeciesCatchStatisticRow: an unscoped "Hauki" finder would
+      // also match the most-caught-species summary card's own primary value
+      // text (species name and catch count now render as separate texts).
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SpeciesCatchStatisticRow),
+          matching: find.text('Hauki'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SpeciesStatisticsPage), findsOneWidget);
+      // The Species Statistics AppBar title is the species' Finnish name.
+      expect(find.widgetWithText(AppBar, 'Hauki'), findsOneWidget);
+    },
+  );
 
   testWidgets('the two summary cards are displayed side by side with equal '
       'width', (tester) async {

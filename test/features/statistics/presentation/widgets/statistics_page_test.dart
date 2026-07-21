@@ -13,6 +13,7 @@ import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_bo
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/lure_statistics_repository.dart';
+import 'package:fishing_app/features/statistics/data/species_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_page.dart';
 
 void main() {
@@ -20,6 +21,7 @@ void main() {
   late Directory tempDir;
   late GeneralCatchStatisticsRepository generalCatchStatisticsRepository;
   late LureStatisticsRepository lureStatisticsRepository;
+  late SpeciesStatisticsRepository speciesStatisticsRepository;
   late CatchRepository catchRepository;
   late CatchPhotoRepository catchPhotoRepository;
   late LureCatalogRepository lureCatalogRepository;
@@ -33,6 +35,7 @@ void main() {
       database,
     );
     lureStatisticsRepository = LureStatisticsRepository(database);
+    speciesStatisticsRepository = SpeciesStatisticsRepository(database);
     catchRepository = CatchRepository(database);
     catchPhotoRepository = CatchPhotoRepository(
       database,
@@ -61,6 +64,7 @@ void main() {
         home: StatisticsPage(
           generalCatchStatisticsRepository: generalCatchStatisticsRepository,
           lureStatisticsRepository: lureStatisticsRepository,
+          speciesStatisticsRepository: speciesStatisticsRepository,
           catchRepository: catchRepository,
           catchPhotoRepository: catchPhotoRepository,
           lureCatalogRepository: lureCatalogRepository,

@@ -11,11 +11,13 @@ import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.d
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
+import 'package:fishing_app/features/statistics/data/species_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/domain/general_catch_statistics_summary.dart';
 import 'package:fishing_app/features/statistics/domain/largest_catch.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/ranked_largest_catch_row.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/species_catch_statistic_row.dart';
+import 'package:fishing_app/features/statistics/presentation/widgets/species_statistics_page.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_summary_card.dart';
 
 const String _noDataYetText = 'Ei vielä tietoja';
@@ -38,6 +40,7 @@ class GeneralCatchStatisticsTab extends StatefulWidget {
   const GeneralCatchStatisticsTab({
     super.key,
     required this.repository,
+    required this.speciesStatisticsRepository,
     required this.catchRepository,
     required this.catchPhotoRepository,
     required this.lureCatalogRepository,
@@ -47,8 +50,12 @@ class GeneralCatchStatisticsTab extends StatefulWidget {
 
   final GeneralCatchStatisticsRepository repository;
 
-  /// Needed only to open Catch Details from a largest-catch entry (FR-5)
-  /// and to resolve each entry's photo thumbnail via the reused
+  /// Used to open Species Statistics from a Species List row (MFS-021).
+  final SpeciesStatisticsRepository speciesStatisticsRepository;
+
+  /// Needed only to open Catch Details from a largest-catch entry (FR-5),
+  /// a Species Statistics Record Catch, or a Species Statistics Catch List
+  /// entry, and to resolve each entry's photo thumbnail via the reused
   /// `CatchListItem` — this tab performs no writes through any of them.
   final CatchRepository catchRepository;
   final CatchPhotoRepository catchPhotoRepository;
@@ -104,6 +111,19 @@ class _GeneralCatchStatisticsTabState extends State<GeneralCatchStatisticsTab> {
       context,
       fishingSpot: largestCatch.fishingSpot,
       catchModel: largestCatch.catchModel,
+      catchRepository: widget.catchRepository,
+      catchPhotoRepository: widget.catchPhotoRepository,
+      lureCatalogRepository: widget.lureCatalogRepository,
+      personalTackleBoxRepository: widget.personalTackleBoxRepository,
+      personalTackleBoxPhotoStorage: widget.personalTackleBoxPhotoStorage,
+    );
+  }
+
+  Future<void> _openSpeciesStatistics(SpeciesCatchStatistic statistic) {
+    return SpeciesStatisticsPage.open(
+      context,
+      species: statistic.species,
+      repository: widget.speciesStatisticsRepository,
       catchRepository: widget.catchRepository,
       catchPhotoRepository: widget.catchPhotoRepository,
       lureCatalogRepository: widget.lureCatalogRepository,
@@ -204,6 +224,7 @@ class _GeneralCatchStatisticsTabState extends State<GeneralCatchStatisticsTab> {
             SpeciesCatchStatisticRow(
               key: ValueKey(statistic.species.name),
               statistic: statistic,
+              onTap: () => unawaited(_openSpeciesStatistics(statistic)),
             ),
       ],
     );
