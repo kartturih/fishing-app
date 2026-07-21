@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture review passed, all automated tests passing (682/682), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed successfully. No architectural deviations from this document's domain, database, repository, or presentation design were required. Two test-only refinements were made after initial review, detailed in Implementation Notes below.
 
 ## Related
 
@@ -747,6 +747,8 @@ No other existing file is modified. `lib/features/catch_photos/`, `lib/features/
 
 ## Definition of Done
 
+All criteria below are satisfied as of the completed implementation (see Status).
+
 * The implementation satisfies all requirements in MFS-023.
 * The implementation follows TD-023, or documents and justifies each deviation.
 * `Catch` has an optional `notes` field with the two assertions specified.
@@ -769,4 +771,14 @@ No other existing file is modified. `lib/features/catch_photos/`, `lib/features/
 
 ## Implementation Notes
 
-To be completed during implementation, following the established convention of recording any deviation from this document here, with justification.
+No architectural deviations from this document's domain, database, repository, or presentation design were required. Implementation followed [Domain Changes](#domain-changes) through [Presentation Changes](#presentation-changes) as specified, including the additive schema 6 → 7 migration, the single `CatchRepository._normalizeNotes` normalization helper, and the decision not to add a database-level CHECK constraint.
+
+### Test-only refinement: explicit repository-call-count assertions for persistence failure and over-limit validation
+
+**What changed.** Two widget tests were added (Add Catch, Edit Catch) verifying that a persistence failure preserves the entered multiline note: the existing `_FailingCreateCatchRepository`/`_FailingUpdateCatchRepository` fakes are used to confirm the repository is called exactly once, no success result is returned, the sheet remains open, and the complete note text — including its line break — remains in the field for correction. The existing 1001-character over-limit tests were also strengthened to use these same counting fakes and assert `createCallCount`/`updateCallCount == 0` after Save is blocked, proving validation stops the call before the repository is ever reached, in addition to the already-covered text-preservation and Finnish-message assertions.
+
+**Why.** This closes a gap in the original test pass: it already proved *that* an over-limit save was blocked and *that* a persistence failure showed an error, but not explicitly that the repository was invoked the correct number of times (zero for validation failure, exactly one for a genuine persistence failure) with the notes value intact for retry.
+
+**What did not change.** No production code was touched — this is additional and strengthened test coverage only, using fakes that already existed in both test files.
+
+**Testing.** `add_catch_bottom_sheet_test.dart` and `edit_catch_bottom_sheet_test.dart`, `notes` group. All 682 tests pass.
