@@ -25,6 +25,7 @@ import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart'
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/add_to_tackle_box_action.dart';
+import 'package:fishing_app/features/statistics/data/fishing_spot_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/lure_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/species_statistics_repository.dart';
@@ -75,6 +76,8 @@ class _MapScreenState extends State<MapScreen> {
   );
   late final SpeciesStatisticsRepository _speciesStatisticsRepository =
       SpeciesStatisticsRepository(_database);
+  late final FishingSpotStatisticsRepository _fishingSpotStatisticsRepository =
+      FishingSpotStatisticsRepository(_database);
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -492,6 +495,7 @@ class _MapScreenState extends State<MapScreen> {
           generalCatchStatisticsRepository: _generalCatchStatisticsRepository,
           lureStatisticsRepository: _lureStatisticsRepository,
           speciesStatisticsRepository: _speciesStatisticsRepository,
+          fishingSpotStatisticsRepository: _fishingSpotStatisticsRepository,
           catchRepository: _catchRepository,
           catchPhotoRepository: _catchPhotoRepository,
           lureCatalogRepository: _lureCatalogRepository,

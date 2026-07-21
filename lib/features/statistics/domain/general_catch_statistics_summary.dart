@@ -1,3 +1,4 @@
+import 'package:fishing_app/features/statistics/domain/fishing_spot_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/domain/largest_catch.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_statistic.dart';
 
@@ -12,6 +13,7 @@ final class GeneralCatchStatisticsSummary {
     required this.totalCatches,
     required this.largestCatches,
     required this.speciesCatchCounts,
+    required this.fishingSpotCatchCounts,
   }) : assert(totalCatches >= 0, 'totalCatches must not be negative'),
        assert(
          largestCatches.length <= 3,
@@ -29,6 +31,13 @@ final class GeneralCatchStatisticsSummary {
   /// Every species with at least one logged catch, with its catch count,
   /// sorted by catch count descending, ties broken deterministically.
   final List<SpeciesCatchStatistic> speciesCatchCounts;
+
+  /// Every fishing spot with at least one logged catch, with its catch
+  /// count, sorted by catch count descending, ties broken deterministically
+  /// (fishing spot name, then id — see MFS-022 / TD-022). Computed from
+  /// the same joined rows as [largestCatches]/[speciesCatchCounts]; no
+  /// additional query.
+  final List<FishingSpotCatchStatistic> fishingSpotCatchCounts;
 
   SpeciesCatchStatistic? get mostCaughtSpecies =>
       speciesCatchCounts.isEmpty ? null : speciesCatchCounts.first;

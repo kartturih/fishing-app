@@ -21,6 +21,39 @@ import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 
+/// What happened to the catch during a Catch Details visit — the result
+/// [CatchDetailsPage.open] resolves to once the page is popped, by whatever
+/// means (overflow menu action, AppBar back button, or the system/gesture
+/// back navigation). Mirrors [EditCatchResult]'s existing three-outcome
+/// shape (MFS-014/MFS-017), so every caller gets an explicit, typed answer
+/// instead of an implicit `void` that only means "control has returned."
+sealed class CatchDetailsResult {
+  const CatchDetailsResult();
+}
+
+/// Nothing about the catch changed during this visit.
+final class CatchDetailsUnchanged extends CatchDetailsResult {
+  const CatchDetailsUnchanged();
+}
+
+/// The catch was edited (fields and/or photos) during this visit, via
+/// [EditCatchBottomSheet].
+final class CatchDetailsUpdated extends CatchDetailsResult {
+  const CatchDetailsUpdated(this.catchModel);
+
+  final Catch catchModel;
+}
+
+/// The catch was deleted during this visit — by construction, this result
+/// can only be produced once the deletion has already been awaited to
+/// completion (see `_confirmDelete` and the `CatchDeleted` case in
+/// `_openEdit`), never before.
+final class CatchDetailsDeleted extends CatchDetailsResult {
+  const CatchDetailsDeleted(this.catchId);
+
+  final String catchId;
+}
+
 /// Read-only Catch Details screen shown between the Catch list and Edit
 /// Catch.
 ///
@@ -59,8 +92,9 @@ class CatchDetailsPage extends StatefulWidget {
   final PersonalTackleBoxRepository personalTackleBoxRepository;
   final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
-  /// Pushes Catch Details as a normal [MaterialPageRoute].
-  static Future<void> open(
+  /// Pushes Catch Details as a normal [MaterialPageRoute], resolving to a
+  /// [CatchDetailsResult] once popped — see that type's own doc comment.
+  static Future<CatchDetailsResult> open(
     BuildContext context, {
     required FishingSpot fishingSpot,
     required Catch catchModel,
@@ -70,19 +104,25 @@ class CatchDetailsPage extends StatefulWidget {
     required PersonalTackleBoxRepository personalTackleBoxRepository,
     required TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
   }) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CatchDetailsPage(
-          fishingSpot: fishingSpot,
-          catchModel: catchModel,
-          catchRepository: catchRepository,
-          catchPhotoRepository: catchPhotoRepository,
-          lureCatalogRepository: lureCatalogRepository,
-          personalTackleBoxRepository: personalTackleBoxRepository,
-          personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
-        ),
-      ),
-    );
+    return Navigator.of(context)
+        .push<CatchDetailsResult>(
+          MaterialPageRoute<CatchDetailsResult>(
+            builder: (context) => CatchDetailsPage(
+              fishingSpot: fishingSpot,
+              catchModel: catchModel,
+              catchRepository: catchRepository,
+              catchPhotoRepository: catchPhotoRepository,
+              lureCatalogRepository: lureCatalogRepository,
+              personalTackleBoxRepository: personalTackleBoxRepository,
+              personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
+            ),
+          ),
+        )
+        // Navigator.push's Future is nullable in the general case; every
+        // pop path in this page always supplies a result (see PopScope's
+        // onPopInvokedWithResult below), so null only guards against a
+        // route being removed by means outside this page's own control.
+        .then((result) => result ?? const CatchDetailsUnchanged());
   }
 
   @override
@@ -106,6 +146,12 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
   Map<String, File> _files = {};
   int _currentPhotoIndex = 0;
   bool _isDeleting = false;
+
+  /// Whether [_catchModel] has been edited during this visit — tracked
+  /// separately from [_catchModel] itself so the back-navigation result
+  /// (see [_currentResult]) doesn't need to compare `Catch` instances for
+  /// equality.
+  bool _hasChanges = false;
 
   bool _isLoadingLure = true;
   LureCatalogEntry? _assignedLure;
@@ -230,7 +276,10 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
 
     switch (result) {
       case CatchUpdated(:final catchModel, :final hasPhotoFailures):
-        setState(() => _catchModel = catchModel);
+        setState(() {
+          _catchModel = catchModel;
+          _hasChanges = true;
+        });
         unawaited(_loadPhotos());
         unawaited(_loadAssignedLure());
         ScaffoldMessenger.of(context).showSnackBar(
@@ -242,14 +291,25 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
             ),
           ),
         );
-      case CatchDeleted():
+      case CatchDeleted(:final catchId):
         // The delete itself (including photo-file cleanup) already happened
-        // inside EditCatchBottomSheet; this screen just leaves.
+        // inside EditCatchBottomSheet, fully awaited before this result
+        // existed at all — this screen just leaves.
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Saalis poistettu')));
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(CatchDetailsDeleted(catchId));
     }
+  }
+
+  /// The result [CatchDetailsPage.open] should resolve to if the page is
+  /// popped right now via back navigation (as opposed to the delete
+  /// action, which always supplies its own [CatchDetailsDeleted] result
+  /// directly — see [_confirmDelete]).
+  CatchDetailsResult _currentResult() {
+    return _hasChanges
+        ? CatchDetailsUpdated(_catchModel)
+        : const CatchDetailsUnchanged();
   }
 
   Future<void> _confirmDelete() async {
@@ -295,7 +355,7 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Saalis poistettu')));
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(CatchDetailsDeleted(_catchModel.id));
     } catch (error) {
       debugPrint('Failed to delete catch: $error');
       if (mounted) {
@@ -311,64 +371,86 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_catchModel.species.finnishName),
-        actions: [
-          PopupMenuButton<_CatchDetailsMenuAction>(
-            key: const Key('catchDetailsMenuButton'),
-            onSelected: (action) {
-              switch (action) {
-                case _CatchDetailsMenuAction.edit:
-                  unawaited(_openEdit());
-                case _CatchDetailsMenuAction.delete:
-                  unawaited(_confirmDelete());
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: _CatchDetailsMenuAction.edit,
-                child: Text('Muokkaa'),
-              ),
-              PopupMenuItem(
-                value: _CatchDetailsMenuAction.delete,
-                child: Text(
-                  'Poista',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+    return PopScope<CatchDetailsResult>(
+      // Always false: every exit — the AppBar back button, the system/
+      // gesture back navigation, and this page's own explicit pop calls —
+      // is handled uniformly in onPopInvokedWithResult below, so the
+      // result passed back is always an explicit CatchDetailsResult,
+      // never left to Navigator's default null. This also closes the race
+      // that let an impatient back-tap during _confirmDelete's in-flight
+      // delete pop the page before the deletion (and thus the caller's
+      // unconditional reload) had actually happened: while _isDeleting is
+      // true, a back-button/gesture pop attempt is simply ignored here —
+      // the only way out during that window is _confirmDelete's own pop,
+      // called after the deletion has been fully awaited.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _isDeleting) {
+          return;
+        }
+        Navigator.of(context).pop(_currentResult());
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_catchModel.species.finnishName),
+          actions: [
+            PopupMenuButton<_CatchDetailsMenuAction>(
+              key: const Key('catchDetailsMenuButton'),
+              onSelected: (action) {
+                switch (action) {
+                  case _CatchDetailsMenuAction.edit:
+                    unawaited(_openEdit());
+                  case _CatchDetailsMenuAction.delete:
+                    unawaited(_confirmDelete());
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: _CatchDetailsMenuAction.edit,
+                  child: Text('Muokkaa'),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPhotoGallery(),
-              _buildInfoRow('Kalalaji', _catchModel.species.finnishName),
-              if (_catchModel.weightGrams != null)
+                PopupMenuItem(
+                  value: _CatchDetailsMenuAction.delete,
+                  child: Text(
+                    'Poista',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPhotoGallery(),
+                _buildInfoRow('Kalalaji', _catchModel.species.finnishName),
+                if (_catchModel.weightGrams != null)
+                  _buildInfoRow(
+                    'Paino',
+                    formatCatchWeight(_catchModel.weightGrams!),
+                  ),
+                if (_catchModel.lengthMillimeters != null)
+                  _buildInfoRow(
+                    'Pituus',
+                    formatCatchLength(_catchModel.lengthMillimeters!),
+                  ),
                 _buildInfoRow(
-                  'Paino',
-                  formatCatchWeight(_catchModel.weightGrams!),
+                  'Päivämäärä',
+                  formatCatchDate(_catchModel.caughtAt),
                 ),
-              if (_catchModel.lengthMillimeters != null)
                 _buildInfoRow(
-                  'Pituus',
-                  formatCatchLength(_catchModel.lengthMillimeters!),
+                  'Kellonaika',
+                  formatCatchTime(_catchModel.caughtAt),
                 ),
-              _buildInfoRow(
-                'Päivämäärä',
-                formatCatchDate(_catchModel.caughtAt),
-              ),
-              _buildInfoRow(
-                'Kellonaika',
-                formatCatchTime(_catchModel.caughtAt),
-              ),
-              if (_catchModel.lureVariantId != null) _buildAssignedLureRow(),
-            ],
+                if (_catchModel.lureVariantId != null) _buildAssignedLureRow(),
+              ],
+            ),
           ),
         ),
       ),

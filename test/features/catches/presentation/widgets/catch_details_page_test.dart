@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -57,6 +58,24 @@ class _FailingDeleteCatchRepository extends CatchRepository {
   Future<void> delete(String catchId) async {
     deleteCallCount++;
     throw StateError('simulated delete failure');
+  }
+}
+
+/// Holds `delete` open on [deleteGate] until the test completes it —
+/// simulates the real, measurable device-I/O delay `_confirmDelete`'s own
+/// awaited deletion can take, so a test can attempt to navigate away
+/// *while* the deletion is still in flight.
+class _SlowDeleteCatchRepository extends CatchRepository {
+  _SlowDeleteCatchRepository(super.database);
+
+  final Completer<void> deleteGate = Completer<void>();
+  int deleteCallCount = 0;
+
+  @override
+  Future<void> delete(String catchId) async {
+    deleteCallCount++;
+    await deleteGate.future;
+    await super.delete(catchId);
   }
 }
 
@@ -728,6 +747,62 @@ void main() {
           await nonLockingRepository.getByCatchId(existingCatch.id),
           isEmpty,
         );
+      },
+    );
+
+    testWidgets(
+      'an impatient back-tap while the delete is still in flight does not '
+      'pop the page before the deletion completes — regression for the '
+      'physical-device bug where a caller reloaded before the delete had '
+      'taken effect',
+      (tester) async {
+        final slowRepository = _SlowDeleteCatchRepository(database);
+
+        await _openDetails(
+          tester,
+          fishingSpot,
+          existingCatch,
+          slowRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+        );
+
+        await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Poista'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Poista').last);
+        // Let deleteFilesForCatch's real (but here trivially fast, no
+        // photos) I/O run first, advancing execution to the gated
+        // catchRepository.delete call.
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+
+        // The deletion is now suspended on deleteGate, mid-flight.
+        expect(slowRepository.deleteCallCount, 1);
+        expect(await catchRepository.getById(existingCatch.id), isNotNull);
+
+        // An impatient back-tap while the deletion is still pending must
+        // not pop the page — the only way out during this window is
+        // _confirmDelete's own pop, once the deletion has actually
+        // completed. pumpAndSettle (rather than a single pump) lets any
+        // pop transition that *did* start run fully to completion, so
+        // this check cannot be fooled by an in-progress route animation.
+        await tester.tap(find.byTooltip('Back'));
+        await tester.pumpAndSettle();
+        expect(find.byType(CatchDetailsPage), findsOneWidget);
+        expect(await catchRepository.getById(existingCatch.id), isNotNull);
+
+        // Once the deletion completes, the page closes on its own.
+        slowRepository.deleteGate.complete();
+        await _pumpUntilSettledWithRealIO(tester);
+
+        expect(find.byType(CatchDetailsPage), findsNothing);
+        expect(await catchRepository.getById(existingCatch.id), isNull);
       },
     );
 

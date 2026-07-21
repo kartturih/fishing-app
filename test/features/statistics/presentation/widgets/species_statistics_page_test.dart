@@ -24,6 +24,20 @@ import 'package:fishing_app/features/statistics/domain/species_statistics_summar
 import 'package:fishing_app/features/statistics/presentation/widgets/record_catch_card.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/species_statistics_page.dart';
 
+/// Pumps and lets a multi-step real dart:io/database chain (photo file
+/// deletion, the catch row delete) advance to completion; the fake-async
+/// test clock does not advance real I/O on its own. Mirrors the identical
+/// helper in catch_details_page_test.dart / fishing_spot_statistics_page_test.dart.
+Future<void> _pumpUntilSettledWithRealIO(WidgetTester tester) async {
+  for (var i = 0; i < 20; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump();
+  }
+  await tester.pumpAndSettle();
+}
+
 /// Never completes `getSpeciesStatistics`, so the loading state can be
 /// observed deterministically. Mirrors `_PendingRepository` in
 /// general_catch_statistics_tab_test.dart.
@@ -535,6 +549,54 @@ void main() {
       expect(find.text('0'), findsOneWidget);
       expect(find.text('Ei vielä ennätyssaalista.'), findsOneWidget);
       expect(find.text('Ei vielä saaliita.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'deleting a catch through the real Catch Details delete action (menu, '
+    'confirm dialog) is immediately reflected in Species Statistics after '
+    'returning, with no extra reload needed',
+    (tester) async {
+      final fishingSpotRepository = FishingSpotRepository(database);
+      final fishingSpot = await fishingSpotRepository.create(
+        name: 'Test Spot',
+        latitude: 61.0,
+        longitude: 25.0,
+      );
+      final toDelete = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+        weightGrams: 2000,
+      );
+
+      final repository = SpeciesStatisticsRepository(database);
+
+      await pumpPage(tester, repository, species: FishSpecies.pike);
+      await tester.pumpAndSettle();
+      expect(find.text('1'), findsOneWidget);
+
+      await tester.tap(find.byType(RecordCatchCard));
+      await tester.pumpAndSettle();
+      expect(find.byType(CatchDetailsPage), findsOneWidget);
+
+      // The real delete action: overflow menu -> "Poista" -> confirm dialog
+      // -> "Poista". Not a direct repository call from the test.
+      await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Poista'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Poista'));
+      await _pumpUntilSettledWithRealIO(tester);
+
+      // Back on Species Statistics — assert immediately, with no manual
+      // reload or extra pump beyond what the delete flow itself triggers.
+      expect(find.byType(SpeciesStatisticsPage), findsOneWidget);
+      expect(find.byType(CatchDetailsPage), findsNothing);
+      expect(find.text('0'), findsOneWidget);
+      expect(find.text('Ei vielä ennätyssaalista.'), findsOneWidget);
+      expect(find.text('Ei vielä saaliita.'), findsOneWidget);
+      expect(await catchRepository.getById(toDelete.id), isNull);
     },
   );
 

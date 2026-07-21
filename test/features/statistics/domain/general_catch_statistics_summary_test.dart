@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/statistics/domain/fishing_spot_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/domain/general_catch_statistics_summary.dart';
 import 'package:fishing_app/features/statistics/domain/largest_catch.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_statistic.dart';
@@ -42,6 +43,7 @@ void main() {
       totalCatches: 4,
       largestCatches: const [],
       speciesCatchCounts: [first, second],
+      fishingSpotCatchCounts: const [],
     );
     expect(summary.mostCaughtSpecies, same(first));
   });
@@ -51,6 +53,7 @@ void main() {
       totalCatches: 0,
       largestCatches: const [],
       speciesCatchCounts: const [],
+      fishingSpotCatchCounts: const [],
     );
     expect(summary.mostCaughtSpecies, isNull);
   });
@@ -61,6 +64,7 @@ void main() {
         totalCatches: -1,
         largestCatches: const [],
         speciesCatchCounts: const [],
+        fishingSpotCatchCounts: const [],
       ),
       throwsA(isA<AssertionError>()),
     );
@@ -77,6 +81,7 @@ void main() {
           buildLargestCatch('catch-4'),
         ],
         speciesCatchCounts: const [],
+        fishingSpotCatchCounts: const [],
       ),
       throwsA(isA<AssertionError>()),
     );
@@ -91,7 +96,29 @@ void main() {
         buildLargestCatch('catch-3'),
       ],
       speciesCatchCounts: const [],
+      fishingSpotCatchCounts: const [],
     );
     expect(summary.largestCatches, hasLength(3));
+  });
+
+  test('stores fishingSpotCatchCounts as given', () {
+    final fishingSpot = FishingSpot(
+      id: 'spot-1',
+      name: 'Test Spot',
+      latitude: 61.0,
+      longitude: 25.0,
+      createdAt: DateTime.utc(2026, 1, 1),
+    );
+    final statistic = FishingSpotCatchStatistic(
+      fishingSpot: fishingSpot,
+      catchCount: 5,
+    );
+    final summary = GeneralCatchStatisticsSummary(
+      totalCatches: 5,
+      largestCatches: const [],
+      speciesCatchCounts: const [],
+      fishingSpotCatchCounts: [statistic],
+    );
+    expect(summary.fishingSpotCatchCounts, [statistic]);
   });
 }

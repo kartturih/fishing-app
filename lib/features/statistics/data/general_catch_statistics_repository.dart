@@ -4,6 +4,8 @@ import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/features/catches/data/catch_mapper.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_mapper.dart';
+import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/statistics/domain/fishing_spot_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/domain/general_catch_statistics_summary.dart';
 import 'package:fishing_app/features/statistics/domain/largest_catch.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_statistic.dart';
@@ -29,10 +31,16 @@ class GeneralCatchStatisticsRepository {
 
   /// Computes the full summary fresh — nothing is cached or stored. See
   /// MFS-020 FR-10.
+  ///
+  /// Extended by MFS-022/TD-022 to also produce [GeneralCatchStatisticsSummary.fishingSpotCatchCounts],
+  /// entirely from the same rows this method already fetches — see this
+  /// class's own doc comment and TD-022 Key Design Decision 6. No
+  /// additional query is issued for it.
   Future<GeneralCatchStatisticsSummary> getGeneralCatchStatistics() async {
     final rows = await _catchesWithFishingSpot();
 
     final speciesCounts = <FishSpecies, int>{};
+    final fishingSpotCounts = <String, _MutableFishingSpotCount>{};
     final weightedCatches = <LargestCatch>[];
 
     for (final row in rows) {
@@ -45,12 +53,21 @@ class GeneralCatchStatisticsRepository {
         ifAbsent: () => 1,
       );
 
+      // Resolved unconditionally (not only for weighted catches, as
+      // GeneralCatchStatisticsSummary.largestCatches alone required) so
+      // the Fishing Spot List can be built from this same pass — MFS-022 /
+      // TD-022 Key Design Decision 6.
+      final fishingSpot = row.readTable(_database.fishingSpots).toDomain();
+      fishingSpotCounts
+          .putIfAbsent(
+            fishingSpot.id,
+            () => _MutableFishingSpotCount(fishingSpot),
+          )
+          .increment();
+
       if (catchModel.weightGrams != null) {
         weightedCatches.add(
-          LargestCatch(
-            catchModel: catchModel,
-            fishingSpot: row.readTable(_database.fishingSpots).toDomain(),
-          ),
+          LargestCatch(catchModel: catchModel, fishingSpot: fishingSpot),
         );
       }
     }
@@ -62,10 +79,19 @@ class GeneralCatchStatisticsRepository {
         SpeciesCatchStatistic(species: entry.key, catchCount: entry.value),
     ]..sort(_compareSpeciesStatistics);
 
+    final fishingSpotCatchCounts = [
+      for (final counted in fishingSpotCounts.values)
+        FishingSpotCatchStatistic(
+          fishingSpot: counted.fishingSpot,
+          catchCount: counted.count,
+        ),
+    ]..sort(_compareFishingSpotStatistics);
+
     return GeneralCatchStatisticsSummary(
       totalCatches: rows.length,
       largestCatches: weightedCatches.take(3).toList(),
       speciesCatchCounts: speciesCatchCounts,
+      fishingSpotCatchCounts: fishingSpotCatchCounts,
     );
   }
 
@@ -107,4 +133,34 @@ int _compareSpeciesStatistics(
   final byCount = b.catchCount.compareTo(a.catchCount);
   if (byCount != 0) return byCount;
   return a.species.name.compareTo(b.species.name);
+}
+
+class _MutableFishingSpotCount {
+  _MutableFishingSpotCount(this.fishingSpot);
+
+  final FishingSpot fishingSpot;
+  int count = 0;
+
+  void increment() => count++;
+}
+
+/// Sorts by catch count descending; ties broken by fishing spot name
+/// (case-insensitive ascending), then by fishing spot id ascending as a
+/// guaranteed-unique final tiebreak. Unlike species (a fixed, closed set
+/// with a stable identifier), fishing spot names are angler-authored free
+/// text and are not guaranteed unique, so a name-only tiebreak is not
+/// sufficient on its own — see MFS-022 / TD-022 Key Design Decision 1's
+/// own precedent in `LureStatisticsRepository`'s manufacturer/model name
+/// tiebreaks (TD-019).
+int _compareFishingSpotStatistics(
+  FishingSpotCatchStatistic a,
+  FishingSpotCatchStatistic b,
+) {
+  final byCount = b.catchCount.compareTo(a.catchCount);
+  if (byCount != 0) return byCount;
+  final byName = a.fishingSpot.name.toLowerCase().compareTo(
+    b.fishingSpot.name.toLowerCase(),
+  );
+  if (byName != 0) return byName;
+  return a.fishingSpot.id.compareTo(b.fishingSpot.id);
 }

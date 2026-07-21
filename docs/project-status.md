@@ -12,7 +12,7 @@ Fishing Spot management is complete. Catch management foundation is complete. Ca
 
 The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, and a full per-species catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate. Tapping a species in the Catches tab's Species List now opens a pushed Species Statistics page (MFS-021) for that species: its total catch count, a Record Catch card, and its full Catch List (reusing the existing Catch list row), each entry opening the existing Catch Details view and refreshing Species Statistics automatically on return.
 
-**MFS-021 (Species Statistics) is now implemented, architecture-reviewed, lifecycle-reviewed, and validated — see the Statistics section below.** No next milestone has been selected yet. See `docs/roadmap.md`'s Near-Term Roadmap for logical future candidates; none of those represent a decision or commitment.
+**MFS-021 (Species Statistics) is now implemented, architecture-reviewed, lifecycle-reviewed, and validated — see the Statistics section below.** Fishing Spot Statistics has been selected as the next milestone, to be specified as MFS-022; it has not yet been drafted or approved. See `docs/roadmap.md`'s Near-Term Roadmap for its updated sequencing (MFS-022 Fishing Spot Statistics, then MFS-023 Catch Notes, then MFS-024 Catch Search & Filtering).
 
 ---
 
@@ -610,7 +610,7 @@ No other iOS configuration changes were required, including for the Lure Catalog
 
 ## Next Planned Task
 
-MFS-021 (Species Statistics) is complete — implemented, architecture-reviewed, lifecycle-reviewed, all automated tests passing (575/575), `flutter analyze` clean, and physically verified on Android. No next milestone has been selected yet. Per this project's Development Workflow, the next step is choosing and drafting the next MFS; see `docs/roadmap.md`'s Near-Term Roadmap for logical candidates (none of which are a decision or commitment).
+MFS-021 (Species Statistics) is complete — implemented, architecture-reviewed, lifecycle-reviewed, all automated tests passing (575/575), `flutter analyze` clean, and physically verified on Android. Fishing Spot Statistics has been selected as the next milestone, to be specified as MFS-022 — not yet drafted or approved. Per this project's Development Workflow, the next step is drafting its MFS; see `docs/roadmap.md`'s Near-Term Roadmap for the updated sequencing (MFS-022, then MFS-023 Catch Notes, then MFS-024 Catch Search & Filtering).
 
 ---
 
