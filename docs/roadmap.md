@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-07-21
+2026-07-22
 
 ---
 
@@ -47,6 +47,62 @@ Proposed logical milestones after MFS-023, in the confirmed next-implementation 
 * **Depends on:** MFS-019 (Lure-Based Catch Statistics) and MFS-016 (Personal Tackle Box) at minimum. Both are now complete, so a lure/catch history exists to recommend from — but this candidate's own scope, data model, and priority remain entirely undefined.
 * **Status:** Candidate — the most speculative item in this list. Named in MFS-016's Future Extensions and the project charter's long-term vision, and explicitly marked "(future)" in the README Vision section. Its dependencies are now built, which removes a blocker but is not itself a scoping or scheduling decision.
 
+### 3.4 Water Bodies and Fishing Spot Hierarchy
+
+* **Intent:** Introduce a parent concept above `FishingSpot` so that multiple fishing spots on the same lake, pond, river, or sea area can be grouped, browsed, and one day analyzed together, while each `Catch` continues to retain its own exact fishing spot (no loss of the precision MFS-011/MFS-014/MFS-022 already provide). For example:
+
+  ```text
+  Merrasjärvi
+    ├── Koiraranta
+    ├── Pohjoislahti
+    └── Ruovikkoniemi
+  ```
+
+* **Likely domain term:** `WaterBody`. No existing project terminology or documentation (ADR-0004, MFS-004, `fishing_spots`' current implementation) names or anticipates this concept today, so this is a newly proposed term, not a renaming of something already established.
+* **Intended model:**
+
+  ```text
+  WaterBody
+    ├── FishingSpot
+    ├── FishingSpot
+    └── FishingSpot
+  ```
+
+  Each `FishingSpot` would belong to exactly one `WaterBody`; a `WaterBody` may have one or more fishing spots. The concept must support lakes, ponds, rivers, and sea areas — not lakes only.
+* **Goals:**
+  - Every fishing spot belongs to a water body.
+  - Catches keep referencing their exact fishing spot, unchanged.
+  - Statistics (the `statistics` feature — MFS-019 through MFS-022) can group and display catches by water body, alongside the existing per-species, per-lure, and per-fishing-spot groupings, without removing any of them.
+  - Catch Details and other detailed catch views continue showing the exact fishing spot, not only the parent water body.
+  - Future water-body-specific statistics and recommendations become possible (see §3.6 and §4).
+* **Staged identification path (roadmap-level intent, not yet scoped):**
+  - First version: the angler selects an existing water body, or creates a new one, while adding a fishing spot — following the same explicit, user-driven creation pattern already established for fishing spots themselves (MFS-005).
+  - The app should reuse and suggest previously created nearby water bodies where practical, rather than always requiring the angler to create a new one.
+  - Later enhancement: automatic water-body detection from map coordinates, using suitable geospatial boundary data. No specific external dataset or API is chosen at this time — that is a research question for whichever future MFS/ADR takes this on, likely requiring a new ADR given the same kind of external-data-source question already unresolved for Weather / Environmental Data (§3.2).
+  - Automatic detection, whenever it exists, must be treated as a suggestion the angler can confirm or correct — never an authoritative, silent assignment.
+* **Depends on:** MFS-004 (Fishing Spot Foundation) and ADR-0004 (Fishing Spot Domain), whose current initial `FishingSpot` fields (`id`, `name`, `latitude`, `longitude`, `createdAt`) would need an additive parent reference; MFS-022 (Fishing Spot Statistics), whose existing per-spot statistics this work must not break.
+* **Status:** Candidate. Newly identified; not yet scoped, drafted, or approved. Placed first among the three newly identified items in this section because the later two candidates (§3.5, §3.6) are described as eventually benefiting from water-body grouping, not the reverse.
+
+### 3.5 Lure Catalog Expansion and Data Management
+
+* **Intent:** Substantially expand the built-in Lure Catalog (MFS-015) with a much larger selection of real lure brands, models, sizes, weights, colors, and variants, and establish a maintainable way to author that data — rather than growing it as scattered, hardcoded entries in production code, the way the current development seed dataset (`lure_catalog_seed_data.dart`, approximately 3–5 `LureModel`s and 10–20 `LureVariant`s per MFS-015 FR-7) is intentionally small and explicitly identified as development-only, not production data.
+* **Goals:**
+  - Verify that the existing `LureModel`/`LureVariant` model (MFS-015's Conceptual Data Model) scales cleanly to a much larger catalog before large-scale data entry begins — MFS-015's own Performance Expectations already anticipated growth to "thousands of variants" via lazy/virtualized rendering and no eager startup load, but that anticipation has not yet been validated against a real, large dataset.
+  - Avoid maintaining a large catalog as scattered hardcoded production-code entries.
+  - Consider a maintainable, structured import or seed-data workflow (for example, JSON or CSV), without requiring a network connection to load it.
+  - Preserve the catalog's existing offline-first operation and its read-only, shared-reference-data character (MFS-015) — this is data-authoring/tooling work, not a change to the catalog's ownership model or read-only nature.
+  - Prepare catalog metadata for future lure recommendations (§3.6). Relevant future lure metadata may include: lure type, size, weight, running depth, color family, natural versus high-visibility coloration, contrast, flash, vibration/action, and suitable depth or cover. This is a roadmap-level list of candidate metadata, not a schema design — the final data model remains a future Technical Design decision.
+* **Depends on:** MFS-015 (Lure Catalog Foundation) and MFS-018 (Lure Catalog UX Improvements) — both complete, so the existing model and browsing/filtering UX are the actual foundation this work would validate and extend, not replace.
+* **Status:** Candidate. Newly identified; not yet scoped, drafted, or approved.
+
+### 3.6 Condition-Based Lure Guidance (Rule-Based)
+
+* **Intent:** Help anglers choose suitable lure types, colors, and properties for their current fishing conditions, through an offline-first, rule-based guidance system. The initial version is explicitly rule-based, not AI — see [Later Roadmap](#4-later-roadmap) for the later, data-driven/AI-assisted personalization path this foundation could eventually support.
+* **Possible inputs:** water clarity or darkness, weather and light conditions, time of day, fishing depth, vegetation versus open water, target species, and season or water temperature where available.
+* **Possible outputs:** recommended lure types; recommended color and contrast properties; recommended action or vibration; explanations for why those properties suit the stated conditions; and matching lures from the angler's own Personal Tackle Box (MFS-016) — not the full Lure Catalog, consistent with the Personal Tackle Box's existing "what the user owns, not the full catalog" principle (MFS-016).
+* **Depends on:** §3.5 (Lure Catalog Expansion and Data Management), for the richer per-lure metadata this guidance would reason over; MFS-016 (Personal Tackle Box), complete, to match recommendations against lures the angler actually owns; the still-unresolved Weather / Environmental Data candidate (§3.2), for any input relying on live/forecast weather rather than angler-entered conditions.
+* **Status:** Candidate. Newly identified; not yet scoped, drafted, or approved. Distinct from the existing "Smart Lure / Fishing Recommendations" candidate (§3.3): that item recommends from the angler's own accumulated catch history, while this item recommends from stated/observed conditions via fixed rules, requiring no catch history and no AI. See [Later Roadmap](#4-later-roadmap) for how a future personalization layer could eventually connect the two.
+
 ---
 
 ## 4. Later Roadmap
@@ -57,7 +113,7 @@ Broader future directions, well beyond the near-term list above. These are theme
 * **Account support.** Listed as out of scope for the MVP in the project charter and in MFS-004/MFS-006, but noted there as something that "may be added in future versions." A likely prerequisite for cloud synchronization and multi-device use.
 * **Multi-device use.** Not separately documented, but a natural corollary of cloud synchronization and account support once both exist — the local-first data model would need a defined sync/conflict strategy first.
 * **Sharing / community features.** The project charter explicitly excludes "Community features" from the MVP (future candidate); MFS-013 separately excludes "photo sharing" for Catch Photos. Any shared-catch or shared-fishing-spot capability would fall under this same, currently out-of-scope theme.
-* **Expanded recommendation engine.** The narrower "Smart Lure / Fishing Recommendations" candidate in the near-term list (§3.3) is the first step; the project charter's long-term goal describes a broader "smart fishing companion that learns from the user's own fishing history," which is a larger, later theme than any single near-term milestone.
+* **Expanded recommendation engine.** The narrower "Smart Lure / Fishing Recommendations" candidate in the near-term list (§3.3) is the first step; the project charter's long-term goal describes a broader "smart fishing companion that learns from the user's own fishing history," which is a larger, later theme than any single near-term milestone. The rule-based Condition-Based Lure Guidance candidate (§3.6) is this theme's other near-term building block: a later personalization layer could build on it using the angler's own catch history (converging with §3.3), water-body-specific results (depending on §3.4, Water Bodies and Fishing Spot Hierarchy), weather and environmental data (depending on the still-unresolved §3.2 Weather candidate), anonymized aggregate data if multi-user functionality is ever introduced (depending on the Cloud Synchronization/Account Support/Multi-Device themes below), and an AI or learned ranking layer only once enough trustworthy data exists to support one. None of this is scoped, and the rule-based foundation in §3.6 is explicitly designed not to depend on any of it.
 * **Richer maps.** MFS-001's Future Extensions already names offline map storage, environmental overlays, custom layers, and route recording as expected later map capabilities. Depth or other environmental overlays would fall under this same theme.
 * **Import / export.** Listed as out of scope in MFS-005 and MFS-006, with no committed future date — a plausible later data-portability feature.
 * **Advanced analytics.** A deeper, longer-horizon extension of the completed Lure-Based Catch Statistics (MFS-019), General Catch Statistics (MFS-020), and Species Statistics (MFS-021) milestones — trend analysis across seasons, locations, or conditions, once enough catch history and (if built) environmental data exist.
