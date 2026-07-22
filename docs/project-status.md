@@ -2,17 +2,17 @@
 
 ## Last Updated
 
-2026-07-21
+2026-07-22
 
 ---
 
 ## Current Phase
 
-Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated. General Catch Statistics (MFS-020 / TD-020) is implemented, architecture-reviewed, and validated. Species Statistics (MFS-021 / TD-021) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Fishing Spot Statistics (MFS-022 / TD-022) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Catch Notes (MFS-023 / TD-023) is implemented, architecture-reviewed, and validated.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated. General Catch Statistics (MFS-020 / TD-020) is implemented, architecture-reviewed, and validated. Species Statistics (MFS-021 / TD-021) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Fishing Spot Statistics (MFS-022 / TD-022) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Catch Notes (MFS-023 / TD-023) is implemented, architecture-reviewed, and validated. Water Bodies and Fishing Spot Hierarchy (MFS-024 / TD-024) is implemented, architecture-reviewed, and validated.
 
-The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, an optional free-form note per Catch, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, a full per-species catch-count list, and a full per-fishing-spot catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate. Tapping a species in the Catches tab's Species List opens a pushed Species Statistics page (MFS-021) for that species, and tapping a fishing spot in the Catches tab's Fishing Spot List opens a pushed Fishing Spot Statistics page (MFS-022) for that spot: each shows its own total catch count, a Record Catch card, and its full Catch List (reusing the existing Catch list row) — Fishing Spot Statistics additionally shows a Species Breakdown and a Last Catch Date. Each entry opens the existing Catch Details view; returning refreshes both the page itself and the Catches tab it was opened from automatically. Catch Notes (MFS-023) lets an angler attach one optional, multiline, plain-text note (up to 1000 characters) to a Catch, editable during Add Catch and Edit Catch and shown as the final, selectable section of Catch Details when present.
+The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, an optional free-form note per Catch, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, a full per-species catch-count list, and a full per-fishing-spot catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate. Tapping a species in the Catches tab's Species List opens a pushed Species Statistics page (MFS-021) for that species, and tapping a fishing spot in the Catches tab's Fishing Spot List opens a pushed Fishing Spot Statistics page (MFS-022) for that spot: each shows its own total catch count, a Record Catch card, and its full Catch List (reusing the existing Catch list row) — Fishing Spot Statistics additionally shows a Species Breakdown and a Last Catch Date. Each entry opens the existing Catch Details view; returning refreshes both the page itself and the Catches tab it was opened from automatically. Catch Notes (MFS-023) lets an angler attach one optional, multiline, plain-text note (up to 1000 characters) to a Catch, editable during Add Catch and Edit Catch and shown as the final, selectable section of Catch Details when present. Water Bodies and Fishing Spot Hierarchy (MFS-024) introduces `WaterBody` as a new parent concept above `FishingSpot`: every fishing spot now belongs to exactly one water body, selected or created while adding the spot (with locally computed nearby-water-body suggestions), changeable afterward from Fishing Spot Details, and manageable from a minimal Water Body management surface (view, rename, member fishing spots, empty-only deletion). Every fishing spot that existed before this milestone was automatically migrated into its own correctly named water body (schema version 7 to 8), with all existing data intact. Species Statistics' Record Catch card now shows the water body instead of the exact fishing spot name; every other exact-fishing-spot-scoped view is unchanged.
 
-**MFS-023 (Catch Notes) is now implemented, architecture-reviewed, and validated — see the Catch Management section below.** Catch Search & Filtering has been selected as the next milestone, to be specified as MFS-024; it has not yet been drafted or approved. See `docs/roadmap.md`'s Near-Term Roadmap for its sequencing.
+**MFS-024 (Water Bodies and Fishing Spot Hierarchy) is now implemented, architecture-reviewed, and validated — see the Water Bodies section below.** The next milestone has not yet been selected; see `docs/roadmap.md`'s Near-Term Roadmap for candidates.
 
 ---
 
@@ -39,6 +39,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * ADR-0004: Fishing Spot Domain
 * ADR-0005: Local Persistence
 * ADR-0006: Database Ownership
+* ADR-0007: Water Body Domain
 
 ### Feature Specifications
 
@@ -65,6 +66,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * MFS-021: Species Statistics
 * MFS-022: Fishing Spot Statistics
 * MFS-023: Catch Notes
+* MFS-024: Water Bodies and Fishing Spot Hierarchy
 
 ### Technical Designs
 
@@ -89,6 +91,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * TD-021: Species Statistics Implementation
 * TD-022: Fishing Spot Statistics Implementation
 * TD-023: Catch Notes Implementation
+* TD-024: Water Bodies and Fishing Spot Hierarchy Implementation
 
 ---
 
@@ -141,6 +144,22 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * Immediate marker updates
 * Immediate marker removal
 * Persistent CRUD operations
+
+### Water Bodies
+
+* Framework-independent `WaterBody` domain model (identity only — id, name, createdAt — no depth/species/vegetation/weather metadata, per ADR-0007/MFS-024's fixed scope), owned by the existing `fishing_spots` feature rather than a new feature directory
+* Drift persistence (schema migrated from version 7 to version 8: new `water_bodies` table, `waterBodyId` foreign key added to `fishing_spots` with `onDelete: KeyAction.restrict`)
+* Existing-data migration: every `FishingSpot` that existed before this milestone automatically received its own correctly named `WaterBody` (named identically to that spot's current name), with no data loss and no angler action required
+* `FishingSpot.waterBodyId` is non-nullable at the domain level (schema-level nullable is a SQLite `ADD COLUMN` technical necessity only); the mapper fails loudly (`StateError`) rather than silently if the invariant is ever violated
+* Concrete `WaterBodyRepository` (create, rename, list, delete-when-empty, member-fishing-spot lookup, and a locally computed nearby-water-body ranking using the haversine great-circle distance formula over already-stored coordinates — no network access, no external dataset)
+* Water-body selection/creation step inserted into both existing fishing-spot-creation paths (current location and map selection); nearby candidates are shown before the full browsable list, with a single clearly relevant candidate optionally preselected and always changeable
+* "Vaihda vesistö" (change water body) action added to the existing Fishing Spot Details bottom sheet, alongside its existing rename/delete actions; changing a fishing spot's water body does not alter its coordinates, name, or catch history
+* Minimal Water Body management surface (`WaterBodyManagementPage`): view every water body with its fishing-spot count, rename, expand to see member fishing spots, and delete once empty
+* A water body containing one or more fishing spots cannot be deleted (enforced by the repository, with `KeyAction.restrict` as a database-level backstop); an empty water body can be deleted with confirmation
+* Deleting a fishing spot is unaffected by this milestone and continues to cascade-delete its catches exactly as before
+* Species Statistics' Record Catch card now shows the water body name, not the exact fishing spot name, in its location line; `SpeciesCatchEntry` retains its `fishingSpot` field so Catch Details navigation is unaffected
+* Fully offline; no new external dependencies
+* Deferred, documented deviation: MFS-024 FR-17's gentle, non-blocking post-migration reorganization hint (the hint text/UI only) was postponed per TD-024 Key Design Decision 8, since this project has no production users yet; recommended before any release to real external users
 
 ### Catch Management
 
@@ -268,7 +287,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * Concrete, read-only `SpeciesStatisticsRepository` performing one species-filtered joined query directly against `catches`/`fishing_spots`, resolving every returned catch's fishing spot (not only the Record Catch's), so any Catch List entry can open Catch Details with no additional lookup
 * Deterministic ordering: recorded weight descending (a catch with no recorded weight sorts after every catch that has one), then catch date descending, then catch id ascending — applied to both the Record Catch and the full Catch List, since the Record Catch is simply the first entry of that same ordered list, never separately computed
 * Wires up the navigation MFS-020's Species List rows were built to anticipate: rows are now real, tappable buttons (explicit `Semantics(button: true)`, added after a widget test showed `InkWell` alone does not expose button semantics) opening the new page for that species
-* `SpeciesStatisticsPage`, pushed via the existing `Navigator.push`/`MaterialPageRoute` pattern (mirroring `CatchDetailsPage.open()`), shows a total-catches summary card, a `RecordCatchCard` (photo, weight/length, date, and fishing spot — each rendering cleanly when absent), and a full Catch List reusing `CatchListItem` completely unmodified
+* `SpeciesStatisticsPage`, pushed via the existing `Navigator.push`/`MaterialPageRoute` pattern (mirroring `CatchDetailsPage.open()`), shows a total-catches summary card, a `RecordCatchCard` (photo, weight/length, date, and water body — each rendering cleanly when absent), and a full Catch List reusing `CatchListItem` completely unmodified
 * Lifecycle fix found during review: the page previously loaded its summary once, in `initState`, so edits/deletes made from Catch Details were not reflected on return. Fixed by following the existing `FishingSpotDetailsBottomSheet` convention — `await CatchDetailsPage.open(...)`, check `mounted`, then reload — rather than introducing a new navigation-result type or state-management mechanism; covers both the Record Catch card and every Catch List entry from one change
 * No new Drift table, column, schema version, or migration; `GeneralCatchStatisticsRepository`, `LureStatisticsRepository`, `LargestCatch`, and `GeneralCatchStatisticsSummary` are unmodified
 
@@ -434,10 +453,21 @@ Verified on physical Android devices.
 * flutter analyze passes; all automated tests pass (682/682)
 * Physical Android testing completed
 
+### Water Bodies
+
+* Schema migration (v7 → v8) verified with a dedicated schema-snapshot migration test (not a reconstruction via the current table class): existing Fishing Spot/Catch/Catch Photo/Lure Catalog/Personal Tackle Box data preserved across the upgrade, every pre-existing fishing spot receiving its own correctly named water body with no orphaned rows
+* Domain, database, mapper (including the fail-fast guard on a null `waterBodyId`), and repository tests completed for both `WaterBody` and the extended `FishingSpot`/`FishingSpotRepository`, including nearby-water-body ranking/preselection and empty-only deletion enforcement
+* Presentation widget tests completed: the water-body selection/creation step, the Fishing Spot Details "Vaihda vesistö" action, and the Water Body management page (list, rename, member fishing spots, blocked-while-non-empty deletion, confirmed empty deletion)
+* Statistics widget/repository tests extended: `SpeciesStatisticsRepository`'s join and `RecordCatchCard` updated to cover water-body resolution and display
+* Four pre-existing legacy-schema-snapshot migration tests, in features unrelated to this milestone, needed correction after `FishingSpots` gained `waterBodyId` — a ripple effect discovered and fixed during implementation, documented in TD-024 Implementation Notes item 3
+* Architecture review completed; no architectural deviations from TD-024's domain, database, repository, or presentation design; MFS-024 FR-17's post-migration hint text/UI was deliberately deferred (TD-024 Key Design Decision 8)
+* flutter analyze passes; all automated tests pass (735/735)
+* Physical Android testing completed
+
 ### Quality
 
 * flutter analyze passes, with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`, on constructor parameters whose external names are relied on by callers and cannot be renamed without breaking the public API — see TD-016 Implementation Notes)
-* 682 automated tests passing
+* 735 automated tests passing
 * Architecture review completed
 * Code review completed
 * Lifecycle review completed for Species Statistics (MFS-021) and Fishing Spot Statistics (MFS-022)
@@ -584,9 +614,10 @@ The application currently supports:
 * Assigning an owned lure to a Catch (Add Catch or Edit Catch), shown read-only in Catch Details
 * Lure-based catch statistics: most successful lure and lure type summary cards, a per-lure catch-count list, and a per-lure-type catch-count breakdown, computed live with no stored aggregate
 * General catch statistics: a Top 3 Largest Catches "Hall of Fame" (medal-bordered cards, each opening the existing Catch Details view), equal-height total-catches/most-caught-species summary cards, and a full per-species catch-count list, computed live across the angler's entire catch history with no stored aggregate
-* Species statistics: tapping a species in the Catches tab's Species List opens a pushed page showing that species' total catch count, a Record Catch card (photo, weight/length, date, fishing spot), and its full Catch List (reusing the existing Catch list row), each entry opening the existing Catch Details view — the page refreshes automatically after returning from Catch Details
+* Species statistics: tapping a species in the Catches tab's Species List opens a pushed page showing that species' total catch count, a Record Catch card (photo, weight/length, date, water body), and its full Catch List (reusing the existing Catch list row), each entry opening the existing Catch Details view — the page refreshes automatically after returning from Catch Details
 * Fishing spot statistics: tapping a fishing spot in the Catches tab's Fishing Spot List opens a pushed page showing that spot's total catch count, Last Catch Date, a Record Catch card (photo, species, weight/length, date — no location, since the page's own context already is one fishing spot), a static Species Breakdown, and its full Catch List (reusing the existing Catch list row), each entry opening the existing Catch Details view — both the page and the Catches tab it was opened from refresh automatically after returning from Catch Details or from Fishing Spot Statistics itself
 * Catch Notes: one optional, multiline, plain-text note (up to 1000 characters) per Catch, added or edited via Add Catch/Edit Catch, shown as the final selectable section of Catch Details when present and omitted entirely when absent
+* Water Bodies: every fishing spot belongs to exactly one water body, selected or created while adding the spot (with locally computed nearby-water-body suggestions) or changed afterward from Fishing Spot Details; a minimal management surface lists, renames, and deletes (once empty) water bodies; every pre-existing fishing spot was automatically migrated into its own water body with no data loss; Species Statistics' Record Catch card shows the water body instead of the exact fishing spot name
 
 ---
 
@@ -611,6 +642,8 @@ No additional permissions were required for Lure-Based Catch Statistics, General
 
 No additional permissions were required for Catch Notes: it is a local database schema addition and form field only, with no new hardware or system capability involved.
 
+No additional permissions were required for Water Bodies: it is a local database schema addition and new presentation surfaces over the existing local database only, with no new hardware or system capability involved.
+
 ---
 
 ## iOS Configuration
@@ -620,7 +653,7 @@ Added for Catch Photos:
 * `NSCameraUsageDescription`
 * `NSPhotoLibraryUsageDescription`
 
-No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos), for Lure-Based Catch Statistics, General Catch Statistics, Species Statistics, and Fishing Spot Statistics (all four local-database-only features), and for Catch Notes (also local-database-only). Physical iOS testing has not been performed (no iOS build target/device in this environment).
+No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos), for Lure-Based Catch Statistics, General Catch Statistics, Species Statistics, and Fishing Spot Statistics (all four local-database-only features), and for Catch Notes and Water Bodies (also local-database-only). Physical iOS testing has not been performed (no iOS build target/device in this environment).
 
 ---
 
@@ -652,22 +685,22 @@ No other iOS configuration changes were required, including for the Lure Catalog
 
 ## Next Planned Task
 
-MFS-023 (Catch Notes) is complete — implemented, architecture-reviewed, all automated tests passing (682/682), `flutter analyze` clean, and physically verified on Android. Catch Search & Filtering has been selected as the next milestone, to be specified as MFS-024 — not yet drafted or approved. Per this project's Development Workflow, the next step is drafting its MFS; see `docs/roadmap.md`'s Near-Term Roadmap for the updated sequencing.
+MFS-024 (Water Bodies and Fishing Spot Hierarchy) is complete — implemented, architecture-reviewed, all automated tests passing (735/735), `flutter analyze` clean, and physically verified on Android. The next milestone has not yet been selected; see `docs/roadmap.md`'s Near-Term Roadmap for candidates.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 23
+Current Feature Specifications: 24
 
-Current Technical Designs: 21
+Current Technical Designs: 22
 
-Architecture Decision Records: 6
+Architecture Decision Records: 7
 
 Implemented Core Features:
 * Map
 * User Location
-* Fishing Spot Management
+* Fishing Spot Management (including Water Bodies)
 * Catch Management (including Catch Notes)
 * Catch Photos
 * Catch Details
@@ -682,6 +715,6 @@ Physical Android Validation: Completed for all currently implemented features
 
 flutter analyze: Passing with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
 
-Automated Tests: 682 Passing
+Automated Tests: 735 Passing
 
-Database schema version: 7
+Database schema version: 8

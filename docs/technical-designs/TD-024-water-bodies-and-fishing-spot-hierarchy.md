@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture review passed, all automated tests passing (735/735), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed successfully. No architectural deviations from this document's domain, database, repository, or presentation design were required; six documented discoveries/deviations (a file-path correction, three newly-created rather than extended test files, a ripple effect across four pre-existing legacy-migration tests, a dialog-controller disposal bug, a loading-text collision, and pre-existing id-generation flakiness surfaced by increased test load) are detailed in Implementation Notes below. FR-17's post-migration hint text/UI was deliberately deferred per Key Design Decision 8, as recorded in the Definition of Done.
 
 ## Related
 

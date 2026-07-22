@@ -21,9 +21,10 @@ The current version supports:
 - Lure-based catch statistics (most successful lure and lure type, per-lure and per-lure-type catch counts), computed live with no stored aggregate
 - General, per-species, and per-fishing-spot catch statistics (Top 3 Largest Catches, most caught species, catch-count breakdowns, a record catch and full catch list per species/fishing spot), computed live with no stored aggregate
 - Optional per-catch notes (multiline, up to 1000 characters), shown in Catch Details
+- Water Bodies: fishing spots are grouped under a parent water body (lake, pond, river, etc.), with nearby-water-body suggestions, a management surface, and automatic migration of existing fishing spots
 - Persistent Drift/SQLite storage
 
-682 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
+735 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
 
 ## Vision
 

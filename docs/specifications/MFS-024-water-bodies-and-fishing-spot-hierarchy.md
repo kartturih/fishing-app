@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture-reviewed, all automated tests passing (735/735), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android verification completed. See TD-024 for the technical design and its Implementation Notes for full detail, and `docs/project-status.md` for the verification record. One acceptance item was deliberately deferred: FR-17's gentle, non-blocking post-migration reorganization hint (the hint *text/UI* only) was postponed per TD-024's Key Design Decision 8, since this project currently has no production users for whom the reassurance matters; the underlying migration itself (FR-14 — every pre-existing fishing spot automatically receiving its own correctly named water body) is fully implemented and verified. Reintroducing the hint is recommended before any release to real external users.
 
 ## Related
 

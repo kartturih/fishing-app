@@ -18,22 +18,22 @@
 
 ## 2. Current Milestone
 
-MFS-017 (Assign Lure to Catch), MFS-018 (Lure Catalog UX Improvements), MFS-019 (Lure-Based Catch Statistics), MFS-020 (General Catch Statistics), MFS-021 (Species Statistics), MFS-022 (Fishing Spot Statistics), and MFS-023 (Catch Notes) are all complete. MFS-017 let an angler assign an owned lure (referencing the catalog `LureVariant`, not the `TackleBoxEntry` — see MFS-017's Conceptual Relationship) to a `Catch`, displayed in Catch Details. MFS-018 followed it with a presentation-only reorganization of the Lure Catalog and Personal Tackle Box add flow: the browsing list groups by lure model instead of by variant, a new Lure Model Details view lists every color variant of a selected model, and the add-photo dialog no longer silently completes an add on dismissal. MFS-019 introduced the new Statistics feature and its first tab, Lure Statistics: two summary cards (most successful lure, most successful lure type), a per-lure catch-count list, and a per-lure-type catch-count breakdown, all computed live from existing catch and lure catalog data with no new persisted statistic, table, or migration. MFS-020 added the Statistics feature's first tab, Catches — moving Lure Statistics to the second tab position, unchanged in every other respect — presenting a Top 3 Largest Catches list ranked by weight (each entry opening the existing Catch Details view, MFS-014, and presented as a medal-bordered "Hall of Fame" after three rounds of post-testing presentation refinement), summary statistics (total catches, most caught species, rendered as equal-height cards), and a full per-species catch-count list. MFS-021 wired up the navigation MFS-020 deliberately left unimplemented: tapping a species row in the Species List now opens a pushed Species Statistics page for that species — a header (species name, total catches), a Record Catch card, and a full Catch List ordered by recorded weight, then catch date, then catch id, each entry opening the existing Catch Details view, with the page refreshing automatically on return from it. MFS-022 completed the Statistics feature's third grouping axis, alongside Species Statistics and Lure Statistics: a new Fishing Spot List within the Catches tab and a pushed Fishing Spot Statistics page for a selected spot, showing its total catch count, Last Catch Date, a Record Catch card, a static Species Breakdown, and its full Catch List, each entry opening the existing Catch Details view. MFS-023 let an angler attach one optional, multiline, plain-text note (up to 1000 characters) to a `Catch` — editable in Add Catch and Edit Catch, and shown as the final, selectable section of Catch Details when present — via an additive schema migration (schema version 6 to 7), with no new table, repository, or feature. All seven are architecture-reviewed, fully tested (682/682 automated tests), and physically verified on Android (see `docs/project-status.md`).
+MFS-017 (Assign Lure to Catch), MFS-018 (Lure Catalog UX Improvements), MFS-019 (Lure-Based Catch Statistics), MFS-020 (General Catch Statistics), MFS-021 (Species Statistics), MFS-022 (Fishing Spot Statistics), and MFS-023 (Catch Notes) are all complete. MFS-017 let an angler assign an owned lure (referencing the catalog `LureVariant`, not the `TackleBoxEntry` — see MFS-017's Conceptual Relationship) to a `Catch`, displayed in Catch Details. MFS-018 followed it with a presentation-only reorganization of the Lure Catalog and Personal Tackle Box add flow: the browsing list groups by lure model instead of by variant, a new Lure Model Details view lists every color variant of a selected model, and the add-photo dialog no longer silently completes an add on dismissal. MFS-019 introduced the new Statistics feature and its first tab, Lure Statistics: two summary cards (most successful lure, most successful lure type), a per-lure catch-count list, and a per-lure-type catch-count breakdown, all computed live from existing catch and lure catalog data with no new persisted statistic, table, or migration. MFS-020 added the Statistics feature's first tab, Catches — moving Lure Statistics to the second tab position, unchanged in every other respect — presenting a Top 3 Largest Catches list ranked by weight (each entry opening the existing Catch Details view, MFS-014, and presented as a medal-bordered "Hall of Fame" after three rounds of post-testing presentation refinement), summary statistics (total catches, most caught species, rendered as equal-height cards), and a full per-species catch-count list. MFS-021 wired up the navigation MFS-020 deliberately left unimplemented: tapping a species row in the Species List now opens a pushed Species Statistics page for that species — a header (species name, total catches), a Record Catch card, and a full Catch List ordered by recorded weight, then catch date, then catch id, each entry opening the existing Catch Details view, with the page refreshing automatically on return from it. MFS-022 completed the Statistics feature's third grouping axis, alongside Species Statistics and Lure Statistics: a new Fishing Spot List within the Catches tab and a pushed Fishing Spot Statistics page for a selected spot, showing its total catch count, Last Catch Date, a Record Catch card, a static Species Breakdown, and its full Catch List, each entry opening the existing Catch Details view. MFS-023 let an angler attach one optional, multiline, plain-text note (up to 1000 characters) to a `Catch` — editable in Add Catch and Edit Catch, and shown as the final, selectable section of Catch Details when present — via an additive schema migration (schema version 6 to 7), with no new table, repository, or feature. MFS-024 (Water Bodies and Fishing Spot Hierarchy), backed by ADR-0007 and TD-024, introduced `WaterBody` as a new parent concept above `FishingSpot`, implemented inside the existing `fishing_spots` feature: every fishing spot now belongs to exactly one water body, selected or created while adding the spot (with locally computed nearby-water-body suggestions, never automatic detection), changeable afterward from Fishing Spot Details, and manageable from a minimal Water Body management surface (view, rename, member fishing spots, empty-only deletion). Every fishing spot that existed before this milestone was automatically migrated into its own correctly named water body (schema version 7 to 8), with no data loss and no angler action required. Species Statistics' Record Catch card now shows the water body instead of the exact fishing spot name. All eight are architecture-reviewed, fully tested (735/735 automated tests), and physically verified on Android (see `docs/project-status.md`).
 
-**Catch Search & Filtering has been selected as the next milestone, to be specified as MFS-024.** It has not yet been drafted or approved — drafting begins immediately following this roadmap update. The Near-Term Roadmap (§3) has been reprioritized accordingly: Catch Search & Filtering (MFS-024) is now first. A milestone's scope only becomes binding once its own MFS has been drafted and approved — this roadmap entry is a sequencing decision, not a specification.
+**The MFS-024 identifier was reassigned to Water Bodies and Fishing Spot Hierarchy** after an earlier, different MFS-024 draft (Catch Search & Filtering) was abandoned before being scoped or approved — see §3.1 below, where that candidate remains a future idea without a reserved MFS number. **The next milestone has not yet been selected.** See the Near-Term Roadmap (§3) for candidates; a milestone's scope only becomes binding once its own MFS has been drafted and approved.
 
 ---
 
 ## 3. Near-Term Roadmap
 
-Proposed logical milestones after MFS-023, in the confirmed next-implementation order below. Only MFS-024 (Catch Search & Filtering) is about to be drafted; it is prioritized first, but is not scoped yet — only an approved MFS defines actual feature scope (§1).
+Proposed logical milestones after MFS-024, listed below. None is yet confirmed as the next milestone to specify — only an approved MFS defines actual feature scope (§1).
 
-### 3.1 MFS-024 – Catch Search & Filtering
+### 3.1 Catch Search & Filtering
 
-* **Identifier:** Confirmed as the next milestone to specify, as MFS-024. Not yet drafted or approved — drafting begins immediately following this roadmap update.
+* **Identifier:** Not assigned. This candidate was previously drafted as MFS-024, then abandoned before being scoped or approved; that identifier was subsequently reassigned to Water Bodies and Fishing Spot Hierarchy (now complete — see §2). This candidate remains a valid future idea, awaiting a future MFS number if and when it is selected again.
 * **Intent:** Let an angler search and filter their catch history (e.g. by species, date range, or fishing spot). Addresses the gap MFS-011 (View Catches for Fishing Spot) explicitly deferred in its own Out of Scope ("filtering"), which no subsequent milestone has picked up since.
 * **Depends on:** MFS-009 (Catch Foundation) and MFS-011 (View Catches for Fishing Spot) — both complete.
-* **Status:** Confirmed as the next milestone. Not yet scoped, drafted, or approved — this remains a roadmap-level description only, not a specification.
+* **Status:** Candidate. Not yet scoped, drafted, or approved — this remains a roadmap-level description only, not a specification.
 
 ### 3.2 Weather / Environmental Data on Catches
 
@@ -47,41 +47,15 @@ Proposed logical milestones after MFS-023, in the confirmed next-implementation 
 * **Depends on:** MFS-019 (Lure-Based Catch Statistics) and MFS-016 (Personal Tackle Box) at minimum. Both are now complete, so a lure/catch history exists to recommend from — but this candidate's own scope, data model, and priority remain entirely undefined.
 * **Status:** Candidate — the most speculative item in this list. Named in MFS-016's Future Extensions and the project charter's long-term vision, and explicitly marked "(future)" in the README Vision section. Its dependencies are now built, which removes a blocker but is not itself a scoping or scheduling decision.
 
-### 3.4 Water Bodies and Fishing Spot Hierarchy
+### 3.4 Water Bodies and Fishing Spot Hierarchy — Foundation Complete
 
-* **Intent:** Introduce a parent concept above `FishingSpot` so that multiple fishing spots on the same lake, pond, river, or sea area can be grouped, browsed, and one day analyzed together, while each `Catch` continues to retain its own exact fishing spot (no loss of the precision MFS-011/MFS-014/MFS-022 already provide). For example:
-
-  ```text
-  Merrasjärvi
-    ├── Koiraranta
-    ├── Pohjoislahti
-    └── Ruovikkoniemi
-  ```
-
-* **Likely domain term:** `WaterBody`. No existing project terminology or documentation (ADR-0004, MFS-004, `fishing_spots`' current implementation) names or anticipates this concept today, so this is a newly proposed term, not a renaming of something already established.
-* **Intended model:**
-
-  ```text
-  WaterBody
-    ├── FishingSpot
-    ├── FishingSpot
-    └── FishingSpot
-  ```
-
-  Each `FishingSpot` would belong to exactly one `WaterBody`; a `WaterBody` may have one or more fishing spots. The concept must support lakes, ponds, rivers, and sea areas — not lakes only.
-* **Goals:**
-  - Every fishing spot belongs to a water body.
-  - Catches keep referencing their exact fishing spot, unchanged.
-  - Statistics (the `statistics` feature — MFS-019 through MFS-022) can group and display catches by water body, alongside the existing per-species, per-lure, and per-fishing-spot groupings, without removing any of them.
-  - Catch Details and other detailed catch views continue showing the exact fishing spot, not only the parent water body.
-  - Future water-body-specific statistics and recommendations become possible (see §3.6 and §4).
-* **Staged identification path (roadmap-level intent, not yet scoped):**
-  - First version: the angler selects an existing water body, or creates a new one, while adding a fishing spot — following the same explicit, user-driven creation pattern already established for fishing spots themselves (MFS-005).
-  - The app should reuse and suggest previously created nearby water bodies where practical, rather than always requiring the angler to create a new one.
-  - Later enhancement: automatic water-body detection from map coordinates, using suitable geospatial boundary data. No specific external dataset or API is chosen at this time — that is a research question for whichever future MFS/ADR takes this on, likely requiring a new ADR given the same kind of external-data-source question already unresolved for Weather / Environmental Data (§3.2).
-  - Automatic detection, whenever it exists, must be treated as a suggestion the angler can confirm or correct — never an authoritative, silent assignment.
-* **Depends on:** MFS-004 (Fishing Spot Foundation) and ADR-0004 (Fishing Spot Domain), whose current initial `FishingSpot` fields (`id`, `name`, `latitude`, `longitude`, `createdAt`) would need an additive parent reference; MFS-022 (Fishing Spot Statistics), whose existing per-spot statistics this work must not break.
-* **Status:** Candidate. Newly identified; not yet scoped, drafted, or approved. Placed first among the three newly identified items in this section because the later two candidates (§3.5, §3.6) are described as eventually benefiting from water-body grouping, not the reverse.
+* **Status:** Done. Implemented as MFS-024 / ADR-0007 / TD-024 (see §2 and `docs/project-status.md`). `WaterBody` now exists as a parent concept above `FishingSpot`: every fishing spot belongs to exactly one water body, selected/created while adding a spot (with locally computed nearby-water-body suggestions, never automatic detection) or changed afterward from Fishing Spot Details; a minimal management surface supports viewing, renaming, and empty-only deletion; every pre-existing fishing spot was automatically migrated into its own water body. Species Statistics' Record Catch card shows the water body instead of the exact fishing spot name; every exact-context view (Fishing Spot Details, Fishing Spot Statistics, Catch Details) is unchanged.
+* **Future ideas explicitly not built by this foundation, and not removed by its completion:**
+  - Automatic water-body detection from map coordinates, using suitable geospatial boundary data — explicitly out of scope for MFS-024 (see its Out of Scope and Future Value sections). No specific external dataset or API is chosen; this remains a research question for whichever future MFS/ADR takes it on, likely requiring a new ADR given the same kind of external-data-source question already unresolved for Weather / Environmental Data (§3.2). Whenever built, automatic detection must remain a suggestion the angler can confirm or correct, never an authoritative, silent assignment.
+  - Water-body-level catch statistics (a new grouping axis alongside the existing per-species, per-lure, and per-exact-fishing-spot statistics) and best-performing-lure-per-water-body — see §3.6 and §4's Expanded recommendation engine bullet.
+  - Water-body characteristics (clarity, vegetation, depth) and condition-based lure guidance informed by water-body context — see §3.6.
+  - Global catch browsing by water body.
+  - None of these are scoped, drafted, or approved; they are recorded here only so this foundation's completion does not imply they are no longer wanted.
 
 ### 3.5 Lure Catalog Expansion and Data Management
 
