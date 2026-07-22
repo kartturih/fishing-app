@@ -17,6 +17,15 @@ void main() {
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     catchRepository = CatchRepository(database);
     fishingSpotRepository = FishingSpotRepository(database);
     statisticsRepository = GeneralCatchStatisticsRepository(database);
@@ -24,6 +33,7 @@ void main() {
       name: 'Test Spot',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
     );
   });
 
@@ -197,10 +207,16 @@ void main() {
 
   test('catches at two different fishing spots each resolve to their own '
       'correct FishingSpot in largestCatches', () async {
+    // A real (not fake-clock) delay so the two generated identifiers
+    // (derived from DateTime.now()) don't land on the same clock tick —
+    // the same pre-existing mitigation already used elsewhere in this
+    // project's test suite.
+    await Future<void>.delayed(const Duration(milliseconds: 2));
     final otherSpot = await fishingSpotRepository.create(
       name: 'Other Spot',
       latitude: 62.0,
       longitude: 26.0,
+      waterBodyId: 'water-body-1',
     );
 
     await catchRepository.create(
@@ -281,10 +297,16 @@ void main() {
   test(
     'a fishing spot with no catches never appears in fishingSpotCatchCounts',
     () async {
+      // A real (not fake-clock) delay so the two generated identifiers
+      // (derived from DateTime.now()) don't land on the same clock tick —
+      // the same pre-existing mitigation already used elsewhere in this
+      // project's test suite.
+      await Future<void>.delayed(const Duration(milliseconds: 2));
       await fishingSpotRepository.create(
         name: 'Empty Spot',
         latitude: 63.0,
         longitude: 27.0,
+        waterBodyId: 'water-body-1',
       );
 
       final summary = await statisticsRepository.getGeneralCatchStatistics();
@@ -294,10 +316,16 @@ void main() {
   );
 
   test('fishingSpotCatchCounts is sorted by catch count descending', () async {
+    // A real (not fake-clock) delay so the two generated identifiers
+    // (derived from DateTime.now(), including setUp's own fishingSpot)
+    // don't land on the same clock tick — the same pre-existing mitigation
+    // already used elsewhere in this project's test suite.
+    await delay();
     final otherSpot = await fishingSpotRepository.create(
       name: 'Other Spot',
       latitude: 62.0,
       longitude: 26.0,
+      waterBodyId: 'water-body-1',
     );
 
     await catchRepository.create(
@@ -331,16 +359,25 @@ void main() {
       // Fishing spot names have no uniqueness constraint (ADR-0004) — two
       // spots can share a display name and must still be counted and
       // ordered as distinct entries.
+      //
+      // A real (not fake-clock) delay, here and before the second create()
+      // call below, so no two generated identifiers (derived from
+      // DateTime.now(), including setUp's own fishingSpot) land on the same
+      // clock tick — the same pre-existing mitigation already used
+      // elsewhere in this project's test suite.
+      await delay();
       final firstSpot = await fishingSpotRepository.create(
         name: 'Kotijärvi',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       await delay();
       final secondSpot = await fishingSpotRepository.create(
         name: 'Kotijärvi',
         latitude: 61.5,
         longitude: 25.5,
+        waterBodyId: 'water-body-1',
       );
       expect(firstSpot.id, isNot(secondSpot.id));
 
@@ -374,10 +411,16 @@ void main() {
 
   test('a tie in catch count between two differently-named fishing spots '
       'resolves deterministically by name ascending', () async {
+    // A real (not fake-clock) delay so the two generated identifiers
+    // (derived from DateTime.now(), including setUp's own fishingSpot)
+    // don't land on the same clock tick — the same pre-existing mitigation
+    // already used elsewhere in this project's test suite.
+    await delay();
     final otherSpot = await fishingSpotRepository.create(
       name: 'Ahvenlampi',
       latitude: 62.0,
       longitude: 26.0,
+      waterBodyId: 'water-body-1',
     );
     // fishingSpot is named 'Test Spot' (setUp); 'Ahvenlampi' sorts first.
 

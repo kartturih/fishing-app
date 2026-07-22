@@ -16,9 +16,12 @@ import 'package:fishing_app/features/statistics/domain/species_catch_entry.dart'
 /// also renders (MFS-021's Conceptual Model; TD-021 Key Design Decision 5).
 ///
 /// Unlike the reused, unmodified `CatchListItem` (which this milestone's
-/// Catch List uses as-is), this card also shows the catch's fishing spot
-/// (location) — a field `CatchListItem` never renders — so it cannot simply
-/// wrap that widget. It resolves its own first-photo file independently,
+/// Catch List uses as-is), this card also shows the catch's location — a
+/// field `CatchListItem` never renders — so it cannot simply wrap that
+/// widget. Since MFS-024/TD-024, the location line shows the catch's water
+/// body rather than its exact fishing spot, since this card already spans
+/// every fishing spot the species was ever caught at (TD-024 Key Design
+/// Decision 9/FR-10). It resolves its own first-photo file independently,
 /// mirroring `CatchListItem`'s private thumbnail-loading pattern rather
 /// than sharing it — see TD-021 Key Design Decision 9. Its photo tile
 /// reuses `CatchPhotoThumbnail` unmodified — see TD-021 Key Design
@@ -87,7 +90,7 @@ class _RecordCatchCardState extends State<RecordCatchCard> {
                         ),
                       Text(formatCatchDate(catchModel.caughtAt)),
                       Text(
-                        widget.entry.fishingSpot.name,
+                        widget.entry.waterBody.name,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -111,7 +114,7 @@ class _RecordCatchCardState extends State<RecordCatchCard> {
       catchModel.species.finnishName,
       ?measurementLine,
       formatCatchDate(catchModel.caughtAt),
-      widget.entry.fishingSpot.name,
+      widget.entry.waterBody.name,
     ];
     return parts.join(', ');
   }

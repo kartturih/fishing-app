@@ -135,8 +135,17 @@ void main() {
   late SpeciesStatisticsRepository speciesStatisticsRepository;
   late FishingSpotStatisticsRepository fishingSpotStatisticsRepository;
 
-  setUp(() {
+  setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     tempDir = Directory.systemTemp.createTempSync(
       'general_catch_statistics_tab',
     );
@@ -280,6 +289,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
         createdAt: DateTime.utc(2026, 1, 1),
       );
       Catch buildCatch(String id, int weightGrams) => Catch(
@@ -340,6 +350,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final createdCatch = await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -388,6 +399,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -436,6 +448,7 @@ void main() {
         name: 'Kotijärvi',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
         createdAt: DateTime.utc(2026, 1, 1),
       );
       final secondSpot = FishingSpot(
@@ -443,6 +456,7 @@ void main() {
         name: 'Muualla',
         latitude: 62.0,
         longitude: 26.0,
+        waterBodyId: 'water-body-1',
         createdAt: DateTime.utc(2026, 1, 1),
       );
 
@@ -475,6 +489,7 @@ void main() {
         name: 'Merrasjärvi',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -576,6 +591,7 @@ void main() {
       name: 'Test Spot',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
       createdAt: DateTime.utc(2026, 1, 1),
     );
     Catch buildCatch(String id, int weightGrams) => Catch(
@@ -629,12 +645,14 @@ void main() {
         name: 'Spot A',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       await delay(tester);
       final spotB = await fishingSpotRepository.create(
         name: 'Spot B',
         latitude: 62.0,
         longitude: 26.0,
+        waterBodyId: 'water-body-1',
       );
       await catchRepository.create(
         fishingSpotId: spotA.id,
@@ -752,6 +770,7 @@ void main() {
       name: 'Test Spot',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
     );
     await catchRepository.create(
       fishingSpotId: fishingSpot.id,
@@ -825,6 +844,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -870,6 +890,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       await catchRepository.create(
         fishingSpotId: fishingSpot.id,

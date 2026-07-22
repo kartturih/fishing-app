@@ -15,6 +15,7 @@ import 'package:fishing_app/features/catches/presentation/widgets/catch_details_
 import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
@@ -126,8 +127,17 @@ void main() {
   late TackleBoxPhotoStorage tackleBoxPhotoStorage;
   late PersonalTackleBoxRepository personalTackleBoxRepository;
 
-  setUp(() {
+  setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     tempDir = Directory.systemTemp.createTempSync('species_statistics_page');
     catchPhotoRepository = CatchPhotoRepository(
       database,
@@ -176,6 +186,13 @@ void main() {
     name: 'Test Spot',
     latitude: 61.0,
     longitude: 25.0,
+    waterBodyId: 'water-body-1',
+    createdAt: DateTime.utc(2026, 1, 1),
+  );
+
+  WaterBody buildWaterBody() => WaterBody(
+    id: 'water-body-1',
+    name: 'Test Water Body',
     createdAt: DateTime.utc(2026, 1, 1),
   );
 
@@ -274,14 +291,17 @@ void main() {
     'full Catch List in the given (already-sorted) order',
     (tester) async {
       final fishingSpot = buildFishingSpot();
+      final waterBody = buildWaterBody();
       final entries = [
         SpeciesCatchEntry(
           catchModel: buildCatch('catch-1', weightGrams: 5000),
           fishingSpot: fishingSpot,
+          waterBody: waterBody,
         ),
         SpeciesCatchEntry(
           catchModel: buildCatch('catch-2', weightGrams: 3000),
           fishingSpot: fishingSpot,
+          waterBody: waterBody,
         ),
       ];
       final summary = SpeciesStatisticsSummary(
@@ -311,9 +331,11 @@ void main() {
     'layout',
     (tester) async {
       final fishingSpot = buildFishingSpot();
+      final waterBody = buildWaterBody();
       final entry = SpeciesCatchEntry(
         catchModel: buildCatch('catch-1'),
         fishingSpot: fishingSpot,
+        waterBody: waterBody,
       );
       final summary = SpeciesStatisticsSummary(
         species: FishSpecies.pike,
@@ -337,7 +359,9 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
+      final waterBody = buildWaterBody();
       final createdCatch = await catchRepository.create(
         fishingSpotId: fishingSpot.id,
         species: FishSpecies.pike,
@@ -348,7 +372,11 @@ void main() {
       final summary = SpeciesStatisticsSummary(
         species: FishSpecies.pike,
         catches: [
-          SpeciesCatchEntry(catchModel: createdCatch, fishingSpot: fishingSpot),
+          SpeciesCatchEntry(
+            catchModel: createdCatch,
+            fishingSpot: fishingSpot,
+            waterBody: waterBody,
+          ),
         ],
       );
       final repository = _StaticRepository(database, summary);
@@ -371,7 +399,9 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
+      final waterBody = buildWaterBody();
       final first = await catchRepository.create(
         fishingSpotId: fishingSpot.id,
         species: FishSpecies.pike,
@@ -399,8 +429,16 @@ void main() {
       final summary = SpeciesStatisticsSummary(
         species: FishSpecies.pike,
         catches: [
-          SpeciesCatchEntry(catchModel: first, fishingSpot: fishingSpot),
-          SpeciesCatchEntry(catchModel: second, fishingSpot: fishingSpot),
+          SpeciesCatchEntry(
+            catchModel: first,
+            fishingSpot: fishingSpot,
+            waterBody: waterBody,
+          ),
+          SpeciesCatchEntry(
+            catchModel: second,
+            fishingSpot: fishingSpot,
+            waterBody: waterBody,
+          ),
         ],
       );
       final repository = _StaticRepository(database, summary);
@@ -434,12 +472,14 @@ void main() {
     expect(find.text('0'), findsOneWidget);
 
     final fishingSpot = buildFishingSpot();
+    final waterBody = buildWaterBody();
     final secondSummary = SpeciesStatisticsSummary(
       species: FishSpecies.pike,
       catches: [
         SpeciesCatchEntry(
           catchModel: buildCatch('catch-1', weightGrams: 2000),
           fishingSpot: fishingSpot,
+          waterBody: waterBody,
         ),
       ],
     );
@@ -479,6 +519,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final original = await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -522,6 +563,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final toDelete = await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -562,6 +604,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final toDelete = await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -609,6 +652,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final heavier = await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -683,7 +727,9 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
+      final waterBody = buildWaterBody();
       final createdCatch = await catchRepository.create(
         fishingSpotId: fishingSpot.id,
         species: FishSpecies.pike,
@@ -694,7 +740,11 @@ void main() {
       final firstSummary = SpeciesStatisticsSummary(
         species: FishSpecies.pike,
         catches: [
-          SpeciesCatchEntry(catchModel: createdCatch, fishingSpot: fishingSpot),
+          SpeciesCatchEntry(
+            catchModel: createdCatch,
+            fishingSpot: fishingSpot,
+            waterBody: waterBody,
+          ),
         ],
       );
       final repository = _FirstThenPendingRepository(database, firstSummary);

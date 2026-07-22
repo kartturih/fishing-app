@@ -25,7 +25,20 @@ class _LegacyAppDatabase extends AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) async {
-      await migrator.createTable(fishingSpots);
+      // Legacy (pre-MFS-024) fishing_spots shape: no water_body_id
+      // column existed before schema 8, so this cannot reuse the live
+      // FishingSpots table class (which now has one) via
+      // migrator.createTable(fishingSpots) — mirrors this file's own
+      // existing raw-SQL-legacy-shape precedent for `catches`.
+      await customStatement('''
+        CREATE TABLE fishing_spots (
+          id TEXT NOT NULL PRIMARY KEY,
+          name TEXT NOT NULL,
+          latitude REAL NOT NULL,
+          longitude REAL NOT NULL,
+          created_at INTEGER NOT NULL
+        )
+      ''');
       await customStatement('''
         CREATE TABLE catches (
           id TEXT NOT NULL PRIMARY KEY,

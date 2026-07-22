@@ -14,10 +14,12 @@ import 'package:fishing_app/features/catch_photos/data/storage/catch_photo_stora
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/add_fishing_spot_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_details_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_spot_name_bottom_sheet.dart';
+import 'package:fishing_app/features/fishing_spots/presentation/widgets/water_body_selection_bottom_sheet.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
 import 'package:fishing_app/features/map/presentation/widgets/lure_tools_page.dart';
@@ -52,6 +54,9 @@ class _MapScreenState extends State<MapScreen> {
   final AppDatabase _database = AppDatabase();
   late final FishingSpotRepository _fishingSpotRepository =
       FishingSpotRepository(_database);
+  late final WaterBodyRepository _waterBodyRepository = WaterBodyRepository(
+    _database,
+  );
   late final CatchRepository _catchRepository = CatchRepository(_database);
   late final CatchPhotoStorage _catchPhotoStorage = CatchPhotoStorage(
     rootDirectoryProvider: getApplicationDocumentsDirectory,
@@ -235,6 +240,8 @@ class _MapScreenState extends State<MapScreen> {
       _lureCatalogRepository,
       _personalTackleBoxRepository,
       _tackleBoxPhotoStorage,
+      _waterBodyRepository,
+      _fishingSpotRepository,
     );
     if (!mounted || result == null) {
       return;
@@ -431,6 +438,17 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _promptAndCreateFishingSpot(LatLng position) async {
+    final waterBody = await WaterBodySelectionBottomSheet.show(
+      context,
+      waterBodyRepository: _waterBodyRepository,
+      fishingSpotRepository: _fishingSpotRepository,
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+    if (!mounted || waterBody == null) {
+      return;
+    }
+
     final name = await FishingSpotNameBottomSheet.show(context);
     if (!mounted || name == null) {
       return;
@@ -441,6 +459,7 @@ class _MapScreenState extends State<MapScreen> {
         name: name,
         latitude: position.latitude,
         longitude: position.longitude,
+        waterBodyId: waterBody.id,
       );
       await _addFishingSpotFeature(spot);
     } catch (error) {

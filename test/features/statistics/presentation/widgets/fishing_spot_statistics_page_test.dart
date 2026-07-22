@@ -133,8 +133,17 @@ void main() {
   late PersonalTackleBoxRepository personalTackleBoxRepository;
   late FishingSpot fishingSpot;
 
-  setUp(() {
+  setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     tempDir = Directory.systemTemp.createTempSync(
       'fishing_spot_statistics_page',
     );
@@ -156,6 +165,7 @@ void main() {
       name: 'Merrasjärvi',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
       createdAt: DateTime.utc(2026, 1, 1),
     );
   });
@@ -410,6 +420,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final createdCatch = await catchRepository.create(
         fishingSpotId: realFishingSpot.id,
@@ -457,6 +468,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final first = await catchRepository.create(
         fishingSpotId: realFishingSpot.id,
@@ -529,6 +541,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final original = await catchRepository.create(
         fishingSpotId: realFishingSpot.id,
@@ -584,6 +597,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final toDelete = await catchRepository.create(
         fishingSpotId: realFishingSpot.id,
@@ -644,6 +658,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       // The heaviest and most recent catch — deleting it must change the
       // total, the Record Catch, the Species Breakdown, and the Last Catch
@@ -772,6 +787,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final heavier = await catchRepository.create(
         fishingSpotId: realFishingSpot.id,
@@ -853,6 +869,7 @@ void main() {
         name: 'Test Spot',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
       final createdCatch = await catchRepository.create(
         fishingSpotId: realFishingSpot.id,

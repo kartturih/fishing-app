@@ -4,6 +4,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:fishing_app/features/catch_photos/data/local/catch_photos_table.dart';
 import 'package:fishing_app/features/catches/data/local/catches_table.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spots_table.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_bodies_table.dart';
 import 'package:fishing_app/features/lure_catalog/data/local/lure_models_table.dart';
 import 'package:fishing_app/features/lure_catalog/data/local/lure_variants_table.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/local/tackle_box_entries_table.dart';
@@ -18,6 +19,7 @@ part 'app_database.g.dart';
     LureModels,
     LureVariants,
     TackleBoxEntries,
+    WaterBodies,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -25,7 +27,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'fishing_app'));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -56,9 +58,42 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         await migrator.addColumn(catches, catches.notes);
       }
+      if (from < 8) {
+        await migrator.createTable(waterBodies);
+        await migrator.addColumn(fishingSpots, fishingSpots.waterBodyId);
+        await _backfillWaterBodiesForExistingFishingSpots();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// Auto-creates one [WaterBody] per pre-existing [FishingSpot] (named
+  /// identically to that spot's current name, per MFS-024 FR-14) and
+  /// assigns it, so that every row satisfies the "always has a water body"
+  /// invariant by the time this migration completes. Uses `this` (the
+  /// AppDatabase instance itself, already in scope inside `onUpgrade`)
+  /// rather than raw SQL — every table involved is already a typed,
+  /// registered Drift table. See TD-024 Key Design Decision 6.
+  Future<void> _backfillWaterBodiesForExistingFishingSpots() async {
+    final existingSpots = await select(fishingSpots).get();
+    for (final spot in existingSpots) {
+      // Appending the fishing spot's own already-unique id guarantees a
+      // unique water-body id even if two spots are processed within the
+      // same microsecond.
+      final waterBodyId =
+          'waterbody-${DateTime.now().microsecondsSinceEpoch}-${spot.id}';
+      await into(waterBodies).insert(
+        WaterBodiesCompanion.insert(
+          id: waterBodyId,
+          name: spot.name,
+          createdAt: spot.createdAt,
+        ),
+      );
+      await (update(fishingSpots)..where((t) => t.id.equals(spot.id))).write(
+        FishingSpotsCompanion(waterBodyId: Value(waterBodyId)),
+      );
+    }
+  }
 }

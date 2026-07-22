@@ -3,6 +3,265 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+class $WaterBodiesTable extends WaterBodies
+    with TableInfo<$WaterBodiesTable, WaterBodyEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WaterBodiesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'water_bodies';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WaterBodyEntity> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WaterBodyEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WaterBodyEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $WaterBodiesTable createAlias(String alias) {
+    return $WaterBodiesTable(attachedDatabase, alias);
+  }
+}
+
+class WaterBodyEntity extends DataClass implements Insertable<WaterBodyEntity> {
+  final String id;
+  final String name;
+  final int createdAt;
+  const WaterBodyEntity({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  WaterBodiesCompanion toCompanion(bool nullToAbsent) {
+    return WaterBodiesCompanion(
+      id: Value(id),
+      name: Value(name),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory WaterBodyEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WaterBodyEntity(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  WaterBodyEntity copyWith({String? id, String? name, int? createdAt}) =>
+      WaterBodyEntity(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  WaterBodyEntity copyWithCompanion(WaterBodiesCompanion data) {
+    return WaterBodyEntity(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WaterBodyEntity(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WaterBodyEntity &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.createdAt == this.createdAt);
+}
+
+class WaterBodiesCompanion extends UpdateCompanion<WaterBodyEntity> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const WaterBodiesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WaterBodiesCompanion.insert({
+    required String id,
+    required String name,
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt);
+  static Insertable<WaterBodyEntity> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WaterBodiesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return WaterBodiesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WaterBodiesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $FishingSpotsTable extends FishingSpots
     with TableInfo<$FishingSpotsTable, FishingSpotEntity> {
   @override
@@ -49,6 +308,20 @@ class $FishingSpotsTable extends FishingSpots
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _waterBodyIdMeta = const VerificationMeta(
+    'waterBodyId',
+  );
+  @override
+  late final GeneratedColumn<String> waterBodyId = GeneratedColumn<String>(
+    'water_body_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES water_bodies (id) ON DELETE RESTRICT',
+    ),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -66,6 +339,7 @@ class $FishingSpotsTable extends FishingSpots
     name,
     latitude,
     longitude,
+    waterBodyId,
     createdAt,
   ];
   @override
@@ -109,6 +383,15 @@ class $FishingSpotsTable extends FishingSpots
     } else if (isInserting) {
       context.missing(_longitudeMeta);
     }
+    if (data.containsKey('water_body_id')) {
+      context.handle(
+        _waterBodyIdMeta,
+        waterBodyId.isAcceptableOrUnknown(
+          data['water_body_id']!,
+          _waterBodyIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -142,6 +425,10 @@ class $FishingSpotsTable extends FishingSpots
         DriftSqlType.double,
         data['${effectivePrefix}longitude'],
       )!,
+      waterBodyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}water_body_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -161,12 +448,14 @@ class FishingSpotEntity extends DataClass
   final String name;
   final double latitude;
   final double longitude;
+  final String? waterBodyId;
   final int createdAt;
   const FishingSpotEntity({
     required this.id,
     required this.name,
     required this.latitude,
     required this.longitude,
+    this.waterBodyId,
     required this.createdAt,
   });
   @override
@@ -176,6 +465,9 @@ class FishingSpotEntity extends DataClass
     map['name'] = Variable<String>(name);
     map['latitude'] = Variable<double>(latitude);
     map['longitude'] = Variable<double>(longitude);
+    if (!nullToAbsent || waterBodyId != null) {
+      map['water_body_id'] = Variable<String>(waterBodyId);
+    }
     map['created_at'] = Variable<int>(createdAt);
     return map;
   }
@@ -186,6 +478,9 @@ class FishingSpotEntity extends DataClass
       name: Value(name),
       latitude: Value(latitude),
       longitude: Value(longitude),
+      waterBodyId: waterBodyId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(waterBodyId),
       createdAt: Value(createdAt),
     );
   }
@@ -200,6 +495,7 @@ class FishingSpotEntity extends DataClass
       name: serializer.fromJson<String>(json['name']),
       latitude: serializer.fromJson<double>(json['latitude']),
       longitude: serializer.fromJson<double>(json['longitude']),
+      waterBodyId: serializer.fromJson<String?>(json['waterBodyId']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
   }
@@ -211,6 +507,7 @@ class FishingSpotEntity extends DataClass
       'name': serializer.toJson<String>(name),
       'latitude': serializer.toJson<double>(latitude),
       'longitude': serializer.toJson<double>(longitude),
+      'waterBodyId': serializer.toJson<String?>(waterBodyId),
       'createdAt': serializer.toJson<int>(createdAt),
     };
   }
@@ -220,12 +517,14 @@ class FishingSpotEntity extends DataClass
     String? name,
     double? latitude,
     double? longitude,
+    Value<String?> waterBodyId = const Value.absent(),
     int? createdAt,
   }) => FishingSpotEntity(
     id: id ?? this.id,
     name: name ?? this.name,
     latitude: latitude ?? this.latitude,
     longitude: longitude ?? this.longitude,
+    waterBodyId: waterBodyId.present ? waterBodyId.value : this.waterBodyId,
     createdAt: createdAt ?? this.createdAt,
   );
   FishingSpotEntity copyWithCompanion(FishingSpotsCompanion data) {
@@ -234,6 +533,9 @@ class FishingSpotEntity extends DataClass
       name: data.name.present ? data.name.value : this.name,
       latitude: data.latitude.present ? data.latitude.value : this.latitude,
       longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      waterBodyId: data.waterBodyId.present
+          ? data.waterBodyId.value
+          : this.waterBodyId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -245,13 +547,15 @@ class FishingSpotEntity extends DataClass
           ..write('name: $name, ')
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
+          ..write('waterBodyId: $waterBodyId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, latitude, longitude, createdAt);
+  int get hashCode =>
+      Object.hash(id, name, latitude, longitude, waterBodyId, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -260,6 +564,7 @@ class FishingSpotEntity extends DataClass
           other.name == this.name &&
           other.latitude == this.latitude &&
           other.longitude == this.longitude &&
+          other.waterBodyId == this.waterBodyId &&
           other.createdAt == this.createdAt);
 }
 
@@ -268,6 +573,7 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
   final Value<String> name;
   final Value<double> latitude;
   final Value<double> longitude;
+  final Value<String?> waterBodyId;
   final Value<int> createdAt;
   final Value<int> rowid;
   const FishingSpotsCompanion({
@@ -275,6 +581,7 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
     this.name = const Value.absent(),
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
+    this.waterBodyId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -283,6 +590,7 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
     required String name,
     required double latitude,
     required double longitude,
+    this.waterBodyId = const Value.absent(),
     required int createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -295,6 +603,7 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
     Expression<String>? name,
     Expression<double>? latitude,
     Expression<double>? longitude,
+    Expression<String>? waterBodyId,
     Expression<int>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -303,6 +612,7 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
       if (name != null) 'name': name,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
+      if (waterBodyId != null) 'water_body_id': waterBodyId,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -313,6 +623,7 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
     Value<String>? name,
     Value<double>? latitude,
     Value<double>? longitude,
+    Value<String?>? waterBodyId,
     Value<int>? createdAt,
     Value<int>? rowid,
   }) {
@@ -321,6 +632,7 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
       name: name ?? this.name,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      waterBodyId: waterBodyId ?? this.waterBodyId,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -341,6 +653,9 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
     if (longitude.present) {
       map['longitude'] = Variable<double>(longitude.value);
     }
+    if (waterBodyId.present) {
+      map['water_body_id'] = Variable<String>(waterBodyId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -357,6 +672,7 @@ class FishingSpotsCompanion extends UpdateCompanion<FishingSpotEntity> {
           ..write('name: $name, ')
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
+          ..write('waterBodyId: $waterBodyId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3485,6 +3801,7 @@ class TackleBoxEntriesCompanion extends UpdateCompanion<TackleBoxEntryEntity> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $WaterBodiesTable waterBodies = $WaterBodiesTable(this);
   late final $FishingSpotsTable fishingSpots = $FishingSpotsTable(this);
   late final $LureModelsTable lureModels = $LureModelsTable(this);
   late final $LureVariantsTable lureVariants = $LureVariantsTable(this);
@@ -3514,6 +3831,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+    waterBodies,
     fishingSpots,
     lureModels,
     lureVariants,
@@ -3551,12 +3869,278 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ]);
 }
 
+typedef $$WaterBodiesTableCreateCompanionBuilder =
+    WaterBodiesCompanion Function({
+      required String id,
+      required String name,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$WaterBodiesTableUpdateCompanionBuilder =
+    WaterBodiesCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$WaterBodiesTableReferences
+    extends BaseReferences<_$AppDatabase, $WaterBodiesTable, WaterBodyEntity> {
+  $$WaterBodiesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$FishingSpotsTable, List<FishingSpotEntity>>
+  _fishingSpotsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.fishingSpots,
+    aliasName: 'water_bodies__id__fishing_spots__water_body_id',
+  );
+
+  $$FishingSpotsTableProcessedTableManager get fishingSpotsRefs {
+    final manager = $$FishingSpotsTableTableManager(
+      $_db,
+      $_db.fishingSpots,
+    ).filter((f) => f.waterBodyId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_fishingSpotsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$WaterBodiesTableFilterComposer
+    extends Composer<_$AppDatabase, $WaterBodiesTable> {
+  $$WaterBodiesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> fishingSpotsRefs(
+    Expression<bool> Function($$FishingSpotsTableFilterComposer f) f,
+  ) {
+    final $$FishingSpotsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.fishingSpots,
+      getReferencedColumn: (t) => t.waterBodyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FishingSpotsTableFilterComposer(
+            $db: $db,
+            $table: $db.fishingSpots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WaterBodiesTableOrderingComposer
+    extends Composer<_$AppDatabase, $WaterBodiesTable> {
+  $$WaterBodiesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WaterBodiesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WaterBodiesTable> {
+  $$WaterBodiesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> fishingSpotsRefs<T extends Object>(
+    Expression<T> Function($$FishingSpotsTableAnnotationComposer a) f,
+  ) {
+    final $$FishingSpotsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.fishingSpots,
+      getReferencedColumn: (t) => t.waterBodyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FishingSpotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.fishingSpots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WaterBodiesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WaterBodiesTable,
+          WaterBodyEntity,
+          $$WaterBodiesTableFilterComposer,
+          $$WaterBodiesTableOrderingComposer,
+          $$WaterBodiesTableAnnotationComposer,
+          $$WaterBodiesTableCreateCompanionBuilder,
+          $$WaterBodiesTableUpdateCompanionBuilder,
+          (WaterBodyEntity, $$WaterBodiesTableReferences),
+          WaterBodyEntity,
+          PrefetchHooks Function({bool fishingSpotsRefs})
+        > {
+  $$WaterBodiesTableTableManager(_$AppDatabase db, $WaterBodiesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WaterBodiesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WaterBodiesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WaterBodiesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WaterBodiesCompanion(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => WaterBodiesCompanion.insert(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$WaterBodiesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({fishingSpotsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (fishingSpotsRefs) db.fishingSpots],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (fishingSpotsRefs)
+                    await $_getPrefetchedData<
+                      WaterBodyEntity,
+                      $WaterBodiesTable,
+                      FishingSpotEntity
+                    >(
+                      currentTable: table,
+                      referencedTable: $$WaterBodiesTableReferences
+                          ._fishingSpotsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$WaterBodiesTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).fishingSpotsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.waterBodyId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$WaterBodiesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WaterBodiesTable,
+      WaterBodyEntity,
+      $$WaterBodiesTableFilterComposer,
+      $$WaterBodiesTableOrderingComposer,
+      $$WaterBodiesTableAnnotationComposer,
+      $$WaterBodiesTableCreateCompanionBuilder,
+      $$WaterBodiesTableUpdateCompanionBuilder,
+      (WaterBodyEntity, $$WaterBodiesTableReferences),
+      WaterBodyEntity,
+      PrefetchHooks Function({bool fishingSpotsRefs})
+    >;
 typedef $$FishingSpotsTableCreateCompanionBuilder =
     FishingSpotsCompanion Function({
       required String id,
       required String name,
       required double latitude,
       required double longitude,
+      Value<String?> waterBodyId,
       required int createdAt,
       Value<int> rowid,
     });
@@ -3566,6 +4150,7 @@ typedef $$FishingSpotsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<double> latitude,
       Value<double> longitude,
+      Value<String?> waterBodyId,
       Value<int> createdAt,
       Value<int> rowid,
     });
@@ -3574,6 +4159,23 @@ final class $$FishingSpotsTableReferences
     extends
         BaseReferences<_$AppDatabase, $FishingSpotsTable, FishingSpotEntity> {
   $$FishingSpotsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $WaterBodiesTable _waterBodyIdTable(_$AppDatabase db) => db.waterBodies
+      .createAlias('fishing_spots__water_body_id__water_bodies__id');
+
+  $$WaterBodiesTableProcessedTableManager? get waterBodyId {
+    final $_column = $_itemColumn<String>('water_body_id');
+    if ($_column == null) return null;
+    final manager = $$WaterBodiesTableTableManager(
+      $_db,
+      $_db.waterBodies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_waterBodyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 
   static MultiTypedResultKey<$CatchesTable, List<CatchEntity>>
   _catchesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -3627,6 +4229,29 @@ class $$FishingSpotsTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$WaterBodiesTableFilterComposer get waterBodyId {
+    final $$WaterBodiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.waterBodyId,
+      referencedTable: $db.waterBodies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WaterBodiesTableFilterComposer(
+            $db: $db,
+            $table: $db.waterBodies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<bool> catchesRefs(
     Expression<bool> Function($$CatchesTableFilterComposer f) f,
@@ -3687,6 +4312,29 @@ class $$FishingSpotsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$WaterBodiesTableOrderingComposer get waterBodyId {
+    final $$WaterBodiesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.waterBodyId,
+      referencedTable: $db.waterBodies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WaterBodiesTableOrderingComposer(
+            $db: $db,
+            $table: $db.waterBodies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$FishingSpotsTableAnnotationComposer
@@ -3712,6 +4360,29 @@ class $$FishingSpotsTableAnnotationComposer
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$WaterBodiesTableAnnotationComposer get waterBodyId {
+    final $$WaterBodiesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.waterBodyId,
+      referencedTable: $db.waterBodies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WaterBodiesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.waterBodies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<T> catchesRefs<T extends Object>(
     Expression<T> Function($$CatchesTableAnnotationComposer a) f,
@@ -3752,7 +4423,7 @@ class $$FishingSpotsTableTableManager
           $$FishingSpotsTableUpdateCompanionBuilder,
           (FishingSpotEntity, $$FishingSpotsTableReferences),
           FishingSpotEntity,
-          PrefetchHooks Function({bool catchesRefs})
+          PrefetchHooks Function({bool waterBodyId, bool catchesRefs})
         > {
   $$FishingSpotsTableTableManager(_$AppDatabase db, $FishingSpotsTable table)
     : super(
@@ -3771,6 +4442,7 @@ class $$FishingSpotsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<double> latitude = const Value.absent(),
                 Value<double> longitude = const Value.absent(),
+                Value<String?> waterBodyId = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FishingSpotsCompanion(
@@ -3778,6 +4450,7 @@ class $$FishingSpotsTableTableManager
                 name: name,
                 latitude: latitude,
                 longitude: longitude,
+                waterBodyId: waterBodyId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -3787,6 +4460,7 @@ class $$FishingSpotsTableTableManager
                 required String name,
                 required double latitude,
                 required double longitude,
+                Value<String?> waterBodyId = const Value.absent(),
                 required int createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => FishingSpotsCompanion.insert(
@@ -3794,6 +4468,7 @@ class $$FishingSpotsTableTableManager
                 name: name,
                 latitude: latitude,
                 longitude: longitude,
+                waterBodyId: waterBodyId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -3805,11 +4480,42 @@ class $$FishingSpotsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({catchesRefs = false}) {
+          prefetchHooksCallback: ({waterBodyId = false, catchesRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [if (catchesRefs) db.catches],
-              addJoins: null,
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (waterBodyId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.waterBodyId,
+                                referencedTable: $$FishingSpotsTableReferences
+                                    ._waterBodyIdTable(db),
+                                referencedColumn: $$FishingSpotsTableReferences
+                                    ._waterBodyIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (catchesRefs)
@@ -3853,7 +4559,7 @@ typedef $$FishingSpotsTableProcessedTableManager =
       $$FishingSpotsTableUpdateCompanionBuilder,
       (FishingSpotEntity, $$FishingSpotsTableReferences),
       FishingSpotEntity,
-      PrefetchHooks Function({bool catchesRefs})
+      PrefetchHooks Function({bool waterBodyId, bool catchesRefs})
     >;
 typedef $$LureModelsTableCreateCompanionBuilder =
     LureModelsCompanion Function({
@@ -6291,6 +6997,8 @@ typedef $$TackleBoxEntriesTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$WaterBodiesTableTableManager get waterBodies =>
+      $$WaterBodiesTableTableManager(_db, _db.waterBodies);
   $$FishingSpotsTableTableManager get fishingSpots =>
       $$FishingSpotsTableTableManager(_db, _db.fishingSpots);
   $$LureModelsTableTableManager get lureModels =>

@@ -151,6 +151,15 @@ void main() {
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     catchRepository = CatchRepository(database);
     storageDir = Directory.systemTemp.createTempSync(
       'catch_details_page_storage',
@@ -178,6 +187,7 @@ void main() {
       name: 'Merrasjärvi',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
     );
     existingCatch = await catchRepository.create(
       fishingSpotId: fishingSpot.id,

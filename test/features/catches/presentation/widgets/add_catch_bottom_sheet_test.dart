@@ -346,6 +346,15 @@ void main() {
 
     setUp(() async {
       database = AppDatabase(NativeDatabase.memory());
+      await database
+          .into(database.waterBodies)
+          .insert(
+            WaterBodiesCompanion.insert(
+              id: 'water-body-1',
+              name: 'Test Water Body',
+              createdAt: 0,
+            ),
+          );
       catchRepository = CatchRepository(database);
       storageDir = Directory.systemTemp.createTempSync(
         'add_catch_photos_storage',
@@ -372,6 +381,7 @@ void main() {
         name: 'Merrasjärvi',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
 
       originalPicker = ImagePickerPlatform.instance;
@@ -769,6 +779,15 @@ void main() {
 
     setUp(() async {
       database = AppDatabase(NativeDatabase.memory());
+      await database
+          .into(database.waterBodies)
+          .insert(
+            WaterBodiesCompanion.insert(
+              id: 'water-body-1',
+              name: 'Test Water Body',
+              createdAt: 0,
+            ),
+          );
       catchRepository = CatchRepository(database);
       storageDir = Directory.systemTemp.createTempSync(
         'add_catch_lure_photos_storage',
@@ -792,6 +811,7 @@ void main() {
         name: 'Merrasjärvi',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
     });
 
@@ -902,6 +922,15 @@ void main() {
 
     setUp(() async {
       database = AppDatabase(NativeDatabase.memory());
+      await database
+          .into(database.waterBodies)
+          .insert(
+            WaterBodiesCompanion.insert(
+              id: 'water-body-1',
+              name: 'Test Water Body',
+              createdAt: 0,
+            ),
+          );
       catchRepository = CatchRepository(database);
       storageDir = Directory.systemTemp.createTempSync(
         'add_catch_notes_photos_storage',
@@ -925,6 +954,7 @@ void main() {
         name: 'Merrasjärvi',
         latitude: 61.0,
         longitude: 25.0,
+        waterBodyId: 'water-body-1',
       );
     });
 

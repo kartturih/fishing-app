@@ -13,6 +13,7 @@ import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_entry.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/record_catch_card.dart';
 
@@ -54,10 +55,20 @@ void main() {
   late Directory storageDir;
   late Directory sourceDir;
   late FishingSpot fishingSpot;
+  late WaterBody waterBody;
   late Catch existingCatch;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     catchRepository = CatchRepository(database);
     storageDir = Directory.systemTemp.createTempSync(
       'record_catch_card_storage',
@@ -72,6 +83,12 @@ void main() {
       name: 'Merrasjärvi',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
+    );
+    waterBody = WaterBody(
+      id: 'water-body-1',
+      name: 'Test Water Body',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
     );
     existingCatch = await catchRepository.create(
       fishingSpotId: fishingSpot.id,
@@ -98,6 +115,7 @@ void main() {
     final entry = SpeciesCatchEntry(
       catchModel: existingCatch,
       fishingSpot: fishingSpot,
+      waterBody: waterBody,
     );
 
     await _pumpCard(tester, entry, catchPhotoRepository);
@@ -122,6 +140,7 @@ void main() {
     final entry = SpeciesCatchEntry(
       catchModel: existingCatch,
       fishingSpot: fishingSpot,
+      waterBody: waterBody,
     );
     await _pumpCard(tester, entry, catchPhotoRepository);
     await _pumpUntilSettledWithRealIO(tester);
@@ -130,12 +149,13 @@ void main() {
     expect(find.byIcon(Icons.set_meal), findsNothing);
   });
 
-  testWidgets('renders the measurement line, date, and fishing spot name', (
+  testWidgets('renders the measurement line, date, and water body name', (
     tester,
   ) async {
     final entry = SpeciesCatchEntry(
       catchModel: existingCatch,
       fishingSpot: fishingSpot,
+      waterBody: waterBody,
     );
 
     await _pumpCard(tester, entry, catchPhotoRepository);
@@ -144,7 +164,7 @@ void main() {
     expect(find.textContaining('3.2 kg'), findsOneWidget);
     expect(find.textContaining('68 cm'), findsOneWidget);
     expect(find.text('14.7.2026'), findsOneWidget);
-    expect(find.text('Merrasjärvi'), findsOneWidget);
+    expect(find.text('Test Water Body'), findsOneWidget);
   });
 
   testWidgets(
@@ -162,6 +182,7 @@ void main() {
       final entry = SpeciesCatchEntry(
         catchModel: catchWithoutMeasurements,
         fishingSpot: fishingSpot,
+        waterBody: waterBody,
       );
 
       await _pumpCard(tester, entry, catchPhotoRepository);
@@ -169,7 +190,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('14.7.2026'), findsOneWidget);
-      expect(find.text('Merrasjärvi'), findsOneWidget);
+      expect(find.text('Test Water Body'), findsOneWidget);
     },
   );
 
@@ -178,6 +199,7 @@ void main() {
     final entry = SpeciesCatchEntry(
       catchModel: existingCatch,
       fishingSpot: fishingSpot,
+      waterBody: waterBody,
     );
 
     await _pumpCard(
@@ -198,6 +220,7 @@ void main() {
     final entry = SpeciesCatchEntry(
       catchModel: existingCatch,
       fishingSpot: fishingSpot,
+      waterBody: waterBody,
     );
     final handle = tester.ensureSemantics();
 
@@ -205,7 +228,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.bySemanticsLabel('Hauki, 3.2 kg • 68 cm, 14.7.2026, Merrasjärvi'),
+      find.bySemanticsLabel(
+        'Hauki, 3.2 kg • 68 cm, 14.7.2026, Test Water Body',
+      ),
       findsOneWidget,
     );
     handle.dispose();

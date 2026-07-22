@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:fishing_app/app/theme/app_spacing.dart';
@@ -6,7 +8,11 @@ import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
+import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
+import 'package:fishing_app/features/fishing_spots/presentation/widgets/water_body_selection_bottom_sheet.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
@@ -38,6 +44,8 @@ class FishingSpotDetailsBottomSheet extends StatefulWidget {
     required this.lureCatalogRepository,
     required this.personalTackleBoxRepository,
     required this.personalTackleBoxPhotoStorage,
+    required this.waterBodyRepository,
+    required this.fishingSpotRepository,
   });
 
   final FishingSpot fishingSpot;
@@ -46,6 +54,8 @@ class FishingSpotDetailsBottomSheet extends StatefulWidget {
   final LureCatalogRepository lureCatalogRepository;
   final PersonalTackleBoxRepository personalTackleBoxRepository;
   final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
+  final WaterBodyRepository waterBodyRepository;
+  final FishingSpotRepository fishingSpotRepository;
 
   static Future<FishingSpotDetailsResult?> show(
     BuildContext context,
@@ -55,6 +65,8 @@ class FishingSpotDetailsBottomSheet extends StatefulWidget {
     LureCatalogRepository lureCatalogRepository,
     PersonalTackleBoxRepository personalTackleBoxRepository,
     TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
+    WaterBodyRepository waterBodyRepository,
+    FishingSpotRepository fishingSpotRepository,
   ) {
     return showModalBottomSheet<FishingSpotDetailsResult>(
       context: context,
@@ -67,6 +79,8 @@ class FishingSpotDetailsBottomSheet extends StatefulWidget {
         lureCatalogRepository: lureCatalogRepository,
         personalTackleBoxRepository: personalTackleBoxRepository,
         personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
+        waterBodyRepository: waterBodyRepository,
+        fishingSpotRepository: fishingSpotRepository,
       ),
     );
   }
@@ -83,6 +97,9 @@ class _FishingSpotDetailsBottomSheetState
   );
   late Future<List<Catch>> _catchesFuture = widget.catchRepository
       .getByFishingSpotId(widget.fishingSpot.id);
+  late Future<WaterBody?> _waterBodyFuture = widget.waterBodyRepository.getById(
+    widget.fishingSpot.waterBodyId,
+  );
 
   bool _isEditing = false;
   bool _isSaving = false;
@@ -113,6 +130,49 @@ class _FishingSpotDetailsBottomSheetState
         widget.fishingSpot.id,
       );
     });
+  }
+
+  /// Opens the water-body picker for this fishing spot, computing nearby
+  /// candidates from its own already-recorded coordinates. Handled entirely
+  /// within this bottom sheet's own local state — changing a water body
+  /// does not affect the map marker or the fishing spot's identity, so
+  /// `MapScreen` needs no new signal. See MFS-024 FR-7.
+  Future<void> _changeWaterBody() async {
+    final selected = await WaterBodySelectionBottomSheet.show(
+      context,
+      waterBodyRepository: widget.waterBodyRepository,
+      fishingSpotRepository: widget.fishingSpotRepository,
+      latitude: widget.fishingSpot.latitude,
+      longitude: widget.fishingSpot.longitude,
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+
+    try {
+      await widget.fishingSpotRepository.updateWaterBody(
+        id: widget.fishingSpot.id,
+        waterBodyId: selected.id,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _waterBodyFuture = widget.waterBodyRepository.getById(selected.id);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vesistö vaihdettu')));
+    } catch (error) {
+      debugPrint('Failed to change water body: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vesistön vaihtaminen epäonnistui. Yritä uudelleen.'),
+          ),
+        );
+      }
+    }
   }
 
   void _startEditing() {
@@ -192,10 +252,17 @@ class _FishingSpotDetailsBottomSheetState
         widget.fishingSpot.name,
         style: Theme.of(context).textTheme.titleMedium,
       ),
+      const SizedBox(height: AppSpacing.xs),
+      _buildWaterBodySubtitle(),
       const SizedBox(height: AppSpacing.lg),
       FilledButton.tonal(
         onPressed: _startEditing,
         child: const Text('Muokkaa nimeä'),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      FilledButton.tonal(
+        onPressed: () => unawaited(_changeWaterBody()),
+        child: const Text('Vaihda vesistö'),
       ),
       const SizedBox(height: AppSpacing.sm),
       FilledButton.tonalIcon(
@@ -216,6 +283,26 @@ class _FishingSpotDetailsBottomSheetState
       const SizedBox(height: AppSpacing.lg),
       _buildCatchesSection(),
     ];
+  }
+
+  // No loading text of its own: this is a small, secondary subtitle, and
+  // showing its own "Ladataan..." would duplicate the catches section's
+  // existing loading text. It simply appears once resolved.
+  Widget _buildWaterBodySubtitle() {
+    return FutureBuilder<WaterBody?>(
+      future: _waterBodyFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done ||
+            snapshot.hasError ||
+            snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+        return Text(
+          snapshot.data!.name,
+          style: Theme.of(context).textTheme.bodyMedium,
+        );
+      },
+    );
   }
 
   List<Widget> _editingContent() {

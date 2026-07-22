@@ -17,6 +17,15 @@ void main() {
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     catchRepository = CatchRepository(database);
     statisticsRepository = LureStatisticsRepository(database);
     final fishingSpotRepository = FishingSpotRepository(database);
@@ -24,6 +33,7 @@ void main() {
       name: 'Test Spot',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
     );
   });
 

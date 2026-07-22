@@ -24,6 +24,7 @@ void main() {
       name: 'Test Spot',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
       createdAt: DateTime.utc(2026, 1, 1),
     );
   }

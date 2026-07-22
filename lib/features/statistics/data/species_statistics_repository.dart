@@ -4,6 +4,7 @@ import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/features/catches/data/catch_mapper.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_mapper.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_mapper.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_entry.dart';
 import 'package:fishing_app/features/statistics/domain/species_statistics_summary.dart';
 
@@ -39,22 +40,28 @@ class SpeciesStatisticsRepository {
         SpeciesCatchEntry(
           catchModel: _catchMapper.toDomain(row.readTable(_database.catches)),
           fishingSpot: row.readTable(_database.fishingSpots).toDomain(),
+          waterBody: row.readTable(_database.waterBodies).toDomain(),
         ),
     ]..sort(_compareSpeciesCatchEntries);
 
     return SpeciesStatisticsSummary(species: species, catches: entries);
   }
 
-  /// Every catch of [species], joined with its fishing spot.
-  /// `Catches.fishingSpotId` is a required foreign key, so this `innerJoin`
-  /// never excludes a row — the same guarantee
-  /// `GeneralCatchStatisticsRepository` already relies on (TD-020 Key
-  /// Design Decision 2).
+  /// Every catch of [species], joined with its fishing spot and, since
+  /// MFS-024/TD-024, that fishing spot's water body. `Catches.fishingSpotId`
+  /// and (after the 7->8 migration) `FishingSpots.waterBodyId` are both
+  /// required foreign keys, so neither `innerJoin` ever excludes a row —
+  /// the same guarantee `GeneralCatchStatisticsRepository` already relies on
+  /// (TD-020 Key Design Decision 2).
   Future<List<TypedResult>> _catchesForSpecies(FishSpecies species) {
     final query = _database.select(_database.catches).join([
       innerJoin(
         _database.fishingSpots,
         _database.fishingSpots.id.equalsExp(_database.catches.fishingSpotId),
+      ),
+      innerJoin(
+        _database.waterBodies,
+        _database.waterBodies.id.equalsExp(_database.fishingSpots.waterBodyId),
       ),
     ])..where(_database.catches.species.equals(species.name));
     return query.get();

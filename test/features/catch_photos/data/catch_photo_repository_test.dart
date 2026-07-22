@@ -75,6 +75,15 @@ void main() {
   setUp(() async {
     tempDir = Directory.systemTemp.createTempSync('catch_photo_repository');
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     storage = CatchPhotoStorage(rootDirectoryProvider: () async => tempDir);
     repository = CatchPhotoRepository(database, storage);
     fishingSpotRepository = FishingSpotRepository(database);
@@ -84,6 +93,7 @@ void main() {
       name: 'Test Spot',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
     );
     final createdCatch = await catchRepository.create(
       fishingSpotId: fishingSpot.id,
@@ -133,6 +143,7 @@ void main() {
         name: 'Other Spot',
         latitude: 60.0,
         longitude: 24.0,
+        waterBodyId: 'water-body-1',
       );
       final otherCatch = await catchRepository.create(
         fishingSpotId: otherSpot.id,
@@ -271,6 +282,7 @@ void main() {
         name: 'Other Spot',
         latitude: 60.0,
         longitude: 24.0,
+        waterBodyId: 'water-body-1',
       );
       final otherCatch = await catchRepository.create(
         fishingSpotId: otherSpot.id,

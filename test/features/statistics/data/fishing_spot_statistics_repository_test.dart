@@ -17,6 +17,15 @@ void main() {
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
+    await database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(
+            id: 'water-body-1',
+            name: 'Test Water Body',
+            createdAt: 0,
+          ),
+        );
     catchRepository = CatchRepository(database);
     fishingSpotRepository = FishingSpotRepository(database);
     repository = FishingSpotStatisticsRepository(database);
@@ -24,6 +33,7 @@ void main() {
       name: 'Test Spot',
       latitude: 61.0,
       longitude: 25.0,
+      waterBodyId: 'water-body-1',
     );
   });
 
@@ -48,10 +58,16 @@ void main() {
   });
 
   test('catches at other fishing spots are excluded from the result', () async {
+    // A real (not fake-clock) delay so the two generated identifiers
+    // (derived from DateTime.now()) don't land on the same clock tick —
+    // the same pre-existing mitigation already used elsewhere in this
+    // project's test suite (e.g. fishing_spot_details_bottom_sheet_test.dart).
+    await Future<void>.delayed(const Duration(milliseconds: 2));
     final otherSpot = await fishingSpotRepository.create(
       name: 'Other Spot',
       latitude: 62.0,
       longitude: 26.0,
+      waterBodyId: 'water-body-1',
     );
     await catchRepository.create(
       fishingSpotId: otherSpot.id,

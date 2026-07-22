@@ -25,12 +25,21 @@ class FishingSpotRepository {
     required String name,
     required double latitude,
     required double longitude,
+    required String waterBodyId,
   }) async {
+    if (waterBodyId.isEmpty) {
+      throw ArgumentError.value(
+        waterBodyId,
+        'waterBodyId',
+        'must not be empty',
+      );
+    }
     final spot = FishingSpot(
       id: _generateId(),
       name: name,
       latitude: latitude,
       longitude: longitude,
+      waterBodyId: waterBodyId,
       createdAt: DateTime.now(),
     );
 
@@ -55,13 +64,67 @@ class FishingSpotRepository {
       FishingSpotsCompanion(name: Value(name)),
     );
 
+    final existingSpot = existing.toDomain();
     return FishingSpot(
-      id: existing.id,
+      id: existingSpot.id,
       name: name,
-      latitude: existing.latitude,
-      longitude: existing.longitude,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(existing.createdAt),
+      latitude: existingSpot.latitude,
+      longitude: existingSpot.longitude,
+      waterBodyId: existingSpot.waterBodyId,
+      createdAt: existingSpot.createdAt,
     );
+  }
+
+  /// Changes only which water body this fishing spot belongs to — a new,
+  /// narrow, single-purpose method mirroring [updateName]'s existing shape,
+  /// not a general-purpose "update" covering every field. Coordinates,
+  /// name, and identifier are left untouched. See MFS-024 FR-7 / TD-024.
+  Future<FishingSpot> updateWaterBody({
+    required String id,
+    required String waterBodyId,
+  }) async {
+    if (waterBodyId.isEmpty) {
+      throw ArgumentError.value(
+        waterBodyId,
+        'waterBodyId',
+        'must not be empty',
+      );
+    }
+    final table = _database.fishingSpots;
+    final existing = await (_database.select(
+      table,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+
+    if (existing == null) {
+      throw StateError('Fishing spot "$id" was not found.');
+    }
+
+    await (_database.update(table)..where((t) => t.id.equals(id))).write(
+      FishingSpotsCompanion(waterBodyId: Value(waterBodyId)),
+    );
+
+    final existingSpot = existing.toDomain();
+    return FishingSpot(
+      id: existingSpot.id,
+      name: existingSpot.name,
+      latitude: existingSpot.latitude,
+      longitude: existingSpot.longitude,
+      waterBodyId: waterBodyId,
+      createdAt: existingSpot.createdAt,
+    );
+  }
+
+  /// Every fishing spot belonging to [waterBodyId], ordered by name — used
+  /// by the water-body management surface to show a water body's member
+  /// fishing spots. Mirrors `CatchRepository.getByFishingSpotId`'s existing
+  /// shape exactly. See TD-024.
+  Future<List<FishingSpot>> getByWaterBodyId(String waterBodyId) async {
+    final rows =
+        await (_database.select(_database.fishingSpots)
+              ..where((t) => t.waterBodyId.equals(waterBodyId))
+              ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+            .get();
+    return [for (final row in rows) row.toDomain()];
   }
 
   Future<void> delete(String id) async {
