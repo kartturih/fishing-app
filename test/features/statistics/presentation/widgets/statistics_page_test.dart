@@ -8,6 +8,7 @@ import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
 import 'package:fishing_app/features/catch_photos/data/storage/catch_photo_storage.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
@@ -29,6 +30,7 @@ void main() {
   late LureCatalogRepository lureCatalogRepository;
   late PersonalTackleBoxRepository personalTackleBoxRepository;
   late TackleBoxPhotoStorage tackleBoxPhotoStorage;
+  late WaterBodyRepository waterBodyRepository;
 
   setUp(() {
     database = AppDatabase(NativeDatabase.memory());
@@ -52,6 +54,7 @@ void main() {
       database,
       tackleBoxPhotoStorage,
     );
+    waterBodyRepository = WaterBodyRepository(database);
   });
 
   tearDown(() async {
@@ -74,6 +77,7 @@ void main() {
           lureCatalogRepository: lureCatalogRepository,
           personalTackleBoxRepository: personalTackleBoxRepository,
           personalTackleBoxPhotoStorage: tackleBoxPhotoStorage,
+          waterBodyRepository: waterBodyRepository,
         ),
       ),
     );

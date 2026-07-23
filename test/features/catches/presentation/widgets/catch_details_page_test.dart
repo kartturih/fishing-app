@@ -18,7 +18,9 @@ import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/edit_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
@@ -47,6 +49,16 @@ class _NullResolvingLureCatalogRepository extends LureCatalogRepository {
 
   @override
   Future<LureCatalogEntry?> getEntryById(String variantId) async => null;
+}
+
+/// A `WaterBodyRepository` whose `getById` always returns `null`, simulating
+/// an unresolvable reference — mirrors
+/// `_NullResolvingLureCatalogRepository`'s own precedent.
+class _NullResolvingWaterBodyRepository extends WaterBodyRepository {
+  _NullResolvingWaterBodyRepository(super.database);
+
+  @override
+  Future<WaterBody?> getById(String id) async => null;
 }
 
 class _FailingDeleteCatchRepository extends CatchRepository {
@@ -101,6 +113,7 @@ Future<void> _openDetails(
   LureCatalogRepository lureCatalogRepository,
   PersonalTackleBoxRepository personalTackleBoxRepository,
   TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
+  WaterBodyRepository waterBodyRepository,
 ) async {
   // Taller than the default test viewport: Edit Catch's form (now including
   // the MFS-017 lure-assignment row) no longer fits at the default 800x600
@@ -124,6 +137,7 @@ Future<void> _openDetails(
               lureCatalogRepository: lureCatalogRepository,
               personalTackleBoxRepository: personalTackleBoxRepository,
               personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
+              waterBodyRepository: waterBodyRepository,
             ),
             child: const Text('open'),
           ),
@@ -148,6 +162,7 @@ void main() {
   late LureCatalogRepository lureCatalogRepository;
   late PersonalTackleBoxRepository personalTackleBoxRepository;
   late TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
+  late WaterBodyRepository waterBodyRepository;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
@@ -183,6 +198,7 @@ void main() {
       personalTackleBoxPhotoStorage,
     );
     fishingSpotRepository = FishingSpotRepository(database);
+    waterBodyRepository = WaterBodyRepository(database);
     fishingSpot = await fishingSpotRepository.create(
       name: 'Merrasjärvi',
       latitude: 61.0,
@@ -223,13 +239,21 @@ void main() {
       lureCatalogRepository,
       personalTackleBoxRepository,
       personalTackleBoxPhotoStorage,
+      waterBodyRepository,
     );
 
-    expect(find.text('Hauki'), findsWidgets);
+    // The species now appears only in the AppBar title — the redundant
+    // "Kalalaji" metadata field has been removed.
+    expect(find.text('Hauki'), findsOneWidget);
+    expect(find.text('Kalalaji'), findsNothing);
     expect(find.text('3.2 kg'), findsOneWidget);
     expect(find.text('78 cm'), findsOneWidget);
     expect(find.text('14.7.2026'), findsOneWidget);
     expect(find.text('18.34'), findsOneWidget);
+    expect(find.text('Vesistö'), findsOneWidget);
+    expect(find.text('Test Water Body'), findsOneWidget);
+    expect(find.text('Kalastuspaikka'), findsOneWidget);
+    expect(find.text('Merrasjärvi'), findsOneWidget);
 
     expect(find.byType(TextFormField), findsNothing);
     expect(find.byType(DropdownButtonFormField<FishSpecies>), findsNothing);
@@ -251,6 +275,7 @@ void main() {
       lureCatalogRepository,
       personalTackleBoxRepository,
       personalTackleBoxPhotoStorage,
+      waterBodyRepository,
     );
 
     expect(find.text('Paino'), findsNothing);
@@ -269,6 +294,7 @@ void main() {
       lureCatalogRepository,
       personalTackleBoxRepository,
       personalTackleBoxPhotoStorage,
+      waterBodyRepository,
     );
 
     expect(find.byType(Image), findsNothing);
@@ -300,6 +326,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -345,6 +372,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -385,6 +413,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -424,6 +453,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -472,6 +502,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -506,6 +537,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -535,6 +567,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
       await _pumpUntilSettledWithRealIO(tester);
 
@@ -557,6 +590,7 @@ void main() {
       lureCatalogRepository,
       personalTackleBoxRepository,
       personalTackleBoxPhotoStorage,
+      waterBodyRepository,
     );
     expect(find.byType(CatchDetailsPage), findsOneWidget);
 
@@ -577,6 +611,7 @@ void main() {
       lureCatalogRepository,
       personalTackleBoxRepository,
       personalTackleBoxPhotoStorage,
+      waterBodyRepository,
     );
 
     await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -596,6 +631,7 @@ void main() {
       lureCatalogRepository,
       personalTackleBoxRepository,
       personalTackleBoxPhotoStorage,
+      waterBodyRepository,
     );
 
     await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -616,6 +652,7 @@ void main() {
       lureCatalogRepository,
       personalTackleBoxRepository,
       personalTackleBoxPhotoStorage,
+      waterBodyRepository,
     );
 
     await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -648,6 +685,7 @@ void main() {
       lureCatalogRepository,
       personalTackleBoxRepository,
       personalTackleBoxPhotoStorage,
+      waterBodyRepository,
     );
 
     await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -676,6 +714,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -700,6 +739,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -740,6 +780,7 @@ void main() {
           lureCatalogRepository,
           personalTackleBoxRepository,
           personalTackleBoxPhotoStorage,
+          waterBodyRepository,
         );
         await _pumpUntilSettledWithRealIO(tester);
 
@@ -777,6 +818,7 @@ void main() {
           lureCatalogRepository,
           personalTackleBoxRepository,
           personalTackleBoxPhotoStorage,
+          waterBodyRepository,
         );
 
         await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -830,6 +872,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       await tester.tap(find.byKey(const Key('catchDetailsMenuButton')));
@@ -894,6 +937,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       expect(find.text('Viehe'), findsNothing);
@@ -921,6 +965,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       expect(find.text('Viehe'), findsOneWidget);
@@ -949,6 +994,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       expect(find.text('Rapala X-Rap Shad XRS08'), findsOneWidget);
@@ -976,6 +1022,7 @@ void main() {
           _NullResolvingLureCatalogRepository(database),
           personalTackleBoxRepository,
           personalTackleBoxPhotoStorage,
+          waterBodyRepository,
         );
 
         expect(find.text('Viehetiedot eivät ole saatavilla'), findsOneWidget);
@@ -997,6 +1044,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       expect(find.text('Muistiinpanot'), findsNothing);
@@ -1022,6 +1070,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       expect(find.text('Muistiinpanot'), findsOneWidget);
@@ -1050,6 +1099,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       final notesWidget = tester.widget<SelectableText>(
@@ -1078,6 +1128,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       final notesWidget = tester.widget<SelectableText>(
@@ -1106,6 +1157,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       expect(find.byType(SelectableText), findsOneWidget);
@@ -1162,6 +1214,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       final lureLabelY = tester.getCenter(find.text('Viehe')).dy;
@@ -1191,6 +1244,7 @@ void main() {
         lureCatalogRepository,
         personalTackleBoxRepository,
         personalTackleBoxPhotoStorage,
+        waterBodyRepository,
       );
 
       expect(find.text('Hauki'), findsWidgets);
@@ -1199,5 +1253,223 @@ void main() {
       expect(find.text('14.7.2026'), findsOneWidget);
       expect(find.text('18.34'), findsOneWidget);
     });
+  });
+
+  group('layout', () {
+    testWidgets(
+      'Paino and Pituus render side by side in the same row',
+      (tester) async {
+        await _openDetails(
+          tester,
+          fishingSpot,
+          existingCatch,
+          catchRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+          waterBodyRepository,
+        );
+
+        final weightCenter = tester.getCenter(find.text('Paino'));
+        final lengthCenter = tester.getCenter(find.text('Pituus'));
+
+        expect(lengthCenter.dy, weightCenter.dy);
+        expect(weightCenter.dx, lessThan(lengthCenter.dx));
+      },
+    );
+
+    testWidgets(
+      'Päivämäärä and Kellonaika render side by side in the same row, '
+      'below Paino/Pituus',
+      (tester) async {
+        await _openDetails(
+          tester,
+          fishingSpot,
+          existingCatch,
+          catchRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+          waterBodyRepository,
+        );
+
+        final weightCenter = tester.getCenter(find.text('Paino'));
+        final dateCenter = tester.getCenter(find.text('Päivämäärä'));
+        final timeCenter = tester.getCenter(find.text('Kellonaika'));
+
+        expect(timeCenter.dy, dateCenter.dy);
+        expect(dateCenter.dx, lessThan(timeCenter.dx));
+        expect(dateCenter.dy, greaterThan(weightCenter.dy));
+      },
+    );
+
+    testWidgets('omits the Paino/Pituus row entirely when neither is set', (
+      tester,
+    ) async {
+      final bareCatch = await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.perch,
+        caughtAt: DateTime(2026, 7, 10, 21, 10),
+      );
+
+      await _openDetails(
+        tester,
+        fishingSpot,
+        bareCatch,
+        catchRepository,
+        catchPhotoRepository,
+        lureCatalogRepository,
+        personalTackleBoxRepository,
+        personalTackleBoxPhotoStorage,
+        waterBodyRepository,
+      );
+
+      expect(find.text('Paino'), findsNothing);
+      expect(find.text('Pituus'), findsNothing);
+    });
+
+    testWidgets(
+      'a single set field (e.g. only Paino) still renders correctly when '
+      'its row partner is absent',
+      (tester) async {
+        final weightOnlyCatch = await catchRepository.create(
+          fishingSpotId: fishingSpot.id,
+          species: FishSpecies.pike,
+          caughtAt: DateTime(2026, 7, 17),
+          weightGrams: 1500,
+        );
+
+        await _openDetails(
+          tester,
+          fishingSpot,
+          weightOnlyCatch,
+          catchRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+          waterBodyRepository,
+        );
+
+        expect(find.text('Paino'), findsOneWidget);
+        expect(find.text('1.5 kg'), findsOneWidget);
+        expect(find.text('Pituus'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'a narrow screen with long water body/fishing spot names renders '
+      'without overflowing',
+      (tester) async {
+        await (database.update(
+          database.waterBodies,
+        )..where((t) => t.id.equals('water-body-1'))).write(
+          const WaterBodiesCompanion(
+            name: Value(
+              'Erittäin pitkä vesistön nimi joka ei todellakaan mahdu',
+            ),
+          ),
+        );
+        final longNameSpotRepository = FishingSpotRepository(database);
+        final longNameSpot = await longNameSpotRepository.create(
+          name: 'Todella pitkä kalastuspaikan nimi joka ei mahdu riviin',
+          latitude: 61.0,
+          longitude: 25.0,
+          waterBodyId: 'water-body-1',
+        );
+        final longNameCatch = await catchRepository.create(
+          fishingSpotId: longNameSpot.id,
+          species: FishSpecies.pike,
+          caughtAt: DateTime(2026, 7, 17),
+          weightGrams: 3200,
+          lengthMillimeters: 780,
+        );
+
+        // _openDetails itself sets a tall 800x1400 viewport (needed for
+        // Edit Catch's own tests), so the narrow width is applied only
+        // after Catch Details is already open and pumped.
+        await _openDetails(
+          tester,
+          longNameSpot,
+          longNameCatch,
+          catchRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+          waterBodyRepository,
+        );
+
+        final originalSize = tester.view.physicalSize;
+        final originalDpr = tester.view.devicePixelRatio;
+        tester.view.physicalSize = const Size(320, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.physicalSize = originalSize;
+          tester.view.devicePixelRatio = originalDpr;
+        });
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('location', () {
+    testWidgets(
+      'shows the Vesistö and Kalastuspaikka fields side by side, positioned '
+      'near the date/time fields',
+      (tester) async {
+        await _openDetails(
+          tester,
+          fishingSpot,
+          existingCatch,
+          catchRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+          waterBodyRepository,
+        );
+
+        final timeLabelY = tester.getCenter(find.text('Kellonaika')).dy;
+        final waterBodyCenter = tester.getCenter(find.text('Vesistö'));
+        final fishingSpotCenter = tester.getCenter(find.text('Kalastuspaikka'));
+
+        expect(waterBodyCenter.dy, greaterThan(timeLabelY));
+        // Same row: equal vertical center, Vesistö in the left column and
+        // Kalastuspaikka in the right.
+        expect(fishingSpotCenter.dy, waterBodyCenter.dy);
+        expect(waterBodyCenter.dx, lessThan(fishingSpotCenter.dx));
+      },
+    );
+
+    testWidgets(
+      'shows a fallback without crashing when the water body cannot be '
+      'resolved',
+      (tester) async {
+        await _openDetails(
+          tester,
+          fishingSpot,
+          existingCatch,
+          catchRepository,
+          catchPhotoRepository,
+          lureCatalogRepository,
+          personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage,
+          _NullResolvingWaterBodyRepository(database),
+        );
+
+        expect(find.text('Vesistöä ei löytynyt'), findsOneWidget);
+        // The fishing spot name is always known synchronously from the
+        // page's own input — it is never affected by the water body
+        // resolution failing.
+        expect(find.text('Merrasjärvi'), findsOneWidget);
+        expect(find.byType(CatchDetailsPage), findsOneWidget);
+      },
+    );
   });
 }

@@ -14,6 +14,7 @@ import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
@@ -126,6 +127,7 @@ void main() {
   late LureCatalogRepository lureCatalogRepository;
   late TackleBoxPhotoStorage tackleBoxPhotoStorage;
   late PersonalTackleBoxRepository personalTackleBoxRepository;
+  late WaterBodyRepository waterBodyRepository;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
@@ -152,6 +154,7 @@ void main() {
       database,
       tackleBoxPhotoStorage,
     );
+    waterBodyRepository = WaterBodyRepository(database);
   });
 
   tearDown(() async {
@@ -176,6 +179,7 @@ void main() {
           lureCatalogRepository: lureCatalogRepository,
           personalTackleBoxRepository: personalTackleBoxRepository,
           personalTackleBoxPhotoStorage: tackleBoxPhotoStorage,
+          waterBodyRepository: waterBodyRepository,
         ),
       ),
     );
@@ -455,6 +459,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CatchDetailsPage), findsOneWidget);
+      // Location fields must appear here too — this is the Species
+      // Statistics navigation path.
+      expect(find.text('Vesistö'), findsOneWidget);
+      expect(find.text('Test Water Body'), findsOneWidget);
+      expect(find.text('Kalastuspaikka'), findsOneWidget);
+      expect(find.text('Test Spot'), findsOneWidget);
     },
   );
 

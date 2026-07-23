@@ -7,6 +7,7 @@ import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.da
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
@@ -50,6 +51,7 @@ class GeneralCatchStatisticsTab extends StatefulWidget {
     required this.lureCatalogRepository,
     required this.personalTackleBoxRepository,
     required this.personalTackleBoxPhotoStorage,
+    required this.waterBodyRepository,
   });
 
   final GeneralCatchStatisticsRepository repository;
@@ -70,6 +72,10 @@ class GeneralCatchStatisticsTab extends StatefulWidget {
   final LureCatalogRepository lureCatalogRepository;
   final PersonalTackleBoxRepository personalTackleBoxRepository;
   final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
+
+  /// Forwarded to `CatchDetailsPage.open()` for it to resolve each catch's
+  /// own water body — see that page's own doc comment.
+  final WaterBodyRepository waterBodyRepository;
 
   @override
   State<GeneralCatchStatisticsTab> createState() =>
@@ -124,6 +130,7 @@ class _GeneralCatchStatisticsTabState extends State<GeneralCatchStatisticsTab> {
       lureCatalogRepository: widget.lureCatalogRepository,
       personalTackleBoxRepository: widget.personalTackleBoxRepository,
       personalTackleBoxPhotoStorage: widget.personalTackleBoxPhotoStorage,
+      waterBodyRepository: widget.waterBodyRepository,
     );
   }
 
@@ -147,6 +154,7 @@ class _GeneralCatchStatisticsTabState extends State<GeneralCatchStatisticsTab> {
       lureCatalogRepository: widget.lureCatalogRepository,
       personalTackleBoxRepository: widget.personalTackleBoxRepository,
       personalTackleBoxPhotoStorage: widget.personalTackleBoxPhotoStorage,
+      waterBodyRepository: widget.waterBodyRepository,
     );
 
     if (!mounted) {
@@ -170,6 +178,7 @@ class _GeneralCatchStatisticsTabState extends State<GeneralCatchStatisticsTab> {
       lureCatalogRepository: widget.lureCatalogRepository,
       personalTackleBoxRepository: widget.personalTackleBoxRepository,
       personalTackleBoxPhotoStorage: widget.personalTackleBoxPhotoStorage,
+      waterBodyRepository: widget.waterBodyRepository,
     );
 
     if (!mounted) {

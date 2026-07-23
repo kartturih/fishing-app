@@ -14,6 +14,7 @@ import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
@@ -135,6 +136,7 @@ void main() {
   late PersonalTackleBoxRepository personalTackleBoxRepository;
   late SpeciesStatisticsRepository speciesStatisticsRepository;
   late WaterBodyStatisticsRepository waterBodyStatisticsRepository;
+  late WaterBodyRepository waterBodyRepository;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
@@ -165,6 +167,7 @@ void main() {
     );
     speciesStatisticsRepository = SpeciesStatisticsRepository(database);
     waterBodyStatisticsRepository = WaterBodyStatisticsRepository(database);
+    waterBodyRepository = WaterBodyRepository(database);
   });
 
   tearDown(() async {
@@ -208,6 +211,7 @@ void main() {
             lureCatalogRepository: lureCatalogRepository,
             personalTackleBoxRepository: personalTackleBoxRepository,
             personalTackleBoxPhotoStorage: tackleBoxPhotoStorage,
+            waterBodyRepository: waterBodyRepository,
           ),
         ),
       ),
@@ -401,6 +405,13 @@ void main() {
       // Catch Details' AppBar title is the catch species (MFS-014 FR-3).
       expect(find.text('Kuha'), findsWidgets);
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      // Location fields must appear here too — this is the Top 3 Largest
+      // Catches navigation path, which only ever carries a `FishingSpot`
+      // (via `LargestCatch`), never a `WaterBody` directly.
+      expect(find.text('Vesistö'), findsOneWidget);
+      expect(find.text('Test Water Body'), findsOneWidget);
+      expect(find.text('Kalastuspaikka'), findsOneWidget);
+      expect(find.text('Test Spot'), findsOneWidget);
     },
   );
 
@@ -513,6 +524,7 @@ void main() {
         caughtAt: DateTime(2026, 7, 17),
         weightGrams: 2000,
       );
+      await delay(tester);
       await catchRepository.create(
         fishingSpotId: spotTwo.id,
         species: FishSpecies.perch,

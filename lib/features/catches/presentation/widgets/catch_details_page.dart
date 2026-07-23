@@ -15,7 +15,9 @@ import 'package:fishing_app/features/catches/presentation/catch_formatters.dart'
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/assigned_lure_row.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/edit_catch_bottom_sheet.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
@@ -75,6 +77,7 @@ class CatchDetailsPage extends StatefulWidget {
     required this.lureCatalogRepository,
     required this.personalTackleBoxRepository,
     required this.personalTackleBoxPhotoStorage,
+    required this.waterBodyRepository,
   });
 
   final FishingSpot fishingSpot;
@@ -89,6 +92,13 @@ class CatchDetailsPage extends StatefulWidget {
   final PersonalTackleBoxRepository personalTackleBoxRepository;
   final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
+  /// Resolves [fishingSpot]'s own water body for the location fields
+  /// ("Vesistö"/"Kalastuspaikka"), reused unconditionally regardless of
+  /// which screen opened Catch Details — this page never receives a
+  /// [WaterBody] directly from its caller, so its behavior does not vary
+  /// by navigation source.
+  final WaterBodyRepository waterBodyRepository;
+
   /// Pushes Catch Details as a normal [MaterialPageRoute], resolving to a
   /// [CatchDetailsResult] once popped — see that type's own doc comment.
   static Future<CatchDetailsResult> open(
@@ -100,6 +110,7 @@ class CatchDetailsPage extends StatefulWidget {
     required LureCatalogRepository lureCatalogRepository,
     required PersonalTackleBoxRepository personalTackleBoxRepository,
     required TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
+    required WaterBodyRepository waterBodyRepository,
   }) {
     return Navigator.of(context)
         .push<CatchDetailsResult>(
@@ -112,6 +123,7 @@ class CatchDetailsPage extends StatefulWidget {
               lureCatalogRepository: lureCatalogRepository,
               personalTackleBoxRepository: personalTackleBoxRepository,
               personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
+              waterBodyRepository: waterBodyRepository,
             ),
           ),
         )
@@ -154,11 +166,15 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
   LureCatalogEntry? _assignedLure;
   bool _isLureUnavailable = false;
 
+  bool _isLoadingWaterBody = true;
+  WaterBody? _waterBody;
+
   @override
   void initState() {
     super.initState();
     unawaited(_loadPhotos());
     unawaited(_loadAssignedLure());
+    unawaited(_loadWaterBody());
   }
 
   @override
@@ -251,6 +267,35 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
         _assignedLure = null;
         _isLureUnavailable = true;
         _isLoadingLure = false;
+      });
+    }
+  }
+
+  /// Resolves [FishingSpot.waterBodyId] to its [WaterBody] for the location
+  /// fields — independently of photo/lure loading. `widget.fishingSpot`
+  /// never changes during this page's lifetime (editing a catch never
+  /// changes which fishing spot it belongs to), so this only needs to run
+  /// once, in [initState].
+  Future<void> _loadWaterBody() async {
+    try {
+      final waterBody = await widget.waterBodyRepository.getById(
+        widget.fishingSpot.waterBodyId,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _waterBody = waterBody;
+        _isLoadingWaterBody = false;
+      });
+    } catch (error) {
+      debugPrint('Failed to resolve water body: $error');
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _waterBody = null;
+        _isLoadingWaterBody = false;
       });
     }
   }
@@ -426,25 +471,34 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildPhotoGallery(),
-                _buildInfoRow('Kalalaji', _catchModel.species.finnishName),
-                if (_catchModel.weightGrams != null)
-                  _buildInfoRow(
-                    'Paino',
-                    formatCatchWeight(_catchModel.weightGrams!),
+                // The fish species is already the AppBar title — showing it
+                // again here would be redundant.
+                _buildFieldRow([
+                  if (_catchModel.weightGrams != null)
+                    _buildField(
+                      'Paino',
+                      formatCatchWeight(_catchModel.weightGrams!),
+                    ),
+                  if (_catchModel.lengthMillimeters != null)
+                    _buildField(
+                      'Pituus',
+                      formatCatchLength(_catchModel.lengthMillimeters!),
+                    ),
+                ]),
+                _buildFieldRow([
+                  _buildField(
+                    'Päivämäärä',
+                    formatCatchDate(_catchModel.caughtAt),
                   ),
-                if (_catchModel.lengthMillimeters != null)
-                  _buildInfoRow(
-                    'Pituus',
-                    formatCatchLength(_catchModel.lengthMillimeters!),
+                  _buildField(
+                    'Kellonaika',
+                    formatCatchTime(_catchModel.caughtAt),
                   ),
-                _buildInfoRow(
-                  'Päivämäärä',
-                  formatCatchDate(_catchModel.caughtAt),
-                ),
-                _buildInfoRow(
-                  'Kellonaika',
-                  formatCatchTime(_catchModel.caughtAt),
-                ),
+                ]),
+                _buildFieldRow([
+                  _buildWaterBodyField(),
+                  _buildField('Kalastuspaikka', widget.fishingSpot.name),
+                ]),
                 if (_catchModel.lureVariantId != null) _buildAssignedLureRow(),
                 if (_catchModel.notes != null) _buildNotesRow(),
               ],
@@ -452,6 +506,27 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildWaterBodyField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Vesistö', style: Theme.of(context).textTheme.labelMedium),
+        _isLoadingWaterBody
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                _waterBody?.name ?? 'Vesistöä ei löytynyt',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+      ],
     );
   }
 
@@ -609,16 +684,48 @@ class _CatchDetailsPageState extends State<CatchDetailsPage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  /// Lays out up to two fields ([_buildField]/[_buildWaterBodyField]
+  /// results) side by side, each taking an equal share of the available
+  /// width — a more compact use of horizontal space than one field per
+  /// row. A single field still renders correctly (it simply takes the
+  /// whole row); an empty list renders nothing, so an optional pair (e.g.
+  /// Paino/Pituus when neither is set) can be omitted entirely without a
+  /// stray gap.
+  Widget _buildFieldRow(List<Widget> fields) {
+    if (fields.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-          Text(value, style: Theme.of(context).textTheme.bodyLarge),
+          for (var i = 0; i < fields.length; i++) ...[
+            if (i > 0) const SizedBox(width: AppSpacing.md),
+            Expanded(child: fields[i]),
+          ],
         ],
       ),
+    );
+  }
+
+  /// One label/value pair, meant to be placed inside [_buildFieldRow] —
+  /// the value is capped to a single line with an ellipsis since it now
+  /// shares its row with another field rather than having the full width
+  /// to itself, which matters on narrow devices or with larger accessibility
+  /// text scaling.
+  Widget _buildField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelMedium),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      ],
     );
   }
 }

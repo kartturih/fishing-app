@@ -14,6 +14,7 @@ import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
 import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
@@ -130,6 +131,7 @@ void main() {
   late LureCatalogRepository lureCatalogRepository;
   late TackleBoxPhotoStorage tackleBoxPhotoStorage;
   late PersonalTackleBoxRepository personalTackleBoxRepository;
+  late WaterBodyRepository waterBodyRepository;
   late WaterBody waterBody;
   late FishingSpot fishingSpot;
 
@@ -160,6 +162,7 @@ void main() {
       database,
       tackleBoxPhotoStorage,
     );
+    waterBodyRepository = WaterBodyRepository(database);
     waterBody = WaterBody(
       id: 'water-body-1',
       name: 'Merrasjärvi',
@@ -196,6 +199,7 @@ void main() {
           lureCatalogRepository: lureCatalogRepository,
           personalTackleBoxRepository: personalTackleBoxRepository,
           personalTackleBoxPhotoStorage: tackleBoxPhotoStorage,
+          waterBodyRepository: waterBodyRepository,
         ),
       ),
     );
@@ -473,6 +477,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CatchDetailsPage), findsOneWidget);
+      // Catch Details must show the tapped entry's own fishing spot (Spot
+      // B), not the water body's other fishing spot (Spot A) — proving the
+      // location shown is per-catch, not just "the water body's first
+      // spot." Catch Details resolves its own water body independently
+      // through `waterBodyRepository` (the real "water-body-1" row seeded
+      // in setUp, named "Test Water Body") rather than trusting this
+      // page's own `waterBody` fixture ("Merrasjärvi"), so it appears
+      // regardless of which catch entry was opened.
+      expect(find.text('Vesistö'), findsOneWidget);
+      expect(find.text('Test Water Body'), findsOneWidget);
+      expect(find.text('Kalastuspaikka'), findsOneWidget);
+      expect(find.text('Spot B'), findsOneWidget);
+      expect(find.text('Spot A'), findsNothing);
     },
   );
 
@@ -509,6 +526,7 @@ void main() {
             lureCatalogRepository: lureCatalogRepository,
             personalTackleBoxRepository: personalTackleBoxRepository,
             personalTackleBoxPhotoStorage: tackleBoxPhotoStorage,
+            waterBodyRepository: waterBodyRepository,
           ),
         ),
       );
@@ -565,6 +583,7 @@ void main() {
             lureCatalogRepository: lureCatalogRepository,
             personalTackleBoxRepository: personalTackleBoxRepository,
             personalTackleBoxPhotoStorage: tackleBoxPhotoStorage,
+            waterBodyRepository: waterBodyRepository,
           ),
         ),
       );
@@ -634,6 +653,7 @@ void main() {
             lureCatalogRepository: lureCatalogRepository,
             personalTackleBoxRepository: personalTackleBoxRepository,
             personalTackleBoxPhotoStorage: tackleBoxPhotoStorage,
+            waterBodyRepository: waterBodyRepository,
           ),
         ),
       );
@@ -749,6 +769,7 @@ void main() {
             lureCatalogRepository: lureCatalogRepository,
             personalTackleBoxRepository: personalTackleBoxRepository,
             personalTackleBoxPhotoStorage: tackleBoxPhotoStorage,
+            waterBodyRepository: waterBodyRepository,
           ),
         ),
       );

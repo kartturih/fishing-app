@@ -120,6 +120,7 @@ class _FishingSpotDetailsBottomSheetState
       lureCatalogRepository: widget.lureCatalogRepository,
       personalTackleBoxRepository: widget.personalTackleBoxRepository,
       personalTackleBoxPhotoStorage: widget.personalTackleBoxPhotoStorage,
+      waterBodyRepository: widget.waterBodyRepository,
     );
 
     if (!mounted) {

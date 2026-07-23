@@ -496,6 +496,12 @@ void main() {
     expect(find.byType(CatchDetailsPage), findsOneWidget);
     // The Catch list Bottom Sheet stays on the Navigator stack underneath.
     expect(find.text('Ei vielä saaliita.'), findsNothing);
+    // Catch Details shows its location fields regardless of navigation
+    // source — here, opened from a FishingSpot (the map path).
+    expect(find.text('Vesistö'), findsOneWidget);
+    expect(find.text('Test Water Body'), findsOneWidget);
+    expect(find.text('Kalastuspaikka'), findsOneWidget);
+    expect(find.text('Merrasjärvi'), findsOneWidget);
   });
 
   testWidgets('the catch list refreshes after returning from Catch Details', (

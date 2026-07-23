@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
@@ -32,6 +33,7 @@ class StatisticsPage extends StatelessWidget {
     required this.lureCatalogRepository,
     required this.personalTackleBoxRepository,
     required this.personalTackleBoxPhotoStorage,
+    required this.waterBodyRepository,
   });
 
   final GeneralCatchStatisticsRepository generalCatchStatisticsRepository;
@@ -55,6 +57,11 @@ class StatisticsPage extends StatelessWidget {
   final LureCatalogRepository lureCatalogRepository;
   final PersonalTackleBoxRepository personalTackleBoxRepository;
   final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
+
+  /// Forwarded to [GeneralCatchStatisticsTab], needed only so Catch Details
+  /// can resolve each catch's own water body — this page has no use for it
+  /// itself.
+  final WaterBodyRepository waterBodyRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +88,7 @@ class StatisticsPage extends StatelessWidget {
               lureCatalogRepository: lureCatalogRepository,
               personalTackleBoxRepository: personalTackleBoxRepository,
               personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
+              waterBodyRepository: waterBodyRepository,
             ),
             LureStatisticsTab(repository: lureStatisticsRepository),
           ],

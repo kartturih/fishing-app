@@ -9,6 +9,7 @@ import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
+import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
@@ -33,6 +34,7 @@ class SpeciesStatisticsPage extends StatefulWidget {
     required this.lureCatalogRepository,
     required this.personalTackleBoxRepository,
     required this.personalTackleBoxPhotoStorage,
+    required this.waterBodyRepository,
   });
 
   final FishSpecies species;
@@ -45,6 +47,7 @@ class SpeciesStatisticsPage extends StatefulWidget {
   final LureCatalogRepository lureCatalogRepository;
   final PersonalTackleBoxRepository personalTackleBoxRepository;
   final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
+  final WaterBodyRepository waterBodyRepository;
 
   /// Pushes Species Statistics as a normal [MaterialPageRoute].
   static Future<void> open(
@@ -56,6 +59,7 @@ class SpeciesStatisticsPage extends StatefulWidget {
     required LureCatalogRepository lureCatalogRepository,
     required PersonalTackleBoxRepository personalTackleBoxRepository,
     required TackleBoxPhotoStorage personalTackleBoxPhotoStorage,
+    required WaterBodyRepository waterBodyRepository,
   }) {
     return Navigator.of(context).push(
       MaterialPageRoute(
@@ -67,6 +71,7 @@ class SpeciesStatisticsPage extends StatefulWidget {
           lureCatalogRepository: lureCatalogRepository,
           personalTackleBoxRepository: personalTackleBoxRepository,
           personalTackleBoxPhotoStorage: personalTackleBoxPhotoStorage,
+          waterBodyRepository: waterBodyRepository,
         ),
       ),
     );
@@ -138,6 +143,7 @@ class _SpeciesStatisticsPageState extends State<SpeciesStatisticsPage> {
       lureCatalogRepository: widget.lureCatalogRepository,
       personalTackleBoxRepository: widget.personalTackleBoxRepository,
       personalTackleBoxPhotoStorage: widget.personalTackleBoxPhotoStorage,
+      waterBodyRepository: widget.waterBodyRepository,
     );
 
     if (!mounted) {

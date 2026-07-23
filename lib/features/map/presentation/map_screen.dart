@@ -520,6 +520,7 @@ class _MapScreenState extends State<MapScreen> {
           lureCatalogRepository: _lureCatalogRepository,
           personalTackleBoxRepository: _personalTackleBoxRepository,
           personalTackleBoxPhotoStorage: _tackleBoxPhotoStorage,
+          waterBodyRepository: _waterBodyRepository,
         ),
       ),
     );
