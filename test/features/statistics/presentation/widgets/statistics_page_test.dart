@@ -11,10 +11,10 @@ import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
-import 'package:fishing_app/features/statistics/data/fishing_spot_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/lure_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/species_statistics_repository.dart';
+import 'package:fishing_app/features/statistics/data/water_body_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_page.dart';
 
 void main() {
@@ -23,7 +23,7 @@ void main() {
   late GeneralCatchStatisticsRepository generalCatchStatisticsRepository;
   late LureStatisticsRepository lureStatisticsRepository;
   late SpeciesStatisticsRepository speciesStatisticsRepository;
-  late FishingSpotStatisticsRepository fishingSpotStatisticsRepository;
+  late WaterBodyStatisticsRepository waterBodyStatisticsRepository;
   late CatchRepository catchRepository;
   late CatchPhotoRepository catchPhotoRepository;
   late LureCatalogRepository lureCatalogRepository;
@@ -38,7 +38,7 @@ void main() {
     );
     lureStatisticsRepository = LureStatisticsRepository(database);
     speciesStatisticsRepository = SpeciesStatisticsRepository(database);
-    fishingSpotStatisticsRepository = FishingSpotStatisticsRepository(database);
+    waterBodyStatisticsRepository = WaterBodyStatisticsRepository(database);
     catchRepository = CatchRepository(database);
     catchPhotoRepository = CatchPhotoRepository(
       database,
@@ -68,7 +68,7 @@ void main() {
           generalCatchStatisticsRepository: generalCatchStatisticsRepository,
           lureStatisticsRepository: lureStatisticsRepository,
           speciesStatisticsRepository: speciesStatisticsRepository,
-          fishingSpotStatisticsRepository: fishingSpotStatisticsRepository,
+          waterBodyStatisticsRepository: waterBodyStatisticsRepository,
           catchRepository: catchRepository,
           catchPhotoRepository: catchPhotoRepository,
           lureCatalogRepository: lureCatalogRepository,

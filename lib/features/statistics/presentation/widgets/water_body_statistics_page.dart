@@ -5,33 +5,32 @@ import 'package:flutter/material.dart';
 import 'package:fishing_app/app/theme/app_spacing.dart';
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
-import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species_extensions.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
-import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
-import 'package:fishing_app/features/statistics/data/fishing_spot_statistics_repository.dart';
-import 'package:fishing_app/features/statistics/domain/fishing_spot_statistics_summary.dart';
+import 'package:fishing_app/features/statistics/data/water_body_statistics_repository.dart';
+import 'package:fishing_app/features/statistics/domain/water_body_catch_entry.dart';
+import 'package:fishing_app/features/statistics/domain/water_body_statistics_summary.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/catch_count_row.dart';
-import 'package:fishing_app/features/statistics/presentation/widgets/fishing_spot_record_catch_card.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_summary_card.dart';
 
 const String _noDataYetText = 'Ei vielä tietoja';
 
-/// One fishing spot's statistics: total catches, Last Catch Date, a Record
-/// Catch section, a static Species Breakdown, and a full Catch List —
-/// reached by tapping a row in the Catches tab's Fishing Spot List.
-/// Pushed as a normal full-screen page (`MaterialPageRoute`), mirroring
-/// `SpeciesStatisticsPage.open()`'s exact precedent, not a third
-/// Statistics tab. See MFS-022 / TD-022 Key Design Decision 2/9.
-class FishingSpotStatisticsPage extends StatefulWidget {
-  const FishingSpotStatisticsPage({
+/// One water body's statistics: total catches, Last Catch Date, a static
+/// Species Breakdown, and a full Catch List spanning every fishing spot
+/// belonging to that water body — reached by tapping a row in the Catches
+/// tab's Water Body List. Pushed as a normal full-screen page
+/// (`MaterialPageRoute`), mirroring `FishingSpotStatisticsPage.open()`'s
+/// precedent.
+class WaterBodyStatisticsPage extends StatefulWidget {
+  const WaterBodyStatisticsPage({
     super.key,
-    required this.fishingSpot,
+    required this.waterBody,
     required this.repository,
     required this.catchRepository,
     required this.catchPhotoRepository,
@@ -40,22 +39,22 @@ class FishingSpotStatisticsPage extends StatefulWidget {
     required this.personalTackleBoxPhotoStorage,
   });
 
-  final FishingSpot fishingSpot;
-  final FishingSpotStatisticsRepository repository;
+  final WaterBody waterBody;
+  final WaterBodyStatisticsRepository repository;
 
-  /// Forwarded to `CatchDetailsPage.open()` when the Record Catch card or a
-  /// Catch List entry is tapped — this page has no other use for them.
+  /// Forwarded to `CatchDetailsPage.open()` when a Catch List entry is
+  /// tapped — this page has no other use for them.
   final CatchRepository catchRepository;
   final CatchPhotoRepository catchPhotoRepository;
   final LureCatalogRepository lureCatalogRepository;
   final PersonalTackleBoxRepository personalTackleBoxRepository;
   final TackleBoxPhotoStorage personalTackleBoxPhotoStorage;
 
-  /// Pushes Fishing Spot Statistics as a normal [MaterialPageRoute].
+  /// Pushes Water Body Statistics as a normal [MaterialPageRoute].
   static Future<void> open(
     BuildContext context, {
-    required FishingSpot fishingSpot,
-    required FishingSpotStatisticsRepository repository,
+    required WaterBody waterBody,
+    required WaterBodyStatisticsRepository repository,
     required CatchRepository catchRepository,
     required CatchPhotoRepository catchPhotoRepository,
     required LureCatalogRepository lureCatalogRepository,
@@ -64,8 +63,8 @@ class FishingSpotStatisticsPage extends StatefulWidget {
   }) {
     return Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => FishingSpotStatisticsPage(
-          fishingSpot: fishingSpot,
+        builder: (context) => WaterBodyStatisticsPage(
+          waterBody: waterBody,
           repository: repository,
           catchRepository: catchRepository,
           catchPhotoRepository: catchPhotoRepository,
@@ -78,14 +77,14 @@ class FishingSpotStatisticsPage extends StatefulWidget {
   }
 
   @override
-  State<FishingSpotStatisticsPage> createState() =>
-      _FishingSpotStatisticsPageState();
+  State<WaterBodyStatisticsPage> createState() =>
+      _WaterBodyStatisticsPageState();
 }
 
-class _FishingSpotStatisticsPageState extends State<FishingSpotStatisticsPage> {
+class _WaterBodyStatisticsPageState extends State<WaterBodyStatisticsPage> {
   bool _isLoading = true;
   String? _errorMessage;
-  FishingSpotStatisticsSummary? _summary;
+  WaterBodyStatisticsSummary? _summary;
 
   @override
   void initState() {
@@ -100,8 +99,8 @@ class _FishingSpotStatisticsPageState extends State<FishingSpotStatisticsPage> {
     });
 
     try {
-      final summary = await widget.repository.getFishingSpotStatistics(
-        widget.fishingSpot.id,
+      final summary = await widget.repository.getWaterBodyStatistics(
+        widget.waterBody.id,
       );
       if (!mounted) {
         return;
@@ -111,7 +110,7 @@ class _FishingSpotStatisticsPageState extends State<FishingSpotStatisticsPage> {
         _isLoading = false;
       });
     } catch (error) {
-      debugPrint('Failed to load fishing spot statistics: $error');
+      debugPrint('Failed to load water body statistics: $error');
       if (!mounted) {
         return;
       }
@@ -122,17 +121,14 @@ class _FishingSpotStatisticsPageState extends State<FishingSpotStatisticsPage> {
     }
   }
 
-  /// Reuses `FishingSpotDetailsBottomSheet`'s established convention —
-  /// `CatchDetailsPage.open()` has no typed changed-result, so this page
-  /// unconditionally reloads after the awaited call returns rather than
-  /// trying to distinguish an edit from a delete from nothing happening.
-  /// Applied from the start here, not retrofitted — see TD-022 Key Design
-  /// Decision 9 (which cites TD-021's own equivalent fix).
-  Future<void> _openCatchDetails(Catch catchModel) async {
+  /// Unconditionally reloads after returning from Catch Details, since it
+  /// has no typed changed-result — the same established convention
+  /// `FishingSpotStatisticsPage`/`SpeciesStatisticsPage` already apply.
+  Future<void> _openCatchDetails(WaterBodyCatchEntry entry) async {
     await CatchDetailsPage.open(
       context,
-      fishingSpot: widget.fishingSpot,
-      catchModel: catchModel,
+      fishingSpot: entry.fishingSpot,
+      catchModel: entry.catchModel,
       catchRepository: widget.catchRepository,
       catchPhotoRepository: widget.catchPhotoRepository,
       lureCatalogRepository: widget.lureCatalogRepository,
@@ -149,7 +145,7 @@ class _FishingSpotStatisticsPageState extends State<FishingSpotStatisticsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.fishingSpot.name)),
+      appBar: AppBar(title: Text(widget.waterBody.name)),
       body: _buildBody(context),
     );
   }
@@ -184,18 +180,11 @@ class _FishingSpotStatisticsPageState extends State<FishingSpotStatisticsPage> {
     }
 
     final summary = _summary!;
-    final recordCatch = summary.recordCatch;
 
     return ListView(
-      key: const Key('fishingSpotStatisticsList'),
+      key: const Key('waterBodyStatisticsList'),
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        // Same equal-height, side-by-side layout already established for
-        // the Catches tab's own two summary cards (TD-020 §5) — reused
-        // here rather than StatisticsSummaryCard's primary/secondaryValue
-        // shape, since total catches and Last Catch Date are two
-        // independent facts, not a primary/elaboration pair (TD-022 Key
-        // Design Decision 10).
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -217,17 +206,6 @@ class _FishingSpotStatisticsPageState extends State<FishingSpotStatisticsPage> {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        Text('Ennätyssaalis', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: AppSpacing.md),
-        if (recordCatch == null)
-          const Text('Ei vielä ennätyssaalista.')
-        else
-          FishingSpotRecordCatchCard(
-            catchModel: recordCatch,
-            catchPhotoRepository: widget.catchPhotoRepository,
-            onTap: () => unawaited(_openCatchDetails(recordCatch)),
-          ),
-        const SizedBox(height: AppSpacing.xxl),
         Text('Lajit', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.sm),
         if (summary.speciesCatchCounts.isEmpty)
@@ -245,12 +223,12 @@ class _FishingSpotStatisticsPageState extends State<FishingSpotStatisticsPage> {
         if (summary.catches.isEmpty)
           const Text('Ei vielä saaliita.')
         else
-          for (final catchModel in summary.catches)
+          for (final entry in summary.catches)
             CatchListItem(
-              key: ValueKey(catchModel.id),
-              catchModel: catchModel,
+              key: ValueKey(entry.catchModel.id),
+              catchModel: entry.catchModel,
               catchPhotoRepository: widget.catchPhotoRepository,
-              onTap: () => unawaited(_openCatchDetails(catchModel)),
+              onTap: () => unawaited(_openCatchDetails(entry)),
             ),
       ],
     );

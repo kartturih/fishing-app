@@ -10,18 +10,18 @@ import 'package:fishing_app/features/catches/presentation/widgets/catch_details_
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
-import 'package:fishing_app/features/statistics/data/fishing_spot_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/species_statistics_repository.dart';
-import 'package:fishing_app/features/statistics/domain/fishing_spot_catch_statistic.dart';
+import 'package:fishing_app/features/statistics/data/water_body_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/domain/general_catch_statistics_summary.dart';
 import 'package:fishing_app/features/statistics/domain/largest_catch.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_statistic.dart';
+import 'package:fishing_app/features/statistics/domain/water_body_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/catch_count_row.dart';
-import 'package:fishing_app/features/statistics/presentation/widgets/fishing_spot_statistics_page.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/ranked_largest_catch_row.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/species_statistics_page.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_summary_card.dart';
+import 'package:fishing_app/features/statistics/presentation/widgets/water_body_statistics_page.dart';
 
 const String _noDataYetText = 'Ei vielä tietoja';
 
@@ -44,7 +44,7 @@ class GeneralCatchStatisticsTab extends StatefulWidget {
     super.key,
     required this.repository,
     required this.speciesStatisticsRepository,
-    required this.fishingSpotStatisticsRepository,
+    required this.waterBodyStatisticsRepository,
     required this.catchRepository,
     required this.catchPhotoRepository,
     required this.lureCatalogRepository,
@@ -57,13 +57,12 @@ class GeneralCatchStatisticsTab extends StatefulWidget {
   /// Used to open Species Statistics from a Species List row (MFS-021).
   final SpeciesStatisticsRepository speciesStatisticsRepository;
 
-  /// Used to open Fishing Spot Statistics from a Fishing Spot List row
-  /// (MFS-022).
-  final FishingSpotStatisticsRepository fishingSpotStatisticsRepository;
+  /// Used to open Water Body Statistics from a Water Body List row.
+  final WaterBodyStatisticsRepository waterBodyStatisticsRepository;
 
   /// Needed only to open Catch Details from a largest-catch entry (FR-5),
-  /// a Species/Fishing Spot Statistics Record Catch, or a Species/Fishing
-  /// Spot Statistics Catch List entry, and to resolve each entry's photo
+  /// a Species/Water Body Statistics Record Catch, or a Species/Water Body
+  /// Statistics Catch List entry, and to resolve each entry's photo
   /// thumbnail via the reused `CatchListItem` — this tab performs no
   /// writes through any of them.
   final CatchRepository catchRepository;
@@ -129,11 +128,11 @@ class _GeneralCatchStatisticsTabState extends State<GeneralCatchStatisticsTab> {
   }
 
   /// Reuses the same proactive lifecycle-refresh convention
-  /// `FishingSpotStatisticsPage`/`SpeciesStatisticsPage` already apply to
+  /// `WaterBodyStatisticsPage`/`SpeciesStatisticsPage` already apply to
   /// their own Catch Details visits (TD-022 Key Design Decision 9): a catch
   /// edited or deleted inside Species Statistics can change this tab's
   /// total, Top 3 Largest Catches, most caught species, Species List, and
-  /// Fishing Spot List, none of which Species Statistics itself has any
+  /// Water Body List, none of which Species Statistics itself has any
   /// way to know about or update — so this tab must reload its own summary
   /// unconditionally after returning, exactly as it does after opening
   /// Catch Details directly (`_openCatchDetails`), not only on a specific
@@ -157,15 +156,15 @@ class _GeneralCatchStatisticsTabState extends State<GeneralCatchStatisticsTab> {
   }
 
   /// See `_openSpeciesStatistics`'s own doc comment — the identical
-  /// unconditional reload-after-return principle applies here for Fishing
-  /// Spot Statistics.
-  Future<void> _openFishingSpotStatistics(
-    FishingSpotCatchStatistic statistic,
+  /// unconditional reload-after-return principle applies here for Water
+  /// Body Statistics.
+  Future<void> _openWaterBodyStatistics(
+    WaterBodyCatchStatistic statistic,
   ) async {
-    await FishingSpotStatisticsPage.open(
+    await WaterBodyStatisticsPage.open(
       context,
-      fishingSpot: statistic.fishingSpot,
-      repository: widget.fishingSpotStatisticsRepository,
+      waterBody: statistic.waterBody,
+      repository: widget.waterBodyStatisticsRepository,
       catchRepository: widget.catchRepository,
       catchPhotoRepository: widget.catchPhotoRepository,
       lureCatalogRepository: widget.lureCatalogRepository,
@@ -275,17 +274,17 @@ class _GeneralCatchStatisticsTabState extends State<GeneralCatchStatisticsTab> {
               onTap: () => unawaited(_openSpeciesStatistics(statistic)),
             ),
         const SizedBox(height: AppSpacing.xxl),
-        Text('Kalastuspaikat', style: Theme.of(context).textTheme.titleMedium),
+        Text('Vesistöt', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.sm),
-        if (summary.fishingSpotCatchCounts.isEmpty)
+        if (summary.waterBodyCatchCounts.isEmpty)
           const Text('Ei vielä saaliita.')
         else
-          for (final statistic in summary.fishingSpotCatchCounts)
+          for (final statistic in summary.waterBodyCatchCounts)
             CatchCountRow(
-              key: ValueKey(statistic.fishingSpot.id),
-              label: statistic.fishingSpot.name,
+              key: ValueKey(statistic.waterBody.id),
+              label: statistic.waterBody.name,
               catchCount: statistic.catchCount,
-              onTap: () => unawaited(_openFishingSpotStatistics(statistic)),
+              onTap: () => unawaited(_openWaterBodyStatistics(statistic)),
             ),
       ],
     );

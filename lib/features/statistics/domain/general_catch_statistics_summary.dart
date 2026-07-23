@@ -1,6 +1,6 @@
-import 'package:fishing_app/features/statistics/domain/fishing_spot_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/domain/largest_catch.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_statistic.dart';
+import 'package:fishing_app/features/statistics/domain/water_body_catch_statistic.dart';
 
 /// The complete, read-only result of computing general catch statistics at
 /// a single point in time. Nothing here is ever persisted — see MFS-020
@@ -13,7 +13,7 @@ final class GeneralCatchStatisticsSummary {
     required this.totalCatches,
     required this.largestCatches,
     required this.speciesCatchCounts,
-    required this.fishingSpotCatchCounts,
+    required this.waterBodyCatchCounts,
   }) : assert(totalCatches >= 0, 'totalCatches must not be negative'),
        assert(
          largestCatches.length <= 3,
@@ -32,12 +32,13 @@ final class GeneralCatchStatisticsSummary {
   /// sorted by catch count descending, ties broken deterministically.
   final List<SpeciesCatchStatistic> speciesCatchCounts;
 
-  /// Every fishing spot with at least one logged catch, with its catch
-  /// count, sorted by catch count descending, ties broken deterministically
-  /// (fishing spot name, then id — see MFS-022 / TD-022). Computed from
-  /// the same joined rows as [largestCatches]/[speciesCatchCounts]; no
-  /// additional query.
-  final List<FishingSpotCatchStatistic> fishingSpotCatchCounts;
+  /// Every water body with at least one logged catch at any fishing spot
+  /// belonging to it, with the combined catch count across all of those
+  /// fishing spots, sorted by catch count descending, ties broken
+  /// deterministically (water body name, then id). Computed from the same
+  /// joined rows as [largestCatches]/[speciesCatchCounts]; no additional
+  /// query.
+  final List<WaterBodyCatchStatistic> waterBodyCatchCounts;
 
   SpeciesCatchStatistic? get mostCaughtSpecies =>
       speciesCatchCounts.isEmpty ? null : speciesCatchCounts.first;

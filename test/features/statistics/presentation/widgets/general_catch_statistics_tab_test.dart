@@ -12,31 +12,32 @@ import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/catches/domain/catch.dart';
 import 'package:fishing_app/features/catches/domain/fish_species.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_details_page.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/catch_list_item.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
+import 'package:fishing_app/features/fishing_spots/domain/water_body.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
-import 'package:fishing_app/features/statistics/data/fishing_spot_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/species_statistics_repository.dart';
-import 'package:fishing_app/features/statistics/domain/fishing_spot_catch_statistic.dart';
+import 'package:fishing_app/features/statistics/data/water_body_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/domain/general_catch_statistics_summary.dart';
 import 'package:fishing_app/features/statistics/domain/largest_catch.dart';
 import 'package:fishing_app/features/statistics/domain/species_catch_statistic.dart';
+import 'package:fishing_app/features/statistics/domain/water_body_catch_statistic.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/catch_count_row.dart';
-import 'package:fishing_app/features/statistics/presentation/widgets/fishing_spot_record_catch_card.dart';
-import 'package:fishing_app/features/statistics/presentation/widgets/fishing_spot_statistics_page.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/general_catch_statistics_tab.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/ranked_largest_catch_row.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/record_catch_card.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/species_statistics_page.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_summary_card.dart';
+import 'package:fishing_app/features/statistics/presentation/widgets/water_body_statistics_page.dart';
 
 /// Pumps and lets a multi-step real dart:io/database chain (photo file
 /// deletion, the catch row delete) advance to completion; the fake-async
 /// test clock does not advance real I/O on its own. Mirrors the identical
-/// helper in catch_details_page_test.dart / fishing_spot_statistics_page_test.dart.
+/// helper in catch_details_page_test.dart / water_body_statistics_page_test.dart.
 Future<void> _pumpUntilSettledWithRealIO(WidgetTester tester) async {
   for (var i = 0; i < 20; i++) {
     await tester.runAsync(
@@ -101,9 +102,9 @@ class _StaticRepository extends GeneralCatchStatisticsRepository {
 /// Resolves normally on its first call, then returns a controllable,
 /// never-auto-completing `Future` on every call after that — used to hold
 /// the post-return reload open long enough to dispose the tab mid-flight,
-/// proving `_openFishingSpotStatistics`/`_openSpeciesStatistics`'s
-/// `mounted` guard prevents a `setState` call after disposal. Mirrors the
-/// identical precedent in fishing_spot_statistics_page_test.dart /
+/// proving `_openWaterBodyStatistics`/`_openSpeciesStatistics`'s `mounted`
+/// guard prevents a `setState` call after disposal. Mirrors the identical
+/// precedent in water_body_statistics_page_test.dart /
 /// species_statistics_page_test.dart.
 class _FirstThenPendingRepository extends GeneralCatchStatisticsRepository {
   _FirstThenPendingRepository(super.database, this._firstSummary);
@@ -133,7 +134,7 @@ void main() {
   late TackleBoxPhotoStorage tackleBoxPhotoStorage;
   late PersonalTackleBoxRepository personalTackleBoxRepository;
   late SpeciesStatisticsRepository speciesStatisticsRepository;
-  late FishingSpotStatisticsRepository fishingSpotStatisticsRepository;
+  late WaterBodyStatisticsRepository waterBodyStatisticsRepository;
 
   setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
@@ -163,7 +164,7 @@ void main() {
       tackleBoxPhotoStorage,
     );
     speciesStatisticsRepository = SpeciesStatisticsRepository(database);
-    fishingSpotStatisticsRepository = FishingSpotStatisticsRepository(database);
+    waterBodyStatisticsRepository = WaterBodyStatisticsRepository(database);
   });
 
   tearDown(() async {
@@ -178,10 +179,18 @@ void main() {
   // calls landing on the same clock tick. A bare Future.delayed would
   // deadlock under this file's fake-async testWidgets binding, so the
   // real delay runs via tester.runAsync — matching
-  // fishing_spot_statistics_page_test.dart's own convention.
+  // water_body_statistics_page_test.dart's own convention.
   Future<void> delay(WidgetTester tester) => tester.runAsync(
     () => Future<void>.delayed(const Duration(milliseconds: 2)),
   );
+
+  Future<void> createWaterBody(String id, String name) {
+    return database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(id: id, name: name, createdAt: 0),
+        );
+  }
 
   Future<void> pumpTab(
     WidgetTester tester,
@@ -193,7 +202,7 @@ void main() {
           body: GeneralCatchStatisticsTab(
             repository: repository,
             speciesStatisticsRepository: speciesStatisticsRepository,
-            fishingSpotStatisticsRepository: fishingSpotStatisticsRepository,
+            waterBodyStatisticsRepository: waterBodyStatisticsRepository,
             catchRepository: catchRepository,
             catchPhotoRepository: catchPhotoRepository,
             lureCatalogRepository: lureCatalogRepository,
@@ -239,7 +248,7 @@ void main() {
       totalCatches: 0,
       largestCatches: const [],
       speciesCatchCounts: const [],
-      fishingSpotCatchCounts: const [],
+      waterBodyCatchCounts: const [],
     );
     final repository = _FailOnceRepository(database, summary);
 
@@ -261,7 +270,7 @@ void main() {
         totalCatches: 0,
         largestCatches: const [],
         speciesCatchCounts: const [],
-        fishingSpotCatchCounts: const [],
+        waterBodyCatchCounts: const [],
       );
       final repository = _StaticRepository(database, summary);
 
@@ -275,7 +284,7 @@ void main() {
         findsOneWidget,
       );
       // "Ei vielä saaliita." now appears twice: once for the empty Species
-      // List, once for the empty Fishing Spot List (MFS-022).
+      // List, once for the empty Water Body List.
       expect(find.text('Ei vielä saaliita.'), findsNWidgets(2));
     },
   );
@@ -290,6 +299,11 @@ void main() {
         latitude: 61.0,
         longitude: 25.0,
         waterBodyId: 'water-body-1',
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+      final waterBody = WaterBody(
+        id: 'water-body-1',
+        name: 'Test Water Body',
         createdAt: DateTime.utc(2026, 1, 1),
       );
       Catch buildCatch(String id, int weightGrams) => Catch(
@@ -318,8 +332,8 @@ void main() {
           SpeciesCatchStatistic(species: FishSpecies.pike, catchCount: 3),
           SpeciesCatchStatistic(species: FishSpecies.perch, catchCount: 1),
         ],
-        fishingSpotCatchCounts: [
-          FishingSpotCatchStatistic(fishingSpot: fishingSpot, catchCount: 4),
+        waterBodyCatchCounts: [
+          WaterBodyCatchStatistic(waterBody: waterBody, catchCount: 4),
         ],
       );
       final repository = _StaticRepository(database, summary);
@@ -367,7 +381,7 @@ void main() {
         speciesCatchCounts: const [
           SpeciesCatchStatistic(species: FishSpecies.zander, catchCount: 1),
         ],
-        fishingSpotCatchCounts: const [],
+        waterBodyCatchCounts: const [],
       );
       final repository = _StaticRepository(database, summary);
 
@@ -414,7 +428,7 @@ void main() {
         speciesCatchCounts: const [
           SpeciesCatchStatistic(species: FishSpecies.pike, catchCount: 1),
         ],
-        fishingSpotCatchCounts: const [],
+        waterBodyCatchCounts: const [],
       );
       final repository = _StaticRepository(database, summary);
 
@@ -440,23 +454,17 @@ void main() {
   );
 
   testWidgets(
-    'the Fishing Spot List renders every entry in the given (already-sorted) '
+    'the Water Body List renders every entry in the given (already-sorted) '
     'order',
     (tester) async {
-      final firstSpot = FishingSpot(
-        id: 'spot-1',
+      final firstWaterBody = WaterBody(
+        id: 'water-body-a',
         name: 'Kotijärvi',
-        latitude: 61.0,
-        longitude: 25.0,
-        waterBodyId: 'water-body-1',
         createdAt: DateTime.utc(2026, 1, 1),
       );
-      final secondSpot = FishingSpot(
-        id: 'spot-2',
+      final secondWaterBody = WaterBody(
+        id: 'water-body-b',
         name: 'Muualla',
-        latitude: 62.0,
-        longitude: 26.0,
-        waterBodyId: 'water-body-1',
         createdAt: DateTime.utc(2026, 1, 1),
       );
 
@@ -464,9 +472,9 @@ void main() {
         totalCatches: 3,
         largestCatches: const [],
         speciesCatchCounts: const [],
-        fishingSpotCatchCounts: [
-          FishingSpotCatchStatistic(fishingSpot: firstSpot, catchCount: 2),
-          FishingSpotCatchStatistic(fishingSpot: secondSpot, catchCount: 1),
+        waterBodyCatchCounts: [
+          WaterBodyCatchStatistic(waterBody: firstWaterBody, catchCount: 2),
+          WaterBodyCatchStatistic(waterBody: secondWaterBody, catchCount: 1),
         ],
       );
       final repository = _StaticRepository(database, summary);
@@ -476,34 +484,53 @@ void main() {
 
       expect(find.text('Kotijärvi'), findsOneWidget);
       expect(find.text('Muualla'), findsOneWidget);
-      expect(find.text('Kalastuspaikat'), findsOneWidget);
+      expect(find.text('Vesistöt'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'tapping a Fishing Spot List row opens Fishing Spot Statistics for the '
-    'correct fishing spot (MFS-022)',
+    'tapping a Water Body List row opens Water Body Statistics for the '
+    'correct water body, combining catches across every fishing spot under '
+    'it',
     (tester) async {
       final fishingSpotRepository = FishingSpotRepository(database);
-      final fishingSpot = await fishingSpotRepository.create(
-        name: 'Merrasjärvi',
+      final spotOne = await fishingSpotRepository.create(
+        name: 'Merrasjärven ranta 1',
         latitude: 61.0,
         longitude: 25.0,
         waterBodyId: 'water-body-1',
       );
+      await delay(tester);
+      final spotTwo = await fishingSpotRepository.create(
+        name: 'Merrasjärven ranta 2',
+        latitude: 61.1,
+        longitude: 25.1,
+        waterBodyId: 'water-body-1',
+      );
       await catchRepository.create(
-        fishingSpotId: fishingSpot.id,
+        fishingSpotId: spotOne.id,
         species: FishSpecies.pike,
         caughtAt: DateTime(2026, 7, 17),
         weightGrams: 2000,
       );
+      await catchRepository.create(
+        fishingSpotId: spotTwo.id,
+        species: FishSpecies.perch,
+        caughtAt: DateTime(2026, 7, 10),
+        weightGrams: 500,
+      );
 
+      final waterBody = WaterBody(
+        id: 'water-body-1',
+        name: 'Merrasjärvi',
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
       final summary = GeneralCatchStatisticsSummary(
-        totalCatches: 1,
+        totalCatches: 2,
         largestCatches: const [],
         speciesCatchCounts: const [],
-        fishingSpotCatchCounts: [
-          FishingSpotCatchStatistic(fishingSpot: fishingSpot, catchCount: 1),
+        waterBodyCatchCounts: [
+          WaterBodyCatchStatistic(waterBody: waterBody, catchCount: 2),
         ],
       );
       final repository = _StaticRepository(database, summary);
@@ -514,8 +541,11 @@ void main() {
       await tester.tap(find.text('Merrasjärvi'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(FishingSpotStatisticsPage), findsOneWidget);
+      expect(find.byType(WaterBodyStatisticsPage), findsOneWidget);
       expect(find.widgetWithText(AppBar, 'Merrasjärvi'), findsOneWidget);
+      // Both catches — one at each fishing spot under the water body — are
+      // shown, proving the filter is by water body, not by fishing spot.
+      expect(find.byType(CatchListItem), findsNWidgets(2));
     },
   );
 
@@ -525,7 +555,7 @@ void main() {
       totalCatches: 5,
       largestCatches: const [],
       speciesCatchCounts: const [],
-      fishingSpotCatchCounts: const [],
+      waterBodyCatchCounts: const [],
     );
     final repository = _StaticRepository(database, summary);
 
@@ -555,7 +585,7 @@ void main() {
         speciesCatchCounts: const [
           SpeciesCatchStatistic(species: FishSpecies.pike, catchCount: 5),
         ],
-        fishingSpotCatchCounts: const [],
+        waterBodyCatchCounts: const [],
       );
       final repository = _StaticRepository(database, summary);
 
@@ -594,6 +624,11 @@ void main() {
       waterBodyId: 'water-body-1',
       createdAt: DateTime.utc(2026, 1, 1),
     );
+    final waterBody = WaterBody(
+      id: 'water-body-1',
+      name: 'Test Water Body',
+      createdAt: DateTime.utc(2026, 1, 1),
+    );
     Catch buildCatch(String id, int weightGrams) => Catch(
       id: id,
       fishingSpotId: fishingSpot.id,
@@ -623,8 +658,8 @@ void main() {
       speciesCatchCounts: const [
         SpeciesCatchStatistic(species: FishSpecies.eel, catchCount: 3),
       ],
-      fishingSpotCatchCounts: [
-        FishingSpotCatchStatistic(fishingSpot: fishingSpot, catchCount: 3),
+      waterBodyCatchCounts: [
+        WaterBodyCatchStatistic(waterBody: waterBody, catchCount: 3),
       ],
     );
     final repository = _StaticRepository(database, summary);
@@ -636,23 +671,25 @@ void main() {
   });
 
   testWidgets(
-    'returning from Fishing Spot Statistics after a real delete refreshes '
-    'General Catch Statistics: total, Fishing Spot List (including removal '
-    'of an emptied spot), Species List, and Top 3',
+    'returning from Water Body Statistics after a real delete refreshes '
+    'General Catch Statistics: total, Water Body List (including removal '
+    'of an emptied water body), Species List, and Top 3',
     (tester) async {
+      await createWaterBody('water-body-a', 'Water A');
+      await createWaterBody('water-body-b', 'Water B');
       final fishingSpotRepository = FishingSpotRepository(database);
       final spotA = await fishingSpotRepository.create(
         name: 'Spot A',
         latitude: 61.0,
         longitude: 25.0,
-        waterBodyId: 'water-body-1',
+        waterBodyId: 'water-body-a',
       );
       await delay(tester);
       final spotB = await fishingSpotRepository.create(
         name: 'Spot B',
         latitude: 62.0,
         longitude: 26.0,
-        waterBodyId: 'water-body-1',
+        waterBodyId: 'water-body-b',
       );
       await catchRepository.create(
         fishingSpotId: spotA.id,
@@ -680,22 +717,22 @@ void main() {
         ),
         findsOneWidget,
       );
-      // The Fishing Spot List sits below the Top 3 and Species List
+      // The Water Body List sits below the Top 3 and Species List
       // sections, past the default test viewport's lazy-build range —
       // scroll it into view before asserting on or tapping its rows.
       await tester.scrollUntilVisible(
-        find.text('Spot A'),
+        find.text('Water A'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('Spot A'), findsOneWidget);
-      expect(find.text('Spot B'), findsOneWidget);
+      expect(find.text('Water A'), findsOneWidget);
+      expect(find.text('Water B'), findsOneWidget);
 
-      await tester.tap(find.text('Spot A'));
+      await tester.tap(find.text('Water A'));
       await tester.pumpAndSettle();
-      expect(find.byType(FishingSpotStatisticsPage), findsOneWidget);
+      expect(find.byType(WaterBodyStatisticsPage), findsOneWidget);
 
-      await tester.tap(find.byType(FishingSpotRecordCatchCard));
+      await tester.tap(find.byType(CatchListItem));
       await tester.pumpAndSettle();
       expect(find.byType(CatchDetailsPage), findsOneWidget);
 
@@ -708,15 +745,15 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Poista'));
       await _pumpUntilSettledWithRealIO(tester);
 
-      expect(find.byType(FishingSpotStatisticsPage), findsOneWidget);
+      expect(find.byType(WaterBodyStatisticsPage), findsOneWidget);
       expect(find.byType(CatchDetailsPage), findsNothing);
 
-      // Return from Fishing Spot Statistics to General Catch Statistics.
+      // Return from Water Body Statistics to General Catch Statistics.
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
 
       expect(find.byType(GeneralCatchStatisticsTab), findsOneWidget);
-      expect(find.byType(FishingSpotStatisticsPage), findsNothing);
+      expect(find.byType(WaterBodyStatisticsPage), findsNothing);
 
       // Total catches: 2 -> 1 — assert immediately, no extra reload.
       expect(
@@ -726,19 +763,19 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Spot A had its only catch deleted — it must disappear entirely
-      // from the Fishing Spot List, not merely show a count of 0. The
-      // list is shorter now (one fewer fishing spot, species, and largest
+      // Water A had its only catch deleted — it must disappear entirely
+      // from the Water Body List, not merely show a count of 0. The list
+      // is shorter now (one fewer water body, species, and largest
       // catch), so it may already fit the viewport; scrollUntilVisible is
       // a no-op in that case.
       await tester.scrollUntilVisible(
-        find.text('Spot B'),
+        find.text('Water B'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('Spot A'), findsNothing);
-      expect(find.text('Spot B'), findsOneWidget);
-      // Species List: pike (only ever caught at Spot A) is gone; perch
+      expect(find.text('Water A'), findsNothing);
+      expect(find.text('Water B'), findsOneWidget);
+      // Species List: pike (only ever caught at Water A) is gone; perch
       // remains.
       expect(
         find.descendant(
@@ -831,12 +868,12 @@ void main() {
     );
     expect(find.text('Yksikään saalis ei ole vielä punnittu.'), findsOneWidget);
     // "Ei vielä saaliita." for both the now-empty Species List and the
-    // now-empty Fishing Spot List.
+    // now-empty Water Body List.
     expect(find.text('Ei vielä saaliita.'), findsNWidgets(2));
   });
 
   testWidgets(
-    'an ordinary open-and-back through Fishing Spot Statistics with no '
+    'an ordinary open-and-back through Water Body Statistics with no '
     'changes reloads safely and shows the same data',
     (tester) async {
       final fishingSpotRepository = FishingSpotRepository(database);
@@ -858,9 +895,9 @@ void main() {
       await pumpTab(tester, repository);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Test Spot'));
+      await tester.tap(find.text('Test Water Body'));
       await tester.pumpAndSettle();
-      expect(find.byType(FishingSpotStatisticsPage), findsOneWidget);
+      expect(find.byType(WaterBodyStatisticsPage), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
@@ -874,7 +911,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Test Spot'), findsOneWidget);
+      expect(find.text('Test Water Body'), findsOneWidget);
       // No lingering/overlapping loading or error state.
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('Tilastojen lataaminen epäonnistui.'), findsNothing);
@@ -883,7 +920,7 @@ void main() {
 
   testWidgets(
     'does not call setState after the tab is disposed while a post-return '
-    'reload (after Fishing Spot Statistics) is still pending',
+    'reload (after Water Body Statistics) is still pending',
     (tester) async {
       final fishingSpotRepository = FishingSpotRepository(database);
       final fishingSpot = await fishingSpotRepository.create(
@@ -899,14 +936,19 @@ void main() {
         weightGrams: 2000,
       );
 
+      final waterBody = WaterBody(
+        id: 'water-body-1',
+        name: 'Test Water Body',
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
       final firstSummary = GeneralCatchStatisticsSummary(
         totalCatches: 1,
         largestCatches: const [],
         speciesCatchCounts: const [
           SpeciesCatchStatistic(species: FishSpecies.pike, catchCount: 1),
         ],
-        fishingSpotCatchCounts: [
-          FishingSpotCatchStatistic(fishingSpot: fishingSpot, catchCount: 1),
+        waterBodyCatchCounts: [
+          WaterBodyCatchStatistic(waterBody: waterBody, catchCount: 1),
         ],
       );
       final repository = _FirstThenPendingRepository(database, firstSummary);
@@ -915,9 +957,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(repository.callCount, 1);
 
-      await tester.tap(find.text('Test Spot'));
+      await tester.tap(find.text('Test Water Body'));
       await tester.pumpAndSettle();
-      expect(find.byType(FishingSpotStatisticsPage), findsOneWidget);
+      expect(find.byType(WaterBodyStatisticsPage), findsOneWidget);
 
       // Returning triggers the post-navigation reload — now the pending,
       // never-completing second call, so the tab is left showing its

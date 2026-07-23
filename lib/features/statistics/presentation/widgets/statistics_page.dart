@@ -5,10 +5,10 @@ import 'package:fishing_app/features/catches/data/catch_repository.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
-import 'package:fishing_app/features/statistics/data/fishing_spot_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/general_catch_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/lure_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/data/species_statistics_repository.dart';
+import 'package:fishing_app/features/statistics/data/water_body_statistics_repository.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/general_catch_statistics_tab.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/lure_statistics_tab.dart';
 
@@ -26,7 +26,7 @@ class StatisticsPage extends StatelessWidget {
     required this.generalCatchStatisticsRepository,
     required this.lureStatisticsRepository,
     required this.speciesStatisticsRepository,
-    required this.fishingSpotStatisticsRepository,
+    required this.waterBodyStatisticsRepository,
     required this.catchRepository,
     required this.catchPhotoRepository,
     required this.lureCatalogRepository,
@@ -42,10 +42,10 @@ class StatisticsPage extends StatelessWidget {
   /// for it itself.
   final SpeciesStatisticsRepository speciesStatisticsRepository;
 
-  /// Forwarded to [GeneralCatchStatisticsTab], needed only to open Fishing
-  /// Spot Statistics from a Fishing Spot List row (MFS-022) — this page
-  /// has no use for it itself.
-  final FishingSpotStatisticsRepository fishingSpotStatisticsRepository;
+  /// Forwarded to [GeneralCatchStatisticsTab], needed only to open Water
+  /// Body Statistics from a Water Body List row — this page has no use for
+  /// it itself.
+  final WaterBodyStatisticsRepository waterBodyStatisticsRepository;
 
   /// Forwarded to [GeneralCatchStatisticsTab], needed only to open Catch
   /// Details from a largest-catch entry (FR-5) — this page has no use for
@@ -75,7 +75,7 @@ class StatisticsPage extends StatelessWidget {
             GeneralCatchStatisticsTab(
               repository: generalCatchStatisticsRepository,
               speciesStatisticsRepository: speciesStatisticsRepository,
-              fishingSpotStatisticsRepository: fishingSpotStatisticsRepository,
+              waterBodyStatisticsRepository: waterBodyStatisticsRepository,
               catchRepository: catchRepository,
               catchPhotoRepository: catchPhotoRepository,
               lureCatalogRepository: lureCatalogRepository,

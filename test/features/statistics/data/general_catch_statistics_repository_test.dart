@@ -47,13 +47,21 @@ void main() {
   // lure_statistics_repository_test.dart's convention.
   Future<void> delay() => Future<void>.delayed(const Duration(milliseconds: 2));
 
+  Future<void> createWaterBody(String id, String name) {
+    return database
+        .into(database.waterBodies)
+        .insert(
+          WaterBodiesCompanion.insert(id: id, name: name, createdAt: 0),
+        );
+  }
+
   test('no catches at all produces an empty summary', () async {
     final summary = await statisticsRepository.getGeneralCatchStatistics();
 
     expect(summary.totalCatches, 0);
     expect(summary.largestCatches, isEmpty);
     expect(summary.speciesCatchCounts, isEmpty);
-    expect(summary.fishingSpotCatchCounts, isEmpty);
+    expect(summary.waterBodyCatchCounts, isEmpty);
   });
 
   test('one catch with a recorded weight appears in largestCatches with its '
@@ -270,11 +278,12 @@ void main() {
     },
   );
 
-  // Fishing Spot List (MFS-022/TD-022) — computed from the same rows as
-  // the assertions above, not a separate query.
+  // Water Body List — computed from the same rows as the assertions above,
+  // not a separate query. Grouped by WaterBody (via each catch's fishing
+  // spot), not by FishingSpot.
 
   test('multiple catches at the same fishing spot are aggregated into one '
-      'fishingSpotCatchCounts entry', () async {
+      'waterBodyCatchCounts entry', () async {
     for (var i = 0; i < 3; i++) {
       await catchRepository.create(
         fishingSpotId: fishingSpot.id,
@@ -286,46 +295,113 @@ void main() {
 
     final summary = await statisticsRepository.getGeneralCatchStatistics();
 
-    expect(summary.fishingSpotCatchCounts, hasLength(1));
-    expect(
-      summary.fishingSpotCatchCounts.single.fishingSpot.id,
-      fishingSpot.id,
-    );
-    expect(summary.fishingSpotCatchCounts.single.catchCount, 3);
+    expect(summary.waterBodyCatchCounts, hasLength(1));
+    expect(summary.waterBodyCatchCounts.single.waterBody.id, 'water-body-1');
+    expect(summary.waterBodyCatchCounts.single.catchCount, 3);
   });
 
   test(
-    'a fishing spot with no catches never appears in fishingSpotCatchCounts',
+    'catches at multiple fishing spots belonging to the same water body are '
+    'combined into one waterBodyCatchCounts entry',
     () async {
-      // A real (not fake-clock) delay so the two generated identifiers
-      // (derived from DateTime.now()) don't land on the same clock tick —
-      // the same pre-existing mitigation already used elsewhere in this
-      // project's test suite.
-      await Future<void>.delayed(const Duration(milliseconds: 2));
-      await fishingSpotRepository.create(
-        name: 'Empty Spot',
-        latitude: 63.0,
-        longitude: 27.0,
+      await delay();
+      final otherSpot = await fishingSpotRepository.create(
+        name: 'Other Spot',
+        latitude: 62.0,
+        longitude: 26.0,
         waterBodyId: 'water-body-1',
+      );
+
+      await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+      await delay();
+      await catchRepository.create(
+        fishingSpotId: otherSpot.id,
+        species: FishSpecies.perch,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+      await delay();
+      await catchRepository.create(
+        fishingSpotId: otherSpot.id,
+        species: FishSpecies.perch,
+        caughtAt: DateTime(2026, 7, 17),
       );
 
       final summary = await statisticsRepository.getGeneralCatchStatistics();
 
-      expect(summary.fishingSpotCatchCounts, isEmpty);
+      expect(summary.waterBodyCatchCounts, hasLength(1));
+      expect(summary.waterBodyCatchCounts.single.waterBody.id, 'water-body-1');
+      expect(summary.waterBodyCatchCounts.single.catchCount, 3);
     },
   );
 
-  test('fishingSpotCatchCounts is sorted by catch count descending', () async {
-    // A real (not fake-clock) delay so the two generated identifiers
-    // (derived from DateTime.now(), including setUp's own fishingSpot)
-    // don't land on the same clock tick — the same pre-existing mitigation
-    // already used elsewhere in this project's test suite.
+  test(
+    'catches at fishing spots belonging to different water bodies remain '
+    'separate waterBodyCatchCounts entries',
+    () async {
+      await createWaterBody('water-body-2', 'Other Water Body');
+      await delay();
+      final otherWaterBodySpot = await fishingSpotRepository.create(
+        name: 'Spot In Other Water Body',
+        latitude: 62.0,
+        longitude: 26.0,
+        waterBodyId: 'water-body-2',
+      );
+
+      await catchRepository.create(
+        fishingSpotId: fishingSpot.id,
+        species: FishSpecies.pike,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+      await delay();
+      await catchRepository.create(
+        fishingSpotId: otherWaterBodySpot.id,
+        species: FishSpecies.perch,
+        caughtAt: DateTime(2026, 7, 17),
+      );
+
+      final summary = await statisticsRepository.getGeneralCatchStatistics();
+
+      expect(summary.waterBodyCatchCounts, hasLength(2));
+      final ids = summary.waterBodyCatchCounts
+          .map((entry) => entry.waterBody.id)
+          .toSet();
+      expect(ids, {'water-body-1', 'water-body-2'});
+      for (final entry in summary.waterBodyCatchCounts) {
+        expect(entry.catchCount, 1);
+      }
+    },
+  );
+
+  test(
+    'a water body with no catches never appears in waterBodyCatchCounts',
+    () async {
+      await createWaterBody('water-body-2', 'Empty Water Body');
+      await delay();
+      await fishingSpotRepository.create(
+        name: 'Empty Spot',
+        latitude: 63.0,
+        longitude: 27.0,
+        waterBodyId: 'water-body-2',
+      );
+
+      final summary = await statisticsRepository.getGeneralCatchStatistics();
+
+      expect(summary.waterBodyCatchCounts, isEmpty);
+    },
+  );
+
+  test('waterBodyCatchCounts is sorted by catch count descending', () async {
+    await createWaterBody('water-body-2', 'Other Water Body');
     await delay();
     final otherSpot = await fishingSpotRepository.create(
       name: 'Other Spot',
       latitude: 62.0,
       longitude: 26.0,
-      waterBodyId: 'water-body-1',
+      waterBodyId: 'water-body-2',
     );
 
     await catchRepository.create(
@@ -345,84 +421,77 @@ void main() {
 
     final summary = await statisticsRepository.getGeneralCatchStatistics();
 
-    expect(summary.fishingSpotCatchCounts, hasLength(2));
-    expect(summary.fishingSpotCatchCounts.first.fishingSpot.id, fishingSpot.id);
-    expect(summary.fishingSpotCatchCounts.first.catchCount, 2);
-    expect(summary.fishingSpotCatchCounts.last.fishingSpot.id, otherSpot.id);
-    expect(summary.fishingSpotCatchCounts.last.catchCount, 1);
+    expect(summary.waterBodyCatchCounts, hasLength(2));
+    expect(summary.waterBodyCatchCounts.first.waterBody.id, 'water-body-1');
+    expect(summary.waterBodyCatchCounts.first.catchCount, 2);
+    expect(summary.waterBodyCatchCounts.last.waterBody.id, 'water-body-2');
+    expect(summary.waterBodyCatchCounts.last.catchCount, 1);
   });
 
   test(
-    'two fishing spots sharing the same display name resolve deterministically '
+    'two water bodies sharing the same display name resolve deterministically '
     'by id, and remain separate entries',
     () async {
-      // Fishing spot names have no uniqueness constraint (ADR-0004) — two
-      // spots can share a display name and must still be counted and
-      // ordered as distinct entries.
-      //
-      // A real (not fake-clock) delay, here and before the second create()
-      // call below, so no two generated identifiers (derived from
-      // DateTime.now(), including setUp's own fishingSpot) land on the same
-      // clock tick — the same pre-existing mitigation already used
-      // elsewhere in this project's test suite.
+      // Water body names have no uniqueness constraint (mirrors fishing
+      // spot names, ADR-0004) — two water bodies can share a display name
+      // and must still be counted and ordered as distinct entries.
+      await createWaterBody('water-body-a', 'Kotijärvi');
+      await createWaterBody('water-body-b', 'Kotijärvi');
       await delay();
-      final firstSpot = await fishingSpotRepository.create(
-        name: 'Kotijärvi',
+      final spotA = await fishingSpotRepository.create(
+        name: 'Spot A',
         latitude: 61.0,
         longitude: 25.0,
-        waterBodyId: 'water-body-1',
+        waterBodyId: 'water-body-a',
       );
       await delay();
-      final secondSpot = await fishingSpotRepository.create(
-        name: 'Kotijärvi',
+      final spotB = await fishingSpotRepository.create(
+        name: 'Spot B',
         latitude: 61.5,
         longitude: 25.5,
-        waterBodyId: 'water-body-1',
+        waterBodyId: 'water-body-b',
       );
-      expect(firstSpot.id, isNot(secondSpot.id));
 
       await catchRepository.create(
-        fishingSpotId: firstSpot.id,
+        fishingSpotId: spotA.id,
         species: FishSpecies.pike,
         caughtAt: DateTime(2026, 7, 17),
       );
       await delay();
       await catchRepository.create(
-        fishingSpotId: secondSpot.id,
+        fishingSpotId: spotB.id,
         species: FishSpecies.perch,
         caughtAt: DateTime(2026, 7, 17),
       );
 
       final summary = await statisticsRepository.getGeneralCatchStatistics();
 
-      final matchingEntries = summary.fishingSpotCatchCounts
-          .where((entry) => entry.fishingSpot.name == 'Kotijärvi')
+      final matchingEntries = summary.waterBodyCatchCounts
+          .where((entry) => entry.waterBody.name == 'Kotijärvi')
           .toList();
       expect(matchingEntries, hasLength(2));
       // Both are a tie on catch count (1) and on name ("Kotijärvi"), so the
-      // final, guaranteed-unique tiebreak (fishing spot id ascending)
+      // final, guaranteed-unique tiebreak (water body id ascending)
       // determines the order.
-      final expectedFirstId = firstSpot.id.compareTo(secondSpot.id) < 0
-          ? firstSpot.id
-          : secondSpot.id;
-      expect(matchingEntries.first.fishingSpot.id, expectedFirstId);
+      final expectedFirstId = 'water-body-a'.compareTo('water-body-b') < 0
+          ? 'water-body-a'
+          : 'water-body-b';
+      expect(matchingEntries.first.waterBody.id, expectedFirstId);
     },
   );
 
-  test('a tie in catch count between two differently-named fishing spots '
+  test('a tie in catch count between two differently-named water bodies '
       'resolves deterministically by name ascending', () async {
-    // A real (not fake-clock) delay so the two generated identifiers
-    // (derived from DateTime.now(), including setUp's own fishingSpot)
-    // don't land on the same clock tick — the same pre-existing mitigation
-    // already used elsewhere in this project's test suite.
+    await createWaterBody('water-body-2', 'Ahvenlampi');
     await delay();
     final otherSpot = await fishingSpotRepository.create(
-      name: 'Ahvenlampi',
+      name: 'Other Spot',
       latitude: 62.0,
       longitude: 26.0,
-      waterBodyId: 'water-body-1',
+      waterBodyId: 'water-body-2',
     );
-    // fishingSpot is named 'Test Spot' (setUp); 'Ahvenlampi' sorts first.
+    // fishingSpot's water body is named 'Test Water Body' (setUp);
+    // 'Ahvenlampi' sorts first.
 
     await catchRepository.create(
       fishingSpotId: fishingSpot.id,
@@ -438,13 +507,13 @@ void main() {
 
     final summary = await statisticsRepository.getGeneralCatchStatistics();
 
-    expect(summary.fishingSpotCatchCounts, hasLength(2));
-    expect(summary.fishingSpotCatchCounts.first.fishingSpot.name, 'Ahvenlampi');
-    expect(summary.fishingSpotCatchCounts.last.fishingSpot.name, 'Test Spot');
+    expect(summary.waterBodyCatchCounts, hasLength(2));
+    expect(summary.waterBodyCatchCounts.first.waterBody.name, 'Ahvenlampi');
+    expect(summary.waterBodyCatchCounts.last.waterBody.name, 'Test Water Body');
   });
 
   test('existing totalCatches/largestCatches/speciesCatchCounts computation is '
-      'unaffected by the added fishingSpotCatchCounts aggregation', () async {
+      'unaffected by the added waterBodyCatchCounts aggregation', () async {
     await catchRepository.create(
       fishingSpotId: fishingSpot.id,
       species: FishSpecies.pike,
@@ -459,6 +528,6 @@ void main() {
     expect(summary.largestCatches.single.catchModel.weightGrams, 2500);
     expect(summary.speciesCatchCounts, hasLength(1));
     expect(summary.speciesCatchCounts.single.species, FishSpecies.pike);
-    expect(summary.fishingSpotCatchCounts, hasLength(1));
+    expect(summary.waterBodyCatchCounts, hasLength(1));
   });
 }

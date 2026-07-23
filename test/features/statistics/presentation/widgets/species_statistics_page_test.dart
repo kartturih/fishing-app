@@ -28,7 +28,7 @@ import 'package:fishing_app/features/statistics/presentation/widgets/species_sta
 /// Pumps and lets a multi-step real dart:io/database chain (photo file
 /// deletion, the catch row delete) advance to completion; the fake-async
 /// test clock does not advance real I/O on its own. Mirrors the identical
-/// helper in catch_details_page_test.dart / fishing_spot_statistics_page_test.dart.
+/// helper in catch_details_page_test.dart / water_body_statistics_page_test.dart.
 Future<void> _pumpUntilSettledWithRealIO(WidgetTester tester) async {
   for (var i = 0; i < 20; i++) {
     await tester.runAsync(
