@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft — technical design only. Not yet implemented. This document designs MFS-025's approved MVP scope (including its two post-approval refinements: the search field's clear button and its tap-to-focus requirement). Implementation has not started.
+Implemented — architecture review passed, all automated tests passing (818/818), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android testing completed successfully. This document designs MFS-025's approved MVP scope (including its two post-approval refinements: the search field's clear button and its tap-to-focus requirement); the implementation follows this document's domain, database, repository, and presentation design with no architectural deviation — see Implementation Notes below for the two test-only conventions applied and for the `MapScreen` widget-test coverage added.
 
 ## Related
 
@@ -1096,11 +1096,24 @@ All must pass. Confirm the schema version is still `8` before implementing, in c
 
 ---
 
-## 23. Documentation Cleanup (deferred — not performed by this document)
+## Implementation Notes
 
-To be carried out only after implementation is approved, not now:
+Implementation followed this document's domain, database, repository, dependency-injection, and UI design as specified, with no architectural deviation. `dart format .`, `flutter analyze` (8 pre-existing/accepted info-level lints, none introduced), and `flutter test` all pass (818/818). The following discoveries were made during implementation:
 
-1. **`docs/roadmap.md` §3.1:** update "Catch Search & Filtering"'s identifier from "Not assigned" to `MFS-025`/`TD-025`, and move it out of the Near-Term Roadmap into the Current Milestone section, alongside the other completed/in-progress milestones.
-2. **`docs/specifications/MFS-023-catch-notes.md`:** correct its four existing "MFS-024 — Catch Search & Filtering" references (Related section; two Out of Scope lines; Future Extensions) to "MFS-025."
-3. **`docs/project-status.md`:** update after implementation, following this project's established per-milestone update convention (Current Phase narrative, Completed/Implemented Features, Validation, Project Metrics, Next Planned Task, database schema version — which remains `8`).
-4. **Undocumented `WaterBody` statistics work:** the already-implemented `WaterBodyStatisticsPage`/`WaterBodyStatisticsRepository` (git history: "feat: group catch statistics by water body") has no MFS/TD identifier and is not mentioned in `docs/project-status.md` or `docs/roadmap.md`. This document does **not** assign it a retrospective MFS/TD number — doing so is a separate documentation/process decision, not a byproduct of designing TD-025, and per the task's own instruction is explicitly left for a separate step (most likely a short retrospective MFS/TD pair, or a documented exception, decided on its own merits rather than folded into this milestone's paperwork).
+1. **Two pre-existing, already-documented test-environment conventions had to be applied to this milestone's own new tests.** `FishingSpotRepository`/`CatchRepository`'s `DateTime.now().microsecondsSinceEpoch`-based id generation (the same latent flakiness already documented in TD-024's own Implementation Notes) required the same short-real-delay-before-rapid-creation mitigation already used throughout this project's repository tests; inside `testWidgets`-based tests specifically, that delay additionally had to run via `tester.runAsync()` (a bare `Future.delayed` never resolves under the fake-async `testWidgets` binding), matching `general_catch_statistics_tab_test.dart`'s established convention. Neither is a new pattern introduced by this milestone, and neither required any production-code change.
+2. **`MapScreen` widget-test coverage was added** (`test/features/map/presentation/widgets/map_screen_test.dart` — no test file for `MapScreen` existed before this milestone) covering the new Catch Search AppBar entry point (icon, tooltip, navigation, `CatchSearchRepository` wiring) and regression coverage confirming the pre-existing Lure Tools/Statistics entry points are unaffected. `MapScreen` embeds a `MapLibreMap` platform view that perpetually schedules frames in this headless test environment, so these tests use bounded `tester.pump()`/`pump(duration)` calls rather than `tester.pumpAndSettle()`, which never settles.
+3. **Architecture review and physical Android testing have both been completed successfully** for this milestone, consistent with every prior milestone in this project.
+
+---
+
+## 23. Documentation Cleanup
+
+Carried out as part of finalizing this milestone's documentation:
+
+- **`docs/project-status.md`:** updated — MFS-025 marked complete and moved into the Implemented Features/Validation/Project Metrics sections, following this project's established per-milestone update convention. Database schema version remains `8`.
+
+Deliberately left for a separate step, not performed here:
+
+1. **`docs/roadmap.md` §3.1:** still shows "Catch Search & Filtering"'s identifier as "Not assigned" — updating it to `MFS-025`/`TD-025` and moving it into the Current Milestone section was out of scope for this documentation pass.
+2. **`docs/specifications/MFS-023-catch-notes.md`:** its four existing "MFS-024 — Catch Search & Filtering" references (Related section; two Out of Scope lines; Future Extensions) still need correcting to "MFS-025" — also out of scope for this pass.
+3. **Undocumented `WaterBody` statistics work:** the already-implemented `WaterBodyStatisticsPage`/`WaterBodyStatisticsRepository` (git history: "feat: group catch statistics by water body") has no MFS/TD identifier and is not mentioned in `docs/project-status.md` or `docs/roadmap.md`. This remains undecided — no retrospective MFS/TD number is assigned by this document or by this documentation pass; it is a separate documentation/process decision, on its own merits, not a byproduct of this milestone's paperwork.

@@ -2,9 +2,9 @@
 
 ## Status
 
-Draft — not yet implemented. This specification defines the MVP scope for the "Catch Search & Filtering" idea previously named, unnumbered, in `docs/roadmap.md` §3.1 (originally drafted as an earlier MFS-024 candidate, abandoned before being scoped, then reassigned — the identifier `MFS-024` itself was later given to Water Bodies and Fishing Spot Hierarchy). This document assigns it the next available identifier, `MFS-025`. See the Report accompanying this document's creation for the specific existing references that still say "MFS-024" and will need correcting once this specification is approved.
+Implemented — architecture-reviewed and approved, all automated tests passing (818/818), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android testing completed successfully. See TD-025 for the technical design and its Implementation Notes for full detail, and `docs/project-status.md` for the validation record. This specification defines the MVP scope for the "Catch Search & Filtering" idea previously named, unnumbered, in `docs/roadmap.md` §3.1 (originally drafted as an earlier MFS-024 candidate, abandoned before being scoped, then reassigned — the identifier `MFS-024` itself was later given to Water Bodies and Fishing Spot Hierarchy). This document assigns it the next available identifier, `MFS-025`. The stale "MFS-024" references identified when this specification was drafted (`docs/roadmap.md` §3.1 and four references in `docs/specifications/MFS-023-catch-notes.md`) have not yet been corrected — see TD-025 §23.
 
-Approved with two small UX refinements requested before Technical Design: an explicit search-field clear ("X") button (FR-20) and an explicit tap-to-focus requirement (FR-21). Both are folded into this document as MVP requirements, not deferred enhancements. Technical Design has not yet started.
+Approved with two small UX refinements requested before Technical Design: an explicit search-field clear ("X") button (FR-20) and an explicit tap-to-focus requirement (FR-21). Both were implemented as MVP requirements, not deferred enhancements.
 
 ## Related
 
