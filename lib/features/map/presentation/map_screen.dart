@@ -12,7 +12,9 @@ import 'package:fishing_app/core/location/location_service.dart';
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
 import 'package:fishing_app/features/catch_photos/data/storage/catch_photo_storage.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
+import 'package:fishing_app/features/catches/data/catch_search_repository.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/add_catch_bottom_sheet.dart';
+import 'package:fishing_app/features/catches/presentation/widgets/catch_search_page.dart';
 import 'package:fishing_app/features/fishing_spots/data/fishing_spot_repository.dart';
 import 'package:fishing_app/features/fishing_spots/data/water_body_repository.dart';
 import 'package:fishing_app/features/fishing_spots/domain/fishing_spot.dart';
@@ -83,6 +85,8 @@ class _MapScreenState extends State<MapScreen> {
       SpeciesStatisticsRepository(_database);
   late final WaterBodyStatisticsRepository _waterBodyStatisticsRepository =
       WaterBodyStatisticsRepository(_database);
+  late final CatchSearchRepository _catchSearchRepository =
+      CatchSearchRepository(_database);
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -526,6 +530,27 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // Temporary navigation entry point, following the same pattern as
+  // _openLureTools/_openStatistics above (see TD-015's Navigation Entry
+  // Point (Temporary) section): the application still has no dedicated
+  // navigation shell, so this is the only existing screen with an AppBar to
+  // attach a link to. See MFS-025 / TD-025.
+  void _openCatchSearch() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CatchSearchPage(
+          catchSearchRepository: _catchSearchRepository,
+          catchRepository: _catchRepository,
+          catchPhotoRepository: _catchPhotoRepository,
+          lureCatalogRepository: _lureCatalogRepository,
+          personalTackleBoxRepository: _personalTackleBoxRepository,
+          personalTackleBoxPhotoStorage: _tackleBoxPhotoStorage,
+          waterBodyRepository: _waterBodyRepository,
+        ),
+      ),
+    );
+  }
+
   /// Backs `LureCatalogListPage`'s owned-badge/hide-owned-filter option.
   /// `lure_catalog` only ever sees the resulting `Set<String>` of variant
   /// ids — never a `personal_tackle_box` type.
@@ -592,6 +617,12 @@ class _MapScreenState extends State<MapScreen> {
             icon: const Icon(Icons.bar_chart),
             tooltip: 'Tilastot',
             onPressed: _openStatistics,
+          ),
+          IconButton(
+            key: const Key('openCatchSearchButton'),
+            icon: const Icon(Icons.search),
+            tooltip: 'Etsi saaliita',
+            onPressed: _openCatchSearch,
           ),
         ],
       ),

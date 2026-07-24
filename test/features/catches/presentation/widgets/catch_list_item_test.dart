@@ -32,6 +32,9 @@ Future<void> _pumpItem(
   Catch catchModel,
   CatchPhotoRepository catchPhotoRepository, {
   VoidCallback? onTap,
+  String? waterBodyName,
+  String? fishingSpotName,
+  String? lureLabel,
 }) {
   return tester.pumpWidget(
     MaterialApp(
@@ -40,6 +43,9 @@ Future<void> _pumpItem(
           catchModel: catchModel,
           catchPhotoRepository: catchPhotoRepository,
           onTap: onTap ?? () {},
+          waterBodyName: waterBodyName,
+          fishingSpotName: fishingSpotName,
+          lureLabel: lureLabel,
         ),
       ),
     ),
@@ -140,5 +146,84 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tapped, isTrue);
+  });
+
+  // MFS-025 / TD-025: additive water body / fishing spot / lure lines, used
+  // only by the global catch-browsing/search surface.
+
+  testWidgets('renders no location or lure line when none of the three new '
+      'parameters are supplied (every pre-existing call site)', (tester) async {
+    await _pumpItem(tester, existingCatch, catchPhotoRepository);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('/'), findsNothing);
+  });
+
+  testWidgets(
+    'renders a combined "water body / fishing spot" line when both are '
+    'supplied',
+    (tester) async {
+      await _pumpItem(
+        tester,
+        existingCatch,
+        catchPhotoRepository,
+        waterBodyName: 'Merrasjärvi',
+        fishingSpotName: 'Koiraranta',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Merrasjärvi / Koiraranta'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'renders only the water body name when the fishing spot name is absent',
+    (tester) async {
+      await _pumpItem(
+        tester,
+        existingCatch,
+        catchPhotoRepository,
+        waterBodyName: 'Merrasjärvi',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Merrasjärvi'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'renders only the fishing spot name when the water body name is absent',
+    (tester) async {
+      await _pumpItem(
+        tester,
+        existingCatch,
+        catchPhotoRepository,
+        fishingSpotName: 'Koiraranta',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Koiraranta'), findsOneWidget);
+    },
+  );
+
+  testWidgets('renders the lure label when supplied', (tester) async {
+    await _pumpItem(
+      tester,
+      existingCatch,
+      catchPhotoRepository,
+      lureLabel: 'Rapala X-Rap Shad',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rapala X-Rap Shad'), findsOneWidget);
+  });
+
+  testWidgets('renders no lure line when lureLabel is not supplied', (
+    tester,
+  ) async {
+    await _pumpItem(tester, existingCatch, catchPhotoRepository);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Rapala'), findsNothing);
   });
 }

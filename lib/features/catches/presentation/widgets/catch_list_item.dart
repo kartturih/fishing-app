@@ -15,17 +15,31 @@ import 'package:fishing_app/features/catches/presentation/catch_formatters.dart'
 /// catch's species, measurements, and date/time. Tapping the row (including
 /// the thumbnail) opens Catch Details, never a photo viewer or editor
 /// directly. See MFS-014 / TD-014.
+///
+/// [waterBodyName], [fishingSpotName], and [lureLabel] are optional,
+/// additive display lines used only by the global catch-browsing/search
+/// surface (MFS-025), which needs location/lure context this list never
+/// showed before. All three default to `null` (rendering nothing extra),
+/// so every existing caller (MFS-011, MFS-014, MFS-019 through MFS-022, and
+/// the Water Body Statistics view) is completely unaffected. See TD-025 Key
+/// Design Decision 7.
 class CatchListItem extends StatefulWidget {
   const CatchListItem({
     super.key,
     required this.catchModel,
     required this.catchPhotoRepository,
     required this.onTap,
+    this.waterBodyName,
+    this.fishingSpotName,
+    this.lureLabel,
   });
 
   final Catch catchModel;
   final CatchPhotoRepository catchPhotoRepository;
   final VoidCallback onTap;
+  final String? waterBodyName;
+  final String? fishingSpotName;
+  final String? lureLabel;
 
   @override
   State<CatchListItem> createState() => _CatchListItemState();
@@ -51,6 +65,7 @@ class _CatchListItemState extends State<CatchListItem> {
   @override
   Widget build(BuildContext context) {
     final measurementLine = formatCatchMeasurementLine(widget.catchModel);
+    final locationLine = _buildLocationLine();
 
     return InkWell(
       onTap: widget.onTap,
@@ -74,6 +89,16 @@ class _CatchListItemState extends State<CatchListItem> {
                     formatCatchDateTime(widget.catchModel.caughtAt),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  if (locationLine != null)
+                    Text(
+                      locationLine,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  if (widget.lureLabel != null)
+                    Text(
+                      widget.lureLabel!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                 ],
               ),
             ),
@@ -81,6 +106,19 @@ class _CatchListItemState extends State<CatchListItem> {
         ),
       ),
     );
+  }
+
+  /// Combines [CatchListItem.waterBodyName]/[CatchListItem.fishingSpotName]
+  /// into one line ("Merrasjärvi / Koiraranta"), only when at least one is
+  /// present — used by the global catch-browsing/search surface (MFS-025)
+  /// only; both are `null` for every other existing caller of this widget.
+  String? _buildLocationLine() {
+    final waterBodyName = widget.waterBodyName;
+    final fishingSpotName = widget.fishingSpotName;
+    if (waterBodyName != null && fishingSpotName != null) {
+      return '$waterBodyName / $fishingSpotName';
+    }
+    return waterBodyName ?? fishingSpotName;
   }
 
   Widget _buildThumbnail(BuildContext context) {
