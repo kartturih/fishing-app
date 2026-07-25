@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' show Point;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -9,6 +10,11 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/core/location/location_service.dart';
+import 'package:fishing_app/core/map/base_map.dart';
+import 'package:fishing_app/core/map/base_map_preference_store.dart';
+import 'package:fishing_app/core/map/mml_config.dart';
+import 'package:fishing_app/core/map/mml_style_factory.dart';
+import 'package:fishing_app/core/map/style_restoration_tracker.dart';
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
 import 'package:fishing_app/features/catch_photos/data/storage/catch_photo_storage.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
@@ -24,7 +30,10 @@ import 'package:fishing_app/features/fishing_spots/presentation/widgets/fishing_
 import 'package:fishing_app/features/fishing_spots/presentation/widgets/water_body_selection_bottom_sheet.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
+import 'package:fishing_app/features/map/presentation/widgets/base_map_layers_control.dart';
+import 'package:fishing_app/features/map/presentation/widgets/base_map_selector_panel.dart';
 import 'package:fishing_app/features/map/presentation/widgets/lure_tools_page.dart';
+import 'package:fishing_app/features/map/presentation/widgets/map_attribution.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
@@ -36,7 +45,28 @@ import 'package:fishing_app/features/statistics/data/water_body_statistics_repos
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_page.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({
+    super.key,
+    this.temporaryDirectoryProvider = getTemporaryDirectory,
+    this.baseMapPreferenceStore = const BaseMapPreferenceStore(),
+  });
+
+  /// Supplies the directory MML base-map style documents are written to
+  /// (see `_writeStyleFile`). Defaults to the real `path_provider` temporary
+  /// directory; overridable so widget tests never need a real
+  /// `path_provider` platform channel — mirroring the existing
+  /// `rootDirectoryProvider` pattern already used by `CatchPhotoStorage`/
+  /// `TackleBoxPhotoStorage` in this same screen.
+  final Future<Directory> Function() temporaryDirectoryProvider;
+
+  /// Persists the selected base map. Defaults to the real, `shared_preferences`-
+  /// backed store; overridable (by subclassing and overriding `save`, the
+  /// same "subclass the real repository and override one method" pattern
+  /// already used elsewhere in this project's tests) so a test can control
+  /// exactly when an in-flight persistence write completes — needed to
+  /// exercise the out-of-order-completion race this class's `_persistBaseMapSelection`
+  /// guards against.
+  final BaseMapPreferenceStore baseMapPreferenceStore;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -87,17 +117,67 @@ class _MapScreenState extends State<MapScreen> {
       WaterBodyStatisticsRepository(_database);
   late final CatchSearchRepository _catchSearchRepository =
       CatchSearchRepository(_database);
+  late final MmlStyleFactory _mmlStyleFactory = MmlStyleFactory(
+    apiKey: MmlConfig.apiKey,
+  );
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
   MapLibreMapController? _mapController;
   bool _myLocationEnabled = false;
-  bool _fishingSpotMarkersAdded = false;
   bool _isSelectionMode = false;
   bool _isCreatingFishingSpot = false;
 
+  /// Selected base map, and the local style file currently backing the map.
+  /// Both are `null` until the persisted preference finishes loading
+  /// (MFS-026 FR-8; see `_initializeBaseMap`) — `build()` shows a loading
+  /// gate rather than constructing `MapLibreMap` with a not-yet-correct
+  /// style, so the angler never sees the wrong base map flash before
+  /// switching to the right one.
+  BaseMap? _selectedBaseMap;
+  String? _currentStylePath;
+  bool _layersPanelOpen = false;
+
+  /// The base map most recently *requested* by the user (updated
+  /// synchronously the moment a selection is made), independent of
+  /// `_selectedBaseMap` (which only updates once that selection's style has
+  /// actually finished loading) and independent of the completion order of
+  /// any in-flight persistence writes. This is the single source of truth
+  /// for "what should ultimately end up persisted" — see
+  /// `_persistBaseMapSelection`.
+  BaseMap? _latestRequestedBaseMap;
+
+  /// Bumped every time a new base-map switch is *requested* (not when it is
+  /// actually applied — see `_styleRestoration` for that). Used only to
+  /// discard stale in-flight work (an outdated style-file write, an
+  /// outdated style-load timeout) that a newer request has since
+  /// superseded.
+  int _styleGeneration = 0;
+
+  /// Tracks which style-application generation fishing-spot markers/layers
+  /// have been restored for — deliberately a separate counter from
+  /// `_styleGeneration` above (which tracks *requests*, not applications).
+  /// Replaces the previous one-shot `_fishingSpotMarkersAdded` guard, which
+  /// assumed a style loads exactly once for the widget's lifetime —
+  /// application-owned fishing-spot layers must instead survive *every*
+  /// base-style reload (ADR-0008; MFS-026), and `onStyleLoadedCallback` may
+  /// only mark restoration complete for the generation actually applied to
+  /// MapLibreMap, never for whichever generation merely happened to be the
+  /// latest *requested* at the time it fired (see
+  /// `StyleRestorationTracker`'s own doc comment).
+  final StyleRestorationTracker _styleRestoration = StyleRestorationTracker();
+
+  Timer? _styleLoadTimeoutTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_initializeBaseMap());
+  }
+
   @override
   void dispose() {
+    _styleLoadTimeoutTimer?.cancel();
     _mapController?.onFeatureTapped.remove(_onFishingSpotFeatureTapped);
     unawaited(_database.close());
     super.dispose();
@@ -106,6 +186,215 @@ class _MapScreenState extends State<MapScreen> {
   void _onMapCreated(MapLibreMapController controller) {
     _mapController = controller;
     controller.onFeatureTapped.add(_onFishingSpotFeatureTapped);
+  }
+
+  /// Loads the persisted base-map preference (defaulting to Maastokartta —
+  /// MFS-026 FR-2/FR-3) and prepares its style file before revealing the
+  /// map for the first time.
+  Future<void> _initializeBaseMap() async {
+    final loaded = await widget.baseMapPreferenceStore.load();
+    final path = await _stylePathFor(loaded);
+    if (!mounted) {
+      return;
+    }
+
+    _latestRequestedBaseMap = loaded;
+    setState(() {
+      _selectedBaseMap = loaded;
+      _currentStylePath = path;
+      // Deliberately not calling `_styleRestoration.recordStyleApplied()`
+      // here: the tracker already starts at generation 0, which *is* the
+      // initial style — calling it here would skip straight to generation
+      // 1 for the very first load, for no benefit.
+    });
+
+    if (MmlConfig.isMissing) {
+      _showMapImageryUnavailableBanner('Karttapohjan asetukset puuttuvat.');
+    } else {
+      _startStyleLoadTimeout(_styleGeneration);
+    }
+  }
+
+  /// Switches the active base map immediately (MFS-026: no separate
+  /// save/apply step) and persists the choice right away, independent of
+  /// whether this particular style load later succeeds — the angler's
+  /// choice is what must be remembered, not a report card on one load
+  /// attempt's outcome.
+  Future<void> _onBaseMapSelected(BaseMap newBaseMap) async {
+    setState(() => _layersPanelOpen = false);
+
+    // Compared against the most recently *requested* selection, not
+    // `_selectedBaseMap` (which only updates once a switch's style has
+    // actually finished loading) — otherwise a rapid switch back to a
+    // choice whose own style hasn't applied yet would be silently dropped
+    // as a no-op.
+    if (newBaseMap == (_latestRequestedBaseMap ?? _selectedBaseMap)) {
+      return;
+    }
+
+    final generation = ++_styleGeneration;
+    _latestRequestedBaseMap = newBaseMap;
+    unawaited(_persistBaseMapSelection(newBaseMap));
+
+    if (MmlConfig.isMissing) {
+      _showMapImageryUnavailableBanner('Karttapohjan asetukset puuttuvat.');
+    } else {
+      _hideImageryBanner();
+      _startStyleLoadTimeout(generation);
+    }
+
+    final path = await _stylePathFor(newBaseMap);
+    if (!mounted || _styleGeneration != generation) {
+      return; // a newer switch has since occurred; discard this stale result
+    }
+
+    setState(() {
+      _selectedBaseMap = newBaseMap;
+      _currentStylePath = path;
+      // The style is only actually being applied to MapLibreMap now — see
+      // `StyleRestorationTracker`'s doc comment for why this must be
+      // tracked separately from `_styleGeneration` above.
+      _styleRestoration.recordStyleApplied();
+    });
+  }
+
+  /// Persists [baseMap] as the selected base map.
+  ///
+  /// Rapid switching can have several of these in flight at once, and
+  /// their underlying writes are not guaranteed to complete in request
+  /// order — without this guard, an older, slower write finishing after a
+  /// newer one could silently leave the persisted preference behind the
+  /// angler's actual latest selection. After its own write completes, this
+  /// re-checks whether [baseMap] is still the most recently requested
+  /// selection (`_latestRequestedBaseMap`, updated synchronously per
+  /// request in `_onBaseMapSelected`, independent of style-load
+  /// completion); if a newer request has since superseded it, it recurses
+  /// to persist the actual latest selection instead of leaving a
+  /// possibly-clobbered, stale value behind. Recursing (rather than a
+  /// single unguarded follow-up write) matters: it re-applies this exact
+  /// same guard to the correction itself, so even a correction that is
+  /// itself overtaken by a still-newer request converges correctly. Since
+  /// each recursive step only ever follows a real, distinct user
+  /// selection, this always terminates — no separate queue or
+  /// serialization mechanism is needed.
+  Future<void> _persistBaseMapSelection(BaseMap baseMap) async {
+    await widget.baseMapPreferenceStore.save(baseMap);
+
+    final latest = _latestRequestedBaseMap;
+    if (latest != null && latest != baseMap) {
+      await _persistBaseMapSelection(latest);
+    }
+  }
+
+  /// Returns a local file path containing the MapLibre style document for
+  /// [baseMap], writing it to the application's temporary directory first.
+  ///
+  /// `maplibre_gl`'s native Android implementation supports passing a raw
+  /// JSON style string directly, but the package's own documentation states
+  /// this is only supported on Android — a local absolute file path is
+  /// supported on both platforms via the same generic mechanism. This
+  /// factory always writes to a file rather than ever passing inline JSON,
+  /// so the map works correctly if this application is ever built for iOS
+  /// (TD-026 §3's documented fallback).
+  ///
+  /// When the MML API key is missing ([MmlConfig.isMissing]), no MML tile
+  /// request is attempted at all — a minimal blank style is used instead,
+  /// so the native map surface still exists and can still host the
+  /// fishing-spot GeoJSON source/layers, even with no base-map imagery.
+  ///
+  /// If writing the style file itself fails (e.g. no free disk space), one
+  /// more attempt writes the minimal blank style to the same location — a
+  /// transient failure (e.g. a momentarily locked directory) is often
+  /// enough to make the first attempt fail without also dooming a retry,
+  /// and this keeps using the same cross-platform file-path mechanism
+  /// rather than abandoning it.
+  ///
+  /// Only if that retry *also* fails does this return the blank style JSON
+  /// directly as an inline string. That inline fallback is not a
+  /// cross-platform solution — it relies on exactly the Android-only raw-
+  /// JSON `styleString` support this method otherwise avoids (see above) —
+  /// it exists solely so the app does not hang on its loading gate forever
+  /// if the filesystem itself is unusable. On a platform where inline JSON
+  /// is not supported, `MapLibreMap` simply will not render a base style in
+  /// this specific, doubly-failed scenario; the rest of the screen (app
+  /// bar, fishing-spot layer once its own add succeeds, other entry
+  /// points) remains reachable regardless.
+  Future<String> _stylePathFor(BaseMap baseMap) async {
+    try {
+      if (MmlConfig.isMissing) {
+        return await _writeStyleFile('blank', _blankStyle);
+      }
+      return await _writeStyleFile(
+        baseMap.name,
+        _mmlStyleFactory.styleFor(baseMap),
+      );
+    } catch (error) {
+      debugPrint('Failed to prepare base-map style file: $error');
+      try {
+        return await _writeStyleFile('blank', _blankStyle);
+      } catch (fallbackError) {
+        debugPrint(
+          'Failed to write the blank-style fallback file too: '
+          '$fallbackError',
+        );
+        // Last resort; Android-only (see doc comment above), not a
+        // cross-platform guarantee.
+        return _blankStyle;
+      }
+    }
+  }
+
+  // Includes the same `glyphs` URL as `MmlStyleFactory` — the blank
+  // fallback style (missing API key, or a disk-write failure) still needs
+  // to host the fishing-spot symbol layer's text labels, which require a
+  // `glyphs` source to rasterize regardless of which base style is active.
+  static const _blankStyle =
+      '{"version":8,"glyphs":"https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",'
+      '"sources":{},"layers":[]}';
+
+  Future<String> _writeStyleFile(String name, String styleJson) async {
+    final directory = await widget.temporaryDirectoryProvider();
+    final file = File('${directory.path}/mml_style_$name.json');
+    await file.writeAsString(styleJson);
+    return file.path;
+  }
+
+  void _startStyleLoadTimeout(int generation) {
+    _styleLoadTimeoutTimer?.cancel();
+    _styleLoadTimeoutTimer = Timer(const Duration(seconds: 10), () {
+      if (!mounted || _styleGeneration != generation) {
+        return;
+      }
+      _showMapImageryUnavailableBanner(
+        'Karttakuvia ei voitu ladata juuri nyt.',
+      );
+    });
+  }
+
+  void _showMapImageryUnavailableBanner(String message) {
+    if (!mounted) {
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearMaterialBanners();
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: messenger.hideCurrentMaterialBanner,
+            child: const Text('Sulje'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _hideImageryBanner() {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).clearMaterialBanners();
   }
 
   Map<String, dynamic> _fishingSpotToFeature(FishingSpot spot) {
@@ -137,58 +426,259 @@ class _MapScreenState extends State<MapScreen> {
   /// spot change instead of two (previously one for the circle annotation,
   /// one for the symbol annotation), halving how often that native refresh
   /// happens.
+  ///
+  /// Runs from `onStyleLoadedCallback`, which fires again every time the
+  /// active style is replaced — including a base-map switch (MFS-026) —
+  /// since MapLibre destroys every style-owned source/layer on a style
+  /// change. `_styleRestoration` distinguishes "already restored for the
+  /// style generation actually applied" (skip, avoiding a duplicate-add
+  /// crash if this callback ever fires twice for the same style) from "a
+  /// genuinely new style just loaded" (restore) — and, critically, can only
+  /// ever be satisfied for whichever generation is *actually applied* at
+  /// the moment this runs, never for a generation that was merely
+  /// *requested* (see `StyleRestorationTracker`'s own doc comment for the
+  /// race this closes). This replaces the previous one-shot
+  /// `_fishingSpotMarkersAdded` boolean, which incorrectly assumed a style
+  /// loads exactly once for the widget's lifetime.
   Future<void> _addFishingSpotMarkers() async {
+    if (!MmlConfig.isMissing) {
+      // A style just finished loading, so any pending "imagery unavailable"
+      // signal for it no longer applies. Left untouched when the API key is
+      // missing, since that banner reflects a persistent configuration
+      // problem, not a transient load — the blank fallback style "loading
+      // successfully" must not dismiss it.
+      _cancelStyleLoadTimeout();
+      _hideImageryBanner();
+    }
+
     final controller = _mapController;
-    if (controller == null || _fishingSpotMarkersAdded) {
+    if (controller == null) {
       return;
     }
 
+    if (_styleRestoration.isRestoredForCurrentGeneration) {
+      return; // already restored for the style actually applied right now
+    }
+    final generation = _styleRestoration.applied;
+
     List<FishingSpot> spots;
     try {
-      spots = await _fishingSpotRepository.loadAll();
+      // Fishing spots don't change just because the base map did, so only
+      // the very first load (cache empty) needs to hit the repository;
+      // every later style reload reuses the already-loaded cache.
+      spots = _fishingSpotsById.isNotEmpty
+          ? _fishingSpotsById.values.toList()
+          : await _fishingSpotRepository.loadAll();
     } catch (error) {
       debugPrint('Failed to load fishing spots: $error');
       return;
+    }
+
+    if (!mounted || _styleRestoration.isStale(generation)) {
+      return; // a newer style has since been applied; discard this stale result
     }
 
     for (final spot in spots) {
       _fishingSpotsById[spot.id] = spot;
     }
 
-    try {
-      await controller.addGeoJsonSource(
-        _fishingSpotsSourceId,
-        _buildFeatureCollection(_fishingSpotsById.values),
-        promoteId: 'id',
+    final restored = await _ensureFishingSpotLayersExist(
+      controller,
+      generation,
+    );
+    if (restored && !_styleRestoration.isStale(generation)) {
+      _styleRestoration.markRestored(generation);
+      debugPrint(
+        'Fishing-spot layers confirmed present for style generation $generation.',
       );
-
-      await controller.addLayer(
-        _fishingSpotsSourceId,
-        _fishingSpotsCircleLayerId,
-        const CircleLayerProperties(
-          circleRadius: 8,
-          circleColor: '#009688',
-          circleStrokeColor: '#ffffff',
-          circleStrokeWidth: 2,
-        ),
-      );
-
-      await controller.addLayer(
-        _fishingSpotsSourceId,
-        _fishingSpotsSymbolLayerId,
-        SymbolLayerProperties(
-          textField: [Expressions.get, 'name'],
-          textOffset: [0, 1.2],
-          textFont: kIsWeb
-              ? null
-              : const ['Open Sans Regular', 'Arial Unicode MS Regular'],
-        ),
-      );
-
-      _fishingSpotMarkersAdded = true;
-    } catch (error) {
-      debugPrint('Failed to set up fishing spot markers: $error');
     }
+  }
+
+  /// Ensures the fishing-spot GeoJSON source and both its layers actually
+  /// exist in the currently active style — verified by querying
+  /// `getSourceIds()`/`getLayerIds()` after each attempt, never assumed
+  /// from an add call merely not throwing.
+  ///
+  /// Waiting for the native style to report "fully loaded" before
+  /// *starting* the add sequence (this project's previous approach) does
+  /// not prove the sequence's own calls succeeded: the native Android
+  /// implementation's `addSource`/`addLayer` methods silently log a
+  /// warning and add nothing — no exception — if the style stops being
+  /// "fully loaded" at any point during the sequence, which a base-map
+  /// switch can trigger by destroying the whole style out from under an
+  /// in-flight attempt. This method instead re-queries what is actually
+  /// present on every iteration and only (re-)attempts whichever specific
+  /// object ([FishingSpotLayerPresence]) is confirmed missing — never
+  /// blindly re-adding something already there, since unlike
+  /// `addGeoJsonSource` (which already guards itself against this),
+  /// `addLayer` throws if given an already-existing layer id.
+  ///
+  /// Bounded to 60 attempts (~30 seconds at 500ms apart). This bound applies
+  /// identically to the very first (initial) style load and to every
+  /// subsequent base-map switch — there is no special-casing by generation,
+  /// since both go through this exact same verified, idempotent convergence
+  /// loop.
+  ///
+  /// The bound was widened from an earlier ~5 seconds after a physical
+  /// device showed the initial load alone failing to converge in that
+  /// window while every later switch converged quickly. Root-caused (native
+  /// Android source: `getSourceIds`/`getLayerIds` both gate on
+  /// `style.isFullyLoaded()`, throwing `STYLE_NOT_READY` until it is) to
+  /// genuine cold-start cost that a warm switch does not pay: the very
+  /// first native map surface/GL initialization on the device, and — more
+  /// specifically — the very first network connection (DNS + TLS + TCP
+  /// handshake) to MML's tile host. A later switch between Maastokartta and
+  /// Ilmakuva targets that exact same host, so it can reuse an
+  /// already-warm connection and converges far faster. Widening the bound
+  /// is not "an arbitrary extra delay": nothing is ever slept blindly for
+  /// its own sake — every attempt still actively re-verifies real
+  /// source/layer presence and returns the instant that is confirmed, so a
+  /// fast style still restores in one or two attempts; only a genuinely
+  /// slow cold start now gets the time it legitimately needs. A style stuck
+  /// well beyond this is still bounded and gives up, and the separate,
+  /// unchanged 10-second `_startStyleLoadTimeout` continues to surface its
+  /// own "imagery unavailable" signal independently of this loop.
+  Future<bool> _ensureFishingSpotLayersExist(
+    MapLibreMapController controller,
+    int generation,
+  ) async {
+    const maxAttempts = 60;
+    const retryDelay = Duration(milliseconds: 500);
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (!mounted || _styleRestoration.isStale(generation)) {
+        return false;
+      }
+
+      FishingSpotLayerPresence presence;
+      try {
+        final sourceIds = await controller.getSourceIds();
+        final layerIds = (await controller.getLayerIds()).cast<String>();
+        presence = FishingSpotLayerPresence.from(
+          sourceIds: sourceIds,
+          layerIds: layerIds,
+          sourceId: _fishingSpotsSourceId,
+          circleLayerId: _fishingSpotsCircleLayerId,
+          symbolLayerId: _fishingSpotsSymbolLayerId,
+        );
+      } catch (error) {
+        // Style not (yet) fully loaded, or another transient native
+        // failure querying it — wait and retry, bounded by maxAttempts.
+        // Logged sparsely (first attempt, then every 10th) so a physical
+        // retest's logcat shows convergence progress without a line every
+        // 500ms for up to 30 seconds. Never logs the error object itself
+        // beyond its message, and never logs MML_API_KEY or tile URLs.
+        if (attempt == 1 || attempt % 10 == 0) {
+          debugPrint(
+            'Fishing-spot layers not yet queryable on attempt $attempt '
+            '(generation $generation): $error',
+          );
+        }
+        await Future<void>.delayed(retryDelay);
+        continue;
+      }
+
+      if (presence.isComplete) {
+        if (attempt > 1) {
+          debugPrint(
+            'Fishing-spot layers confirmed present after $attempt attempts '
+            '(generation $generation).',
+          );
+        }
+        return true;
+      }
+
+      if (!mounted || _styleRestoration.isStale(generation)) {
+        return false;
+      }
+
+      try {
+        if (presence.shouldAddSource) {
+          await controller.addGeoJsonSource(
+            _fishingSpotsSourceId,
+            _buildFeatureCollection(_fishingSpotsById.values),
+            promoteId: 'id',
+          );
+        }
+
+        // Re-check the source specifically before attempting either layer:
+        // a layer referencing a non-existent source is itself invalid, and
+        // the add just above may itself have silently no-op'd.
+        final sourceReady =
+            presence.hasSource ||
+            (await controller.getSourceIds()).contains(_fishingSpotsSourceId);
+
+        if (sourceReady) {
+          if (presence.shouldAddCircleLayer) {
+            // No `belowLayerId` is given, so the layer is appended above
+            // every existing style layer (including the base-map raster
+            // layer) — this is MapLibre's own documented default when
+            // `belowLayerId` is omitted, verified directly against the
+            // native Android implementation; layer ordering was not the
+            // defect that caused missing markers.
+            await controller.addLayer(
+              _fishingSpotsSourceId,
+              _fishingSpotsCircleLayerId,
+              const CircleLayerProperties(
+                circleRadius: 8,
+                circleColor: '#009688',
+                circleStrokeColor: '#ffffff',
+                circleStrokeWidth: 2,
+              ),
+            );
+          }
+
+          if (!mounted || _styleRestoration.isStale(generation)) {
+            return false;
+          }
+
+          if (presence.shouldAddSymbolLayer) {
+            await controller.addLayer(
+              _fishingSpotsSourceId,
+              _fishingSpotsSymbolLayerId,
+              SymbolLayerProperties(
+                textField: [Expressions.get, 'name'],
+                textOffset: [0, 1.2],
+                // 'Open Sans Regular' alone — verified live against the
+                // configured glyph host (fonts.openmaptiles.org) by
+                // requesting its actual PBF ranges directly: it returns
+                // real glyph data (HTTP 200, application/octet-stream)
+                // across ranges including Latin-1 Supplement (needed for
+                // Finnish ä/ö). 'Arial Unicode MS Regular' — previously
+                // included as a fallback — does NOT exist on this host
+                // (HTTP 200 but an HTML error page, not glyph data), and
+                // MapLibre requests a *combined* fontstack for a
+                // multi-font textFont list, so that combined request
+                // failed as a whole and no glyphs were ever returned for
+                // any font — this is why labels silently failed to
+                // render even after glyphs/circles worked. Do not add
+                // another font here without first verifying it actually
+                // exists on this glyph host; an unverifiable font name
+                // silently breaks every font in the same textFont list.
+                textFont: kIsWeb ? null : const ['Open Sans Regular'],
+              ),
+            );
+          }
+        }
+      } catch (error) {
+        debugPrint(
+          'Fishing-spot layer setup attempt $attempt failed, retrying: $error',
+        );
+      }
+
+      await Future<void>.delayed(retryDelay);
+    }
+
+    debugPrint(
+      'Fishing-spot layers still missing after $maxAttempts attempts; '
+      'giving up for style generation $generation.',
+    );
+    return false;
+  }
+
+  void _cancelStyleLoadTimeout() {
+    _styleLoadTimeoutTimer?.cancel();
+    _styleLoadTimeoutTimer = null;
   }
 
   Future<bool> _addFishingSpotFeature(FishingSpot spot) async {
@@ -601,6 +1091,18 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedBaseMap = _selectedBaseMap;
+    final stylePath = _currentStylePath;
+
+    // The persisted base-map preference (and its style file) is loaded
+    // asynchronously (see `_initializeBaseMap`); showing this brief loading
+    // gate instead of constructing `MapLibreMap` with a not-yet-correct
+    // style avoids the map ever visibly loading the wrong base map first
+    // and then switching (MFS-026).
+    if (selectedBaseMap == null || stylePath == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -634,12 +1136,13 @@ class _MapScreenState extends State<MapScreen> {
             trackCameraPosition: true,
             onMapCreated: _onMapCreated,
             onStyleLoadedCallback: _addFishingSpotMarkers,
-            styleString: 'https://demotiles.maplibre.org/style.json',
+            styleString: stylePath,
           ),
           if (_isSelectionMode)
             const IgnorePointer(
               child: Center(child: Icon(Icons.add, size: 32)),
             ),
+          MapAttribution(baseMap: selectedBaseMap),
           MapControls(
             isSelectionMode: _isSelectionMode,
             onLocationPressed: _onLocationPressed,
@@ -647,6 +1150,32 @@ class _MapScreenState extends State<MapScreen> {
             onCancelSelectionPressed: _onCancelSelectionPressed,
             onAddHerePressed: _onAddHerePressed,
           ),
+          BaseMapLayersControl(
+            onPressed: () =>
+                setState(() => _layersPanelOpen = !_layersPanelOpen),
+          ),
+          if (_layersPanelOpen) ...[
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () => setState(() => _layersPanelOpen = false),
+              ),
+            ),
+            Positioned(
+              // Anchored just under BaseMapLayersControl's own smaller
+              // button (MFS-026 polish pass): AppSpacing.md padding (12) +
+              // FloatingActionButton.small's 48-logical-pixel tap-target
+              // footprint + a small gap (8), mirroring the same
+              // padding+button+gap arithmetic the previous, larger control
+              // used for its own anchor offset.
+              top: 68,
+              right: 12,
+              child: BaseMapSelectorPanel(
+                selected: selectedBaseMap,
+                onSelected: _onBaseMapSelected,
+              ),
+            ),
+          ],
         ],
       ),
     );

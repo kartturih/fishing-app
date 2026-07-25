@@ -24,7 +24,7 @@ class MapControls extends StatelessWidget {
       child: Align(
         alignment: Alignment.bottomRight,
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: isSelectionMode
@@ -36,21 +36,27 @@ class MapControls extends StatelessWidget {
     );
   }
 
+  // FloatingActionButton.small keeps every map control the same compact
+  // size (40x40 visual, 48x48 tap target per Flutter's own FAB layout —
+  // still a comfortable, standard Material touch target despite the
+  // smaller visual footprint) as `BaseMapLayersControl`'s button, so the
+  // two form one visually consistent control system rather than a mix of
+  // full-size and shrunk-only-for-one-button FABs.
   List<Widget> _defaultControls() {
     return [
-      FloatingActionButton(
+      FloatingActionButton.small(
         heroTag: 'mapSettingsButton',
         onPressed: () {},
         child: const Icon(Icons.settings),
       ),
-      const SizedBox(height: AppSpacing.sm),
-      FloatingActionButton(
+      const SizedBox(height: AppSpacing.xs),
+      FloatingActionButton.small(
         heroTag: 'addFishingSpotButton',
         onPressed: onAddFishingSpotPressed,
         child: const Icon(Icons.add_location_alt),
       ),
-      const SizedBox(height: AppSpacing.sm),
-      FloatingActionButton(
+      const SizedBox(height: AppSpacing.xs),
+      FloatingActionButton.small(
         heroTag: 'currentLocationButton',
         onPressed: onLocationPressed,
         child: const Icon(Icons.my_location),
@@ -60,13 +66,13 @@ class MapControls extends StatelessWidget {
 
   List<Widget> _selectionControls() {
     return [
-      FloatingActionButton(
+      FloatingActionButton.small(
         heroTag: 'cancelSelectionButton',
         onPressed: onCancelSelectionPressed,
         child: const Icon(Icons.close),
       ),
-      const SizedBox(height: AppSpacing.sm),
-      FloatingActionButton(
+      const SizedBox(height: AppSpacing.xs),
+      FloatingActionButton.small(
         heroTag: 'addHereButton',
         onPressed: onAddHerePressed,
         child: const Icon(Icons.check),
