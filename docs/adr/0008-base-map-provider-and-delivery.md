@@ -181,6 +181,7 @@ This decision does not define:
 - The depth-contour data provider.
 - Hillshade implementation.
 - Offline map implementation.
+- Non-Finland/global base-map coverage. MML's cartography covers Finland only; behavior outside that coverage (e.g. a global fallback base map) was investigated separately from this decision and from MFS-026/TD-026's implementation, and remains a distinct, not-yet-decided future consideration — not designed, scoped, or committed to here. Any such work would need its own ADR (see Alternatives Considered §3, which already anticipated MapTiler being "reconsidered for non-Finnish coverage if the application ever expands beyond Finland").
 
 These topics are left to a future MFS and TD (not yet created).
 
@@ -188,7 +189,7 @@ These topics are left to a future MFS and TD (not yet created).
 
 ## Implementation Notes
 
-Product behavior for base-map/overlay selection will be specified by a future MFS. Technical implementation — including the exact mechanism for making application-owned layers restorable across base-style reloads, WMTS request construction, and API-key handling — will be described by a future TD (anticipated as TD-026, not yet created). This ADR documents why MML raster WMTS was chosen and how base maps, overlays, and application-owned layers relate architecturally; it deliberately does not specify database schema, code structure, or UI design.
+Product behavior for base-map/overlay selection is specified by MFS-026. Technical implementation — the exact mechanism for making application-owned layers restorable across base-style reloads, WMTS request construction, and API-key handling — is described by TD-026, now implemented, architecture-reviewed, and physically validated (see `docs/project-status.md`). This ADR documents why MML raster WMTS was chosen and how base maps, overlays, and application-owned layers relate architecturally; it deliberately does not specify database schema, code structure, or UI design, and TD-026's own Implementation Notes are the authoritative record of implementation-time detail and deviation, not this ADR.
 
 ---
 

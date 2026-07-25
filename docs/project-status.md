@@ -8,11 +8,11 @@
 
 ## Current Phase
 
-Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated. General Catch Statistics (MFS-020 / TD-020) is implemented, architecture-reviewed, and validated. Species Statistics (MFS-021 / TD-021) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Fishing Spot Statistics (MFS-022 / TD-022) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Catch Notes (MFS-023 / TD-023) is implemented, architecture-reviewed, and validated. Water Bodies and Fishing Spot Hierarchy (MFS-024 / TD-024) is implemented, architecture-reviewed, and validated. Catch Search & Filtering (MFS-025 / TD-025) is implemented, architecture-reviewed, and validated.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated. General Catch Statistics (MFS-020 / TD-020) is implemented, architecture-reviewed, and validated. Species Statistics (MFS-021 / TD-021) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Fishing Spot Statistics (MFS-022 / TD-022) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Catch Notes (MFS-023 / TD-023) is implemented, architecture-reviewed, and validated. Water Bodies and Fishing Spot Hierarchy (MFS-024 / TD-024) is implemented, architecture-reviewed, and validated. Catch Search & Filtering (MFS-025 / TD-025) is implemented, architecture-reviewed, and validated. Selectable MML Base Maps (MFS-026 / TD-026, backed by ADR-0008) is implemented, architecture-reviewed, and validated.
 
-The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, an optional free-form note per Catch, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, a full per-species catch-count list, and a full per-fishing-spot catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate. Tapping a species in the Catches tab's Species List opens a pushed Species Statistics page (MFS-021) for that species, and tapping a fishing spot in the Catches tab's Fishing Spot List opens a pushed Fishing Spot Statistics page (MFS-022) for that spot: each shows its own total catch count, a Record Catch card, and its full Catch List (reusing the existing Catch list row) — Fishing Spot Statistics additionally shows a Species Breakdown and a Last Catch Date. Each entry opens the existing Catch Details view; returning refreshes both the page itself and the Catches tab it was opened from automatically. Catch Notes (MFS-023) lets an angler attach one optional, multiline, plain-text note (up to 1000 characters) to a Catch, editable during Add Catch and Edit Catch and shown as the final, selectable section of Catch Details when present. Water Bodies and Fishing Spot Hierarchy (MFS-024) introduces `WaterBody` as a new parent concept above `FishingSpot`: every fishing spot now belongs to exactly one water body, selected or created while adding the spot (with locally computed nearby-water-body suggestions), changeable afterward from Fishing Spot Details, and manageable from a minimal Water Body management surface (view, rename, member fishing spots, empty-only deletion). Every fishing spot that existed before this milestone was automatically migrated into its own correctly named water body (schema version 7 to 8), with all existing data intact. Species Statistics' Record Catch card now shows the water body instead of the exact fishing spot name; every other exact-fishing-spot-scoped view is unchanged. Catch Search & Filtering (MFS-025) adds a global catch-browsing page, reached from a new `MapScreen` AppBar entry, with an always-visible debounced text search (species, water body, fishing spot, lure brand/model) and a filter bottom sheet (water body, species, lure, date range); each result reuses the existing `CatchListItem` (additively extended) and opens the existing, unmodified Catch Details view. No new database table, column, or schema version.
+The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, an optional free-form note per Catch, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, a full per-species catch-count list, and a full per-fishing-spot catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate. Tapping a species in the Catches tab's Species List opens a pushed Species Statistics page (MFS-021) for that species, and tapping a fishing spot in the Catches tab's Fishing Spot List opens a pushed Fishing Spot Statistics page (MFS-022) for that spot: each shows its own total catch count, a Record Catch card, and its full Catch List (reusing the existing Catch list row) — Fishing Spot Statistics additionally shows a Species Breakdown and a Last Catch Date. Each entry opens the existing Catch Details view; returning refreshes both the page itself and the Catches tab it was opened from automatically. Catch Notes (MFS-023) lets an angler attach one optional, multiline, plain-text note (up to 1000 characters) to a Catch, editable during Add Catch and Edit Catch and shown as the final, selectable section of Catch Details when present. Water Bodies and Fishing Spot Hierarchy (MFS-024) introduces `WaterBody` as a new parent concept above `FishingSpot`: every fishing spot now belongs to exactly one water body, selected or created while adding the spot (with locally computed nearby-water-body suggestions), changeable afterward from Fishing Spot Details, and manageable from a minimal Water Body management surface (view, rename, member fishing spots, empty-only deletion). Every fishing spot that existed before this milestone was automatically migrated into its own correctly named water body (schema version 7 to 8), with all existing data intact. Species Statistics' Record Catch card now shows the water body instead of the exact fishing spot name; every other exact-fishing-spot-scoped view is unchanged. Catch Search & Filtering (MFS-025) adds a global catch-browsing page, reached from a new `MapScreen` AppBar entry, with an always-visible debounced text search (species, water body, fishing spot, lure brand/model) and a filter bottom sheet (water body, species, lure, date range); each result reuses the existing `CatchListItem` (additively extended) and opens the existing, unmodified Catch Details view. No new database table, column, or schema version. Selectable MML Base Maps (MFS-026) replaces the map's placeholder demo style with two real, switchable Finnish base maps from Maanmittauslaitos — Maastokartta (topographic) and Ilmakuva (aerial imagery) — reachable from a new compact upper-right layers control, with the selection persisted across restarts and every existing map capability (fishing-spot markers, labels, tap interaction, adding spots, location controls, other entry points) surviving a base-map switch with no need to leave and reopen the Map screen.
 
-**MFS-025 (Catch Search & Filtering) is now implemented, architecture-reviewed, and validated — see the Catch Search & Filtering section below.** The next milestone has not yet been selected; see `docs/roadmap.md`'s Near-Term Roadmap for candidates.
+**MFS-026 (Selectable MML Base Maps) is now implemented, architecture-reviewed, and validated — see the Base Maps section below.** The next milestone has not yet been selected; the global base-map fallback/world-coverage work identified as a natural follow-up has not yet been scoped into an MFS/TD — see Next Planned Task.
 
 ---
 
@@ -40,6 +40,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * ADR-0005: Local Persistence
 * ADR-0006: Database Ownership
 * ADR-0007: Water Body Domain
+* ADR-0008: Base Map Provider and Delivery
 
 ### Feature Specifications
 
@@ -68,6 +69,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * MFS-023: Catch Notes
 * MFS-024: Water Bodies and Fishing Spot Hierarchy
 * MFS-025: Catch Search & Filtering
+* MFS-026: Selectable MML Base Maps
 
 ### Technical Designs
 
@@ -94,6 +96,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * TD-023: Catch Notes Implementation
 * TD-024: Water Bodies and Fishing Spot Hierarchy Implementation
 * TD-025: Catch Search & Filtering Implementation
+* TD-026: Selectable MML Base Maps Implementation
 
 ---
 
@@ -107,6 +110,20 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * Pan and zoom
 * Physical Android support
 * GeoJSON-based fishing spot rendering
+
+### Base Maps
+
+* Two selectable MML base maps — Maastokartta (topographic) and Ilmakuva (aerial imagery) — replacing the previous hardcoded MapLibre demo style, delivered as MML raster WMTS per ADR-0008
+* Maastokartta as the default for a user with no saved selection; the demo style is no longer reachable as a user-facing default
+* Compact, upper-right floating layers control (`FloatingActionButton.small`, visually consistent with the resized `MapControls` buttons), opening a compact anchored selector
+* Selector presents both choices as vertically stacked, fixed-size (88×88), image-only preview tiles — real, cropped stills of each base map's own MML cartography (CC BY 4.0-licensed; fetched once outside the application using a developer's own MML API key, never via a live in-app request or a second `MapLibreMap`); each choice's name remains fully accessible via `Semantics`, not visible on-screen text
+* Subtle active-state indication (a thin themed border plus a mild background tint) — no checkmark or other redundant indicator
+* Immediate, save-free switching between the two base maps, with the selection persisted across restarts (`shared_preferences`)
+* Existing fishing-spot markers, labels, tap interaction, adding fishing spots, location controls, and every other `MapScreen` entry point survive a base-map switch, including the very first (cold) style load, with no need to leave and reopen the Map screen
+* Required MML CC BY 4.0 attribution, always visible while an MML base map is active
+* Non-technical, calm Finnish-language handling of a missing/invalid MML API credential and of a whole-style load timeout; no crash, no technical detail ever exposed
+* MML API key supplied only via `--dart-define=MML_API_KEY=...` (`String.fromEnvironment`); never committed, logged, or hardcoded anywhere in the repository
+* No offline maps, no additional base-map providers, no MML vector tiles, and no map overlays (hillshade, depth contours) — all explicitly out of scope for this milestone
 
 ### Map Controls
 
@@ -489,10 +506,22 @@ Verified on physical Android devices.
 * Architecture review completed
 * Physical Android testing completed
 
+### Base Maps
+
+* WMTS raster mechanics (matrix set identifier `WGS84_Pseudo-Mercator`, `{z}/{y}/{x}` tile-token order, zoom 0–18, 256×256 tiles, Maastokartta `.png`/Ortokuva `.jpg`) verified directly against MML's live `WMTSCapabilities.xml` and confirmed accurate throughout implementation with no correction needed
+* Domain, config, persistence, and style-factory tests completed (`BaseMap`, `MmlConfig`, `BaseMapPreferenceStore`, `MmlStyleFactory`, `StyleRestorationTracker`/`FishingSpotLayerPresence`)
+* Selector and layers-control widget tests completed, including the final vertical, image-only, fixed-dimension layout, semantic-label retention with no visible text, and the subtle border/tint active-state treatment
+* Architecture review found and fixed three races, each with a dedicated regression test: a style-generation/restoration race (a delayed callback for an older, superseded style could satisfy the restoration guard for a newer one), an out-of-order base-map-preference persistence race (an older save completing after a newer one), and a no-op-detection bug in rapid re-selection
+* Three rounds of physical Android testing found and fixed: fishing-spot markers permanently disappearing after a base-map switch (native `addSource`/`addLayer` silently no-op'ing when the style was not yet fully loaded — fixed with an idempotent, source/layer-presence-verifying restoration loop); fishing-spot markers not appearing on the very first (cold) app launch despite the same mechanism working after a later switch (the restoration retry bound was tuned for a warm switch; widened to account for first-time native/network initialization cost); and fishing-spot labels not rendering at all, then still not rendering after a first fix (missing `glyphs` URL, then a broken multi-font `textFont` combination verified via direct `curl` testing against the glyph host — resolved to a single verified-working font)
+* Preview assets verified as real, licensed MML-derived crops: CC BY 4.0's own legal text confirmed cropped/adapted derivatives are permitted and that the existing always-visible `MapAttribution` notice reasonably satisfies attribution for them; both crops were fetched once outside the application using a developer's own MML API key, never via a live request from the app itself
+* `flutter analyze` passes; all automated tests pass (878/878)
+* Architecture review completed
+* Physical Android testing completed across three rounds: Maastokartta and Ilmakuva both load correctly, switching works in both directions, fishing-spot circles and labels appear correctly on initial launch and after switching, fishing-spot interaction is unaffected, the selection persists across restart, the layers control and selector work correctly, attribution is visible, missing-key behavior is handled non-technically, and no credential appears anywhere in the repository
+
 ### Quality
 
 * flutter analyze passes, with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`, on constructor parameters whose external names are relied on by callers and cannot be renamed without breaking the public API — see TD-016 Implementation Notes)
-* 818 automated tests passing
+* 878 automated tests passing
 * Architecture review completed
 * Code review completed
 * Lifecycle review completed for Species Statistics (MFS-021) and Fishing Spot Statistics (MFS-022)
@@ -561,7 +590,8 @@ lib/
 ├── app/
 ├── core/
 │   ├── database/
-│   └── location/
+│   ├── location/
+│   └── map/
 ├── features/
 │   ├── catch_photos/
 │   │   ├── data/
@@ -586,6 +616,8 @@ lib/
 │   │   └── presentation/
 │   │       └── widgets/
 │   ├── map/
+│   │   └── presentation/
+│   │       └── widgets/
 │   ├── personal_tackle_box/
 │   │   ├── data/
 │   │   │   ├── local/
@@ -608,6 +640,7 @@ lib/
 The application currently supports:
 
 * Interactive map
+* Selectable MML base maps: Maastokartta (topographic) and Ilmakuva (aerial imagery), switchable from a compact upper-right layers control with a vertically stacked, image-only selector; the selection persists across restarts, and existing fishing-spot markers/labels/interaction, location controls, and other entry points survive every base-map switch
 * User location
 * Persistent offline fishing spots
 * Fishing Spot CRUD
@@ -672,6 +705,8 @@ No additional permissions were required for Water Bodies: it is a local database
 
 No additional permissions were required for Catch Search & Filtering: it reads the existing local database only, with no new hardware or system capability involved.
 
+No `AndroidManifest.xml` change was required for Selectable MML Base Maps: `MapScreen` already made network requests over HTTPS to load its previous placeholder demo style, so this milestone's MML tile requests introduce no new network-access requirement or manifest entry.
+
 ---
 
 ## iOS Configuration
@@ -681,7 +716,7 @@ Added for Catch Photos:
 * `NSCameraUsageDescription`
 * `NSPhotoLibraryUsageDescription`
 
-No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos), for Lure-Based Catch Statistics, General Catch Statistics, Species Statistics, and Fishing Spot Statistics (all four local-database-only features), and for Catch Notes, Water Bodies, and Catch Search & Filtering (also local-database-only). Physical iOS testing has not been performed (no iOS build target/device in this environment).
+No other iOS configuration changes were required, including for the Lure Catalog and the Personal Tackle Box (the latter's photo capture reuses the same `image_picker` usage descriptions already added for Catch Photos), for Lure-Based Catch Statistics, General Catch Statistics, Species Statistics, and Fishing Spot Statistics (all four local-database-only features), and for Catch Notes, Water Bodies, and Catch Search & Filtering (also local-database-only). No iOS configuration change was required for Selectable MML Base Maps either: it makes ordinary HTTPS requests, exactly like the placeholder demo style it replaces, and its style-delivery mechanism was deliberately chosen ([TD-026](docs/technical-designs/TD-026-selectable-mml-base-maps.md) Implementation Notes) to remain cross-platform rather than relying on an Android-only plugin API. Physical iOS testing has not been performed (no iOS build target/device in this environment).
 
 ---
 
@@ -708,25 +743,27 @@ No other iOS configuration changes were required, including for the Lure Catalog
 * A catch may reference at most one lure (MFS-017); assigning more than one lure to a catch, showing the assigned lure in the catch list, and lure-based statistics are all explicitly out of scope for MFS-017 (see its Out of Scope section).
 * Variant filtering within a single model's Color Variants list, favorite variants, stock/availability status, and quick-add shortcuts that skip Lure Model Details are all explicitly out of scope for MFS-018 (see its Out of Scope section).
 * Graphs/charts, filters, percentages, averages, biggest fish, seasonal/time-based/water/weather statistics, export, and comparison features are all explicitly out of scope for MFS-019 (see its Out of Scope section); the lure list only shows lures with at least one recorded catch (zero-catch lures are a documented future extension, not a bug).
+* Selectable MML Base Maps (MFS-026) is the first feature in this project requiring live network access — MML base-map imagery does not work offline (a clear, non-technical message is shown instead; every other application feature, including fishing spots/catches/statistics/lure catalog, remains fully usable). Offline map support remains explicitly out of scope (ADR-0008, MFS-026), consistent with this project's existing offline-first-for-*data* (not necessarily base-map-imagery) architecture. Coverage is also Finland-only (MML's own data extent); a global base-map fallback is a not-yet-scoped future consideration (see Next Planned Task).
 
 ---
 
 ## Next Planned Task
 
-MFS-025 (Catch Search & Filtering) is complete — implemented, architecture-reviewed, all automated tests passing (818/818), `flutter analyze` clean, and physically verified on Android. The next milestone has not yet been selected; see `docs/roadmap.md`'s Near-Term Roadmap for candidates.
+MFS-026 (Selectable MML Base Maps) is complete — implemented, architecture-reviewed, all automated tests passing (878/878), `flutter analyze` clean, and physically verified on Android across three rounds. The next milestone has not yet been selected. A global base-map fallback/world-coverage milestone was investigated as the natural follow-up (MML's cartography covers Finland only; a global base map — the leading candidate being a MapTiler vector style — would fill the gap outside that coverage while MML remains primary within it), but this investigation did not produce an approved MFS/TD, so no identifier is assigned yet; see `docs/roadmap.md`'s Near-Term Roadmap for other candidates.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 25
+Current Feature Specifications: 26
 
-Current Technical Designs: 23
+Current Technical Designs: 24
 
-Architecture Decision Records: 7
+Architecture Decision Records: 8
 
 Implemented Core Features:
 * Map
+* Base Maps (selectable MML Maastokartta/Ilmakuva)
 * User Location
 * Fishing Spot Management (including Water Bodies)
 * Catch Management (including Catch Notes)
@@ -738,12 +775,12 @@ Implemented Core Features:
 * Assign Lure to Catch
 * Statistics (Catches — general catch statistics; Species Statistics; Fishing Spot Statistics; Lure Statistics)
 
-Offline-first: Yes
+Offline-first: Yes (base-map imagery is the sole exception — see Known Limitations)
 
 Physical Android Validation: Completed for all currently implemented features
 
 flutter analyze: Passing with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
 
-Automated Tests: 818 Passing
+Automated Tests: 878 Passing
 
 Database schema version: 8

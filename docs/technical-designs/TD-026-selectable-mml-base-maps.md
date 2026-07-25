@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft — not yet implemented. Designs MFS-026's approved MVP scope. **All WMTS service-mechanics verification is now complete** — the values in [§0](#0-pre-implementation-verification-completed) were confirmed directly against MML's live `WMTSCapabilities.xml`, retrieved using the user's own API key, and cross-checked against separate official MML documentation for the two items (the API-key request parameter and the CC BY 4.0 attribution requirement) a capabilities document does not itself cover. The only items still open are two narrow, non-WMTS `maplibre_gl` plugin-API questions (§0), which do not block writing `MmlStyleFactory`/`BaseMapPreferenceStore`/`MmlConfig` as designed — only the small fallback path noted in [§3](#3-mml-wmts-integration) if one of them resolves unfavorably. This document is implementation-ready.
+Implemented — architecture-reviewed and approved, all automated tests passing (878/878), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android testing completed successfully across several rounds. Implementation followed this document's domain, database-avoidance (persistence), and MML WMTS-mechanics design with no deviation; the marker-restoration/style-lifecycle mechanism, glyph/label configuration, and selector UX evolved materially beyond this document's original pseudocode through architecture review and three rounds of physical Android testing — see **Implementation Notes** for the complete, final record, including resolution of the two `maplibre_gl` plugin-API questions this document originally left open. All WMTS service-mechanics values in [§0](#0-pre-implementation-verification-completed) were confirmed directly against MML's live `WMTSCapabilities.xml` and remained accurate throughout implementation with no correction needed.
 
 ## Related
 
@@ -208,11 +208,16 @@ enum BaseMap {
   };
 
   /// Bundled static preview asset for the selector (MFS-026 FR-5); no live
-  /// tile request is ever made for this preview (§9/§11) — illustrative
-  /// artwork, not a crop of real MML tiles (see §11).
+  /// tile request is ever made for this preview (§9/§11).
+  ///
+  /// **Superseded — see Implementation Notes.** This section originally
+  /// specified illustrative, non-MML artwork for both previews (§11's
+  /// original decision, below); the final shipped implementation instead
+  /// uses real, cropped MML tile stills for both, and Ilmakuva's asset is
+  /// `.jpg`, not `.png`. Kept here as the historical design record.
   String get previewAssetPath => switch (this) {
     BaseMap.maastokartta => 'assets/map/maastokartta_preview.png',
-    BaseMap.ilmakuva => 'assets/map/ilmakuva_preview.png',
+    BaseMap.ilmakuva => 'assets/map/ilmakuva_preview.png', // superseded: .jpg in the final implementation
   };
 
   /// MML's WMTS tile file extension for this base map — confirmed from live
@@ -705,6 +710,8 @@ This milestone therefore ships with two independent, non-overlapping floating co
 
 ## 11. Preview Assets
 
+**Superseded — see Implementation Notes.** The decision below (illustrative, non-MML artwork) was this document's original plan. It was later reversed after directly confirming, against CC BY 4.0's own legal text, that real MML-derived preview crops are permitted and adequately attributed by the existing `MapAttribution` widget — see Implementation Notes for the full reasoning and the final asset provenance. Kept below as the historical design record, not the final decision.
+
 Per the task brief, this TD specifies the plan only — no image files are added by this document.
 
 - Two new static, bundled assets: `assets/map/maastokartta_preview.png`, `assets/map/ilmakuva_preview.png`, added to `pubspec.yaml`'s existing `assets:` list (mirroring the established `assets/lure_catalog/` entry).
@@ -896,4 +903,62 @@ Restated explicitly, per the task brief's scope constraints — none of the foll
 
 ## Implementation Notes
 
-This section is intentionally left for whoever implements TD-026 to fill in (deviations found during implementation, physical-testing outcomes, and the resolution of the two remaining `maplibre_gl` plugin-API items noted in [§0](#0-pre-implementation-verification-completed)) — following this project's existing convention of recording implementation notes in the TD itself once work is underway. Nothing is recorded here yet, since this document precedes implementation.
+Implementation followed this document's WMTS-mechanics design ([§0](#0-pre-implementation-verification-completed)/[§3](#3-mml-wmts-integration)), persistence design ([§4](#4-persistence)), and API-key configuration ([§8](#8-mml-api-key-configuration)) exactly as specified, with no deviation and no correction needed to any confirmed WMTS value. The style-lifecycle/marker-restoration mechanism, label/glyph rendering, and selector UX all evolved materially beyond this document's original design across architecture review and three separate rounds of physical Android testing. `dart format .`, `flutter analyze` (8 pre-existing/accepted info-level lints, none introduced), and `flutter test` all pass (878/878). The following is the complete, final record:
+
+### Resolution of the two open `maplibre_gl` plugin-API questions ([§0](#0-pre-implementation-verification-completed))
+
+1. **Inline-JSON `styleString` support:** confirmed the plugin's Android implementation does accept a raw JSON style string directly — but its own documentation states this is Android-only, not cross-platform. Rather than rely on an Android-only mechanism, `MapScreen._stylePathFor()` deliberately always writes the generated style JSON to a file in the application's temporary directory and passes that file's path as `styleString` — the one genuinely cross-platform delivery mechanism the plugin supports, so the map would work correctly if this application were ever built for iOS. This is a permanent design choice, not a fallback triggered by inline JSON failing.
+2. **Explicit style-load-error callback:** confirmed still not present in this plugin version. The bounded-timeout approach [§9](#9-loading-and-failure-behavior) already designed around this (`_startStyleLoadTimeout`, ~10 seconds) was implemented exactly as designed and needed no revision.
+
+### Style lifecycle and marker restoration — significantly more elaborate than [§5](#5-maplibre-style-lifecycle--the-fix)'s original pseudocode
+
+Three real defects were found across architecture review and physical Android testing, each requiring a mechanism beyond the single boolean/int generation guard this document originally sketched:
+
+1. **A style-generation/restoration race (architecture review).** The original design's single `_styleGeneration` int, bumped the instant a switch is *requested*, was not sufficient — a slow-finishing restoration for an older switch could satisfy the guard for a *newer* style that had since actually been applied. Fixed by splitting "requested" (`_styleGeneration`) from "actually applied" (a new `StyleRestorationTracker`, tracking the generation actually handed to `MapLibreMap` via `styleString`, separate from whichever generation was merely requested most recently).
+2. **Fishing-spot markers permanently disappearing after a base-map switch (physical Android testing, round 1).** Root-caused to native Android `addSource`/`addLayer` silently no-op'ing (a `Log.w`, no thrown exception) when the style's `isFullyLoaded()` is false at the moment of the call — a condition a base-map switch can trigger mid-sequence by tearing down the whole style. The original design's one-shot add-and-guard sequence assumed a non-throwing call had succeeded; it had not. Fixed by replacing it with `FishingSpotLayerPresence`, a small pure class that re-queries actual `getSourceIds()`/`getLayerIds()` state after every attempt and only (re-)adds whichever specific object is confirmed missing — never assumed from a call merely not throwing — inside an idempotent, bounded retry loop (`_ensureFishingSpotLayersExist`).
+3. **Fishing-spot markers not appearing on initial (cold) app launch, despite the same mechanism working correctly after a later switch (physical Android testing, round 2).** Root-caused to the retry loop's bound (originally 20 attempts × 250ms, ≈5 seconds) being tuned around a *warm* switch; the very first style load additionally pays for first-ever native map/GL initialization and the first, connection-cold network handshake to MML's tile host (a later switch to the other base map reuses that already-warm connection to the same host). Fixed by widening the bound to 60 attempts × 500ms (~30 seconds), applied identically to both the initial load and every switch — not special-cased by generation — since a fast style still converges in one or two attempts regardless of the wider ceiling.
+
+### Label/glyph rendering — not designed at all in the original [§2](#2-base-map-model)/[§3](#3-mml-wmts-integration) style JSON
+
+Two further defects, found only once fishing-spot circles were rendering correctly (physical Android testing, rounds 2–3):
+
+1. **Labels did not render at all**, even though circles did. Root-caused to the MapLibre style spec requiring a top-level `glyphs` URL for *any* symbol layer using `text-field` — the originally designed minimal style JSON had none (the old placeholder demo style it replaced happened to already have one). Fixed by adding `"glyphs": "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf"` to every generated style, including the missing-key blank fallback style.
+2. **Labels still did not render after the `glyphs` fix.** Root-caused, via direct `curl` verification against the configured glyph host, to the fishing-spot symbol layer's `textFont: ['Open Sans Regular', 'Arial Unicode MS Regular']`: `'Open Sans Regular'` alone returns real glyph data, but `'Arial Unicode MS Regular'` does not exist on this host (HTTP 200 with an HTML error page, not glyph data) — and MapLibre requests a *combined* fontstack for a multi-font list, so the whole combined request failed, returning no glyphs for either font. Fixed by using only the verified-working `'Open Sans Regular'` (confirmed, via the same `curl` testing, to cover the Latin-1 Supplement range needed for Finnish ä/ö).
+
+### Persistence — one race found beyond [§4](#4-persistence)'s design
+
+**Out-of-order save completion (architecture review).** The original design's `unawaited(_baseMapPreferenceStore.save(newBaseMap))` did not account for an older save completing *after* a newer one, silently leaving the persisted value one selection behind the angler's actual latest choice during rapid switching. Fixed with `_persistBaseMapSelection`, a recursive, self-correcting write that re-checks the true latest requested selection after its own write completes and recurses to persist that instead if it was superseded — proven to always converge regardless of completion order.
+
+**A related no-op-detection bug (architecture review).** [§6](#6-base-map-switching-mechanism)'s `if (newBaseMap == _selectedBaseMap) return;` compared against `_selectedBaseMap`, which only updates once a switch's *own style* finishes loading — a rapid reselect back to a choice whose style load was still in flight would be silently dropped as a no-op. Fixed by comparing against `_latestRequestedBaseMap ?? _selectedBaseMap`, which tracks the true latest requested choice independent of load completion.
+
+### Selector UX and preview assets — two full polish rounds after initial implementation, both driven by physical Android testing feedback
+
+1. **Floating control sizing (round 1).** All floating controls — the pre-existing `MapControls` buttons (settings, add-fishing-spot, current-location, cancel-selection, add-here) and the new layers control — were switched from the default `FloatingActionButton` this document's [§7](#7-selector-ux-implementation) pseudocode showed to `FloatingActionButton.small` (40×40 visual, 48×48 tap target — still a full Material touch target), after physical testing found the original default size felt visually heavy on a phone. `MapControls`' behavior, callbacks, and feature set are completely unchanged — only visual sizing/spacing.
+2. **Selector redesign (round 2).** The selector was redesigned from [§7](#7-selector-ux-implementation)'s horizontal row of 56×56 image-over-label-over-checkmark tiles to a vertical column of two fixed 88×88, image-only tiles. Visible "Maastokartta"/"Ilmakuva" text labels were removed entirely; both names remain fully accessible via each tile's existing `Semantics(label: '<name>, <valittu/ei valittu>')`. The active-state checkmark was replaced with a subtle themed border (1px) plus a mild background tint — no checkmark or other redundant indicator, per explicit feedback that the original treatment was too heavy.
+3. **Preview assets reversed [§11](#11-preview-assets)'s original decision.** [§11](#11-preview-assets) originally chose illustrative, non-MML artwork specifically to avoid resolving a CC BY 4.0 licensing question. That question was subsequently resolved directly against the license's own legal text (`creativecommons.org/licenses/by/4.0/legalcode`): creating and sharing cropped/adapted derivatives of CC BY 4.0-licensed material is explicitly permitted (§2(a)(1)(ii)), and attribution may be satisfied by "one reasonable, consolidated notice... based on medium, means, and context" (§3(a)(2)) — the existing always-visible `MapAttribution` widget, shown on the same screen the selector overlays, reasonably satisfies this for the preview crops of the same licensed dataset too. The final previews are therefore real, center-cropped, downsampled stills of one real Maastokartta tile and one real Ortokuva tile (same coordinates and zoom, the Nuuksio lake/forest area) — fetched once, by the developer, outside the application and outside this repository, using the developer's own MML API key, which never entered the codebase, a build, or a live in-app request; the app itself never makes a live tile request to produce or display these previews, and no second `MapLibreMap` is ever used for them, consistent with the Constraint Compliance Summary's "no two live MapLibre instances for previews" row. Maastokartta's preview remains PNG (quantized; its cartographic, largely flat-color content compresses cleanly); Ilmakuva's preview is JPEG, not PNG (its photographic content compresses far smaller with no visible quality loss at thumbnail size) — mirroring MML's own per-layer format choice for the live tiles themselves.
+
+### Everything else matched this document's design with no deviation
+
+`shared_preferences`-backed persistence's shape ([§4](#4-persistence)), the `MML_API_KEY`/`--dart-define`/`String.fromEnvironment` configuration mechanism ([§8](#8-mml-api-key-configuration)), the missing-key and whole-style-timeout failure treatments ([§9](#9-loading-and-failure-behavior)), attribution's three-element CC BY 4.0 string and always-visible `Text` widget ([§2](#2-base-map-model)), and the decision to leave the existing bottom-right `MapControls` completely untouched in responsibility/behavior terms ([§10](#10-existing-mapcontrols-decision) — only its buttons' visual sizing changed, per above) were all implemented exactly as designed.
+
+### Final validation
+
+Architecture review completed successfully (the three races above were its findings, all resolved and re-verified). `flutter analyze` clean apart from the 8 pre-existing/accepted info-level lints. All 878 automated tests passing. Physical Android testing completed successfully across three rounds, confirming: Maastokartta and Ilmakuva both load correctly; switching works in both directions; fishing-spot circles and labels appear correctly on both initial launch and after switching, and survive repeated switching; fishing-spot tap interaction is unaffected; the selected base map persists across restart; the layers control and selector work correctly with the final compact, vertical, image-only UX; attribution is visible; missing-key behavior shows the intended non-technical message; and no MML credential appears anywhere in the repository.
+
+---
+
+## 20. Documentation Cleanup
+
+Carried out as part of finalizing this milestone's documentation:
+
+- **`docs/project-status.md`:** updated — MFS-026 marked complete and moved into the Implemented Features/Validation/Project Metrics sections, following this project's established per-milestone update convention. Database schema version remains `8` (this milestone introduced no schema change).
+- **`README.md`:** feature summary and test count updated.
+- **ADR-0008:** Implementation Notes corrected (TD-026 now exists and is implemented, rather than "anticipated... not yet created"); a Scope note added making explicit that non-Finland/global base-map coverage remains a distinct, not-yet-decided future consideration, separate from this milestone.
+- **`MFS-026`:** Status marked Implemented; FR-5/Acceptance Criterion 8 annotated to reflect the final image-only, semantics-labeled selector (see Implementation Notes above for the full reasoning).
+
+Deliberately left for a separate step, not performed here, consistent with this project's existing convention of treating roadmap curation as a separate pass from MFS/TD finalization (see TD-025 Implementation Notes item, §23):
+
+1. **`docs/roadmap.md`:** never referenced MFS-026, ADR-0008, or base maps at all — there is no stale entry to correct or move. The global base-map-fallback/world-coverage follow-up work investigated separately from this milestone has no MFS/TD number yet, so no roadmap candidate entry is added for it here; it is recorded instead in `docs/project-status.md`'s Next Planned Task.
+2. **`docs/app-structure.md`:** still describes "Map configuration" as a planned, not-yet-existing `core/` responsibility — this milestone is the first to populate `core/map/`, so this reference could now be marked fulfilled. Not corrected here.
+3. **`docs/development-rules.md`:** TD-026 §17 anticipated a short local-development setup note naming the `MML_API_KEY` `--dart-define` flag. Not added here.
+4. **`docs/database.md`:** TD-026 §17 anticipated confirming this file needs no change (no schema impact) but might be worth a pass noting the new, non-Drift preference now exists. Not performed here.

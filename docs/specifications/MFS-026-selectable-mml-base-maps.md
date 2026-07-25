@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Implemented — architecture-reviewed and approved, all automated tests passing (878/878), `flutter analyze` clean (8 pre-existing/accepted info-level lints, none introduced by this milestone), and physical Android testing completed successfully. See TD-026 for the technical design and its Implementation Notes for full detail (including several post-implementation UX refinement rounds — floating-control sizing, the selector's redesign to a vertical image-only layout, and its preview images' replacement with real MML-derived crops — all discovered and resolved through physical Android testing rounds, not designed here), and `docs/project-status.md` for the validation record.
 
 ## Related
 
@@ -142,6 +142,8 @@ Activating the layers control must open a compact selector, visually anchored ne
 ### FR-5 — Visual Base-Map Choices
 
 The selector must present both base-map choices, each with a small visual preview representing that map type and a short text label ("Maastokartta" / "Ilmakuva"). The preview is a UI representation of the map type, not a separate live map render.
+
+**Final implementation note:** following physical Android testing feedback that a visible text label alongside a small icon-sized preview looked cluttered, the shipped selector conveys each choice's name through accessible `Semantics` only, not visible on-screen text — the preview itself (enlarged, and a real recognizable crop of that base map's own MML cartography rather than illustrative artwork) identifies the choice directly. This still satisfies this requirement's underlying intent (each choice is visually and accessibly identifiable) but deviates from its literal "short text label" wording; see TD-026 Implementation Notes for the full reasoning and licensing basis for using real MML-derived preview crops.
 
 ### FR-6 — Active Selection Indication
 
@@ -307,7 +309,7 @@ Following the existing feature-first structure and this project's architecture r
 5. A floating layers control, using a layers-style icon, is visible in the upper-right area of the Map screen and is reachable directly from the map with no additional navigation.
 6. The layers control does not permanently occupy map space beyond the control itself.
 7. Activating the layers control opens a compact selector, anchored near the control, showing both Maastokartta and Ilmakuva.
-8. Each of the two choices shows a small visual preview and a short text label.
+8. Each of the two choices shows a small visual preview identifying it; per FR-5's final implementation note, the choice's name is conveyed through accessible semantics rather than a visible on-screen text label, and the preview is a real, recognizable crop of that base map's own MML cartography.
 9. The selector clearly and visually distinguishes the currently active base map from the inactive one.
 10. Selecting the inactive base map switches the visible map to it immediately, with no separate Save/Apply action.
 11. The selector's active-selection indication updates immediately after a new base map is selected.

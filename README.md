@@ -9,6 +9,7 @@
 The current version supports:
 
 - Interactive MapLibre map
+- Selectable MML base maps: Maastokartta (topographic) and Ilmakuva/Ortokuva (aerial imagery), switchable from a compact map-layer selector with the choice persisted across restarts
 - User location
 - Offline Fishing Spot CRUD
 - Offline Catch CRUD
@@ -25,7 +26,7 @@ The current version supports:
 - Catch search and filtering: a global catch-browsing page with an always-visible, debounced text search (species, water body, fishing spot, lure) and a filter bottom sheet (water body, species, lure, date range)
 - Persistent Drift/SQLite storage
 
-818 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
+878 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
 
 ## Vision
 
