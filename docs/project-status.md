@@ -2,17 +2,17 @@
 
 ## Last Updated
 
-2026-07-25
+2026-07-29
 
 ---
 
 ## Current Phase
 
-Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated. General Catch Statistics (MFS-020 / TD-020) is implemented, architecture-reviewed, and validated. Species Statistics (MFS-021 / TD-021) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Fishing Spot Statistics (MFS-022 / TD-022) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Catch Notes (MFS-023 / TD-023) is implemented, architecture-reviewed, and validated. Water Bodies and Fishing Spot Hierarchy (MFS-024 / TD-024) is implemented, architecture-reviewed, and validated. Catch Search & Filtering (MFS-025 / TD-025) is implemented, architecture-reviewed, and validated. Selectable MML Base Maps (MFS-026 / TD-026, backed by ADR-0008) is implemented, architecture-reviewed, and validated.
+Fishing Spot management is complete. Catch management foundation is complete. Catch Photos is implemented and validated. Catch Details View is implemented and validated. Lure Catalog Foundation (MFS-015 / TD-015) is implemented, architecture-reviewed, and validated. Personal Tackle Box Foundation (MFS-016 / TD-016) is implemented, architecture-reviewed, and validated. Assign Lure to Catch (MFS-017 / TD-017) is implemented, architecture-reviewed, and validated. Lure Catalog UX Improvements (MFS-018 / TD-018) is implemented, architecture-reviewed, and validated. Lure-Based Catch Statistics (MFS-019 / TD-019) is implemented, architecture-reviewed, and validated. General Catch Statistics (MFS-020 / TD-020) is implemented, architecture-reviewed, and validated. Species Statistics (MFS-021 / TD-021) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Fishing Spot Statistics (MFS-022 / TD-022) is implemented, architecture-reviewed, lifecycle-reviewed, and validated. Catch Notes (MFS-023 / TD-023) is implemented, architecture-reviewed, and validated. Water Bodies and Fishing Spot Hierarchy (MFS-024 / TD-024) is implemented, architecture-reviewed, and validated. Catch Search & Filtering (MFS-025 / TD-025) is implemented, architecture-reviewed, and validated. Selectable MML Base Maps (MFS-026 / TD-026, backed by ADR-0008) is implemented, architecture-reviewed, and validated. Worldwide Base-Map Coverage (MFS-027 / TD-027, backed by ADR-0008/ADR-0009) — MML v21 vector plus MapTiler worldwide fallback, and the SYKE bathymetry overlay with depth labels — is implemented and physically validated.
 
 The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, an optional free-form note per Catch, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, a full per-species catch-count list, and a full per-fishing-spot catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate. Tapping a species in the Catches tab's Species List opens a pushed Species Statistics page (MFS-021) for that species, and tapping a fishing spot in the Catches tab's Fishing Spot List opens a pushed Fishing Spot Statistics page (MFS-022) for that spot: each shows its own total catch count, a Record Catch card, and its full Catch List (reusing the existing Catch list row) — Fishing Spot Statistics additionally shows a Species Breakdown and a Last Catch Date. Each entry opens the existing Catch Details view; returning refreshes both the page itself and the Catches tab it was opened from automatically. Catch Notes (MFS-023) lets an angler attach one optional, multiline, plain-text note (up to 1000 characters) to a Catch, editable during Add Catch and Edit Catch and shown as the final, selectable section of Catch Details when present. Water Bodies and Fishing Spot Hierarchy (MFS-024) introduces `WaterBody` as a new parent concept above `FishingSpot`: every fishing spot now belongs to exactly one water body, selected or created while adding the spot (with locally computed nearby-water-body suggestions), changeable afterward from Fishing Spot Details, and manageable from a minimal Water Body management surface (view, rename, member fishing spots, empty-only deletion). Every fishing spot that existed before this milestone was automatically migrated into its own correctly named water body (schema version 7 to 8), with all existing data intact. Species Statistics' Record Catch card now shows the water body instead of the exact fishing spot name; every other exact-fishing-spot-scoped view is unchanged. Catch Search & Filtering (MFS-025) adds a global catch-browsing page, reached from a new `MapScreen` AppBar entry, with an always-visible debounced text search (species, water body, fishing spot, lure brand/model) and a filter bottom sheet (water body, species, lure, date range); each result reuses the existing `CatchListItem` (additively extended) and opens the existing, unmodified Catch Details view. No new database table, column, or schema version. Selectable MML Base Maps (MFS-026) replaces the map's placeholder demo style with two real, switchable Finnish base maps from Maanmittauslaitos — Maastokartta (topographic) and Ilmakuva (aerial imagery) — reachable from a new compact upper-right layers control, with the selection persisted across restarts and every existing map capability (fishing-spot markers, labels, tap interaction, adding spots, location controls, other entry points) surviving a base-map switch with no need to leave and reopen the Map screen.
 
-**MFS-026 (Selectable MML Base Maps) is now implemented, architecture-reviewed, and validated — see the Base Maps section below.** The next milestone has not yet been selected; the global base-map fallback/world-coverage work identified as a natural follow-up has not yet been scoped into an MFS/TD — see Next Planned Task.
+**MFS-026 (Selectable MML Base Maps) is implemented, architecture-reviewed, and validated.** **Worldwide Base-Map Coverage (MFS-027 / TD-027), including the SYKE bathymetry overlay and its depth labels, is implemented, `flutter analyze`-clean, fully covered by the automated test suite, and physically validated on Android — see the Base Maps and SYKE Bathymetry Overlay sections below. Not yet committed; see Next Planned Task.**
 
 ---
 
@@ -70,6 +70,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * MFS-024: Water Bodies and Fishing Spot Hierarchy
 * MFS-025: Catch Search & Filtering
 * MFS-026: Selectable MML Base Maps
+* MFS-027: Worldwide Base-Map Coverage (includes the SYKE bathymetry overlay and depth labels)
 
 ### Technical Designs
 
@@ -97,6 +98,7 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * TD-024: Water Bodies and Fishing Spot Hierarchy Implementation
 * TD-025: Catch Search & Filtering Implementation
 * TD-026: Selectable MML Base Maps Implementation
+* TD-027: Worldwide Base-Map Coverage Implementation (includes the SYKE bathymetry overlay and depth labels)
 
 ---
 
@@ -113,17 +115,28 @@ The application now supports full offline CRUD operations for both Fishing Spots
 
 ### Base Maps
 
-* Two selectable MML base maps — Maastokartta (topographic) and Ilmakuva (aerial imagery) — replacing the previous hardcoded MapLibre demo style, delivered as MML raster WMTS per ADR-0008
-* Maastokartta as the default for a user with no saved selection; the demo style is no longer reachable as a user-facing default
-* Compact, upper-right floating layers control (`FloatingActionButton.small`, visually consistent with the resized `MapControls` buttons), opening a compact anchored selector
-* Selector presents both choices as vertically stacked, fixed-size (88×88), image-only preview tiles — real, cropped stills of each base map's own MML cartography (CC BY 4.0-licensed; fetched once outside the application using a developer's own MML API key, never via a live in-app request or a second `MapLibreMap`); each choice's name remains fully accessible via `Semantics`, not visible on-screen text
-* Subtle active-state indication (a thin themed border plus a mild background tint) — no checkmark or other redundant indicator
+* Two selectable base maps — Maastokartta (topographic) and Ilmakuva (aerial imagery) — replacing the previous hardcoded MapLibre demo style, each now with real worldwide coverage (MFS-027/TD-027, ADR-0009; supersedes MFS-026's original MML-only raster delivery, ADR-0008's raster-WMTS choice revised for Maastokartta by TD-027 Revision 7)
+* **Maastokartta:** MML's own official v21 **vector** tiles for Finnish cartography (fetched via a local, on-device loopback proxy that fetches MML's real style/tiles/glyphs and strips the API key before anything reaches MapLibre — never a raster tile-masking process, which was fully retired), with MapTiler Outdoor as an always-present worldwide underlay beneath it
+* **Ilmakuva:** MapTiler Satellite Hybrid as the complete worldwide base map (MML Ortokuva is not used in this milestone — a deliberate product decision, ADR-0009)
+* Maastokartta as the default for a user with no saved selection
+* Compact, upper-right floating layers control (`FloatingActionButton.small`), opening a compact anchored selector, unchanged in UX from MFS-026
 * Immediate, save-free switching between the two base maps, with the selection persisted across restarts (`shared_preferences`)
-* Existing fishing-spot markers, labels, tap interaction, adding fishing spots, location controls, and every other `MapScreen` entry point survive a base-map switch, including the very first (cold) style load, with no need to leave and reopen the Map screen
-* Required MML CC BY 4.0 attribution, always visible while an MML base map is active
-* Non-technical, calm Finnish-language handling of a missing/invalid MML API credential and of a whole-style load timeout; no crash, no technical detail ever exposed
-* MML API key supplied only via `--dart-define=MML_API_KEY=...` (`String.fromEnvironment`); never committed, logged, or hardcoded anywhere in the repository
-* No offline maps, no additional base-map providers, no MML vector tiles, and no map overlays (hillshade, depth contours) — all explicitly out of scope for this milestone
+* Existing fishing-spot markers, labels, tap interaction, adding fishing spots, location controls, and every other `MapScreen` entry point survive a base-map switch, including the very first (cold) style load
+* Required attribution (MML, MapTiler, and SYKE — see below) via a compact, tap-to-expand panel
+* Non-technical, calm Finnish-language handling of missing/invalid credentials and load timeouts for either provider; no crash, no technical detail ever exposed
+* MML and MapTiler API keys supplied only via `--dart-define`; never committed, logged, or hardcoded anywhere in the repository
+* No offline maps, no additional base-map providers, and no custom MapTiler style — explicitly out of scope
+
+### SYKE Bathymetry Overlay
+
+* National lake/river depth-contour overlay (SYKE "Järvien ja jokien syvyysaineisto," CC BY 4.0), layered above the active base map and below application-owned layers (fishing-spot markers), for **both** Maastokartta and Ilmakuva (MFS-027/TD-027 Revision 7, finalized Revision 8)
+* Fully offline: a single preprocessed national MBTiles file bundled as an app asset, served through the same local loopback listener used for MML — no live SYKE WFS request from the running app, ever
+* Contour lines shipped **completely unsimplified** — full source vertex precision at every zoom; the only geometry transformation applied is per-tile MVT clipping, a product decision made after physical Android testing found even an adaptive, size-aware simplification tolerance still visibly too angular
+* Tiled z10–z14 (a contiguous range, no gaps), with zooms 15–18 served by MapLibre's own standard vector-source overzoom; contour lines presented from `minzoom` 10
+* Depth-area (fill) polygons are bundled but not rendered — physical testing found the fill visually competing with the base map's own lake rendering; contour lines only ship, in the spirit of a traditional topographic map
+* Depth labels (`"<depth> m"`, e.g. `1.5 m`, `10 m`) trace each contour line directly, reading the same `depth_m` MVT attribute already used for line rendering — no MBTiles/pipeline change needed; shown from `minzoom` 12, excluding the `0 m` shoreline contour; a font-selection defect (found in physical testing — the label layer fell back to a combined default font stack unavailable on either glyph host this app uses) was root-caused and fixed by resolving a single verified-working font per the active style's glyph host, mirroring the same pattern already used for fishing-spot labels
+* Content-aware, version-sidecar-based extraction invalidation on-device: a stale, previously-extracted MBTiles copy is never silently reused after the bundled asset is updated (a confirmed physical-device bug, fixed and covered by a dedicated regression test suite)
+* Physical Android testing completed: contour geometry fidelity, continuous rendering across the tiled zoom range, close-zoom (overzoom) rendering, and depth-label rendering/sizing/spacing all accepted as shipped
 
 ### Map Controls
 
@@ -508,6 +521,8 @@ Verified on physical Android devices.
 
 ### Base Maps
 
+**MFS-026's own validation record, below — MML raster WMTS.** Maastokartta's Finnish cartography has since moved to MML v21 vector (MFS-027/TD-027 Revision 7, finalized Revision 8); see the Worldwide Base-Map Coverage & SYKE Bathymetry subsection following this one for that later milestone's own validation. This record is retained as an accurate history of MFS-026 itself, not as a description of the currently shipped rendering path for Maastokartta's Finnish layer.
+
 * WMTS raster mechanics (matrix set identifier `WGS84_Pseudo-Mercator`, `{z}/{y}/{x}` tile-token order, zoom 0–18, 256×256 tiles, Maastokartta `.png`/Ortokuva `.jpg`) verified directly against MML's live `WMTSCapabilities.xml` and confirmed accurate throughout implementation with no correction needed
 * Domain, config, persistence, and style-factory tests completed (`BaseMap`, `MmlConfig`, `BaseMapPreferenceStore`, `MmlStyleFactory`, `StyleRestorationTracker`/`FishingSpotLayerPresence`)
 * Selector and layers-control widget tests completed, including the final vertical, image-only, fixed-dimension layout, semantic-label retention with no visible text, and the subtle border/tint active-state treatment
@@ -518,10 +533,25 @@ Verified on physical Android devices.
 * Architecture review completed
 * Physical Android testing completed across three rounds: Maastokartta and Ilmakuva both load correctly, switching works in both directions, fishing-spot circles and labels appear correctly on initial launch and after switching, fishing-spot interaction is unaffected, the selection persists across restart, the layers control and selector work correctly, attribution is visible, missing-key behavior is handled non-technically, and no credential appears anywhere in the repository
 
+### Worldwide Base-Map Coverage & SYKE Bathymetry (MFS-027 / TD-027)
+
+* Raster WMTS + on-device pixel-masking (Revisions 1–6) was fully implemented, then superseded and retired in favor of MML's own official v21 vector tiles for Maastokartta (Revision 7) — vector tiles have no opaque out-of-coverage fill to mask, eliminating the defect class the retired masking machinery existed to fix; the retired code and its dedicated tests were removed, not left passing-but-irrelevant
+* MapTiler Outdoor (Maastokartta's worldwide underlay) and MapTiler Satellite Hybrid (Ilmakuva's complete worldwide base map) verified directly against MapTiler's own authenticated TileJSON responses
+* The MML API credential is proxied through a local, on-device loopback service that strips it before anything reaches MapLibre or disk — never written to a plaintext style file
+* SYKE bathymetry (national lake/river depth contours, CC BY 4.0) added as a new overlay, bundled fully offline as a single preprocessed MBTiles asset, served through the same local loopback listener as MML — no live SYKE WFS request from the running app
+* Contour-line simplification was tried (an adaptive, size-aware tolerance) and rejected after physical Android testing found it still visibly too angular; contours ship completely unsimplified, full source vertex precision, with only per-tile MVT clipping applied
+* Depth-area (fill) polygons are bundled but not rendered in the shipped presentation — found visually competing with the base map's own lake rendering; contour lines only ship
+* Depth labels (reading each contour's own `depth_m` MVT attribute, `"<depth> m"`, excluding the `0 m` shoreline contour) were added, found not rendering on first physical test, root-caused to a font-selection defect (the label layer's default font stack is unavailable on either glyph host this app uses), and fixed by resolving a single verified-working font per the active style's glyph host — the same pattern already used for fishing-spot labels
+* Content-aware, version-sidecar-based extraction invalidation for the bundled MBTiles verified by a dedicated regression test suite (first extraction, idempotent reuse, stale-version replacement, failed-replacement-preserves-previous-copy, zero-length/missing-target/no-sidecar edge cases)
+* Temporary `[SYKE_TILE]`/`[MAP_ZOOM]` debug logging, added during investigation of an earlier zoom-disappearance defect, was removed once the defect was root-caused and fixed (root cause: non-contiguous tiled zoom range) — production code retains only the version-sidecar invalidation fix itself, not the diagnostic logging used to find it
+* `flutter analyze` passes; all automated tests pass
+* Architecture review completed
+* Physical Android testing completed: MML v21 vector renders correctly for Maastokartta with MapTiler Outdoor as worldwide fallback; MapTiler Satellite Hybrid renders correctly for Ilmakuva; the four-lake SYKE coverage matrix (Kymijärvi, Vesijärvi, Päijänne, Saimaa) confirmed correct positive/no-data/mixed-coverage/dense-data behavior; contour geometry fidelity, continuous rendering across the tiled zoom range, close-zoom (overzoom) rendering, and depth-label rendering/sizing/spacing are all confirmed and accepted as shipped
+
 ### Quality
 
-* flutter analyze passes, with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`, on constructor parameters whose external names are relied on by callers and cannot be renamed without breaking the public API — see TD-016 Implementation Notes)
-* 878 automated tests passing
+* flutter analyze passes, with 11 pre-existing/accepted info-level lints (`prefer_initializing_formals`, on constructor parameters whose external names are relied on by callers and cannot be renamed without breaking the public API — see TD-016 Implementation Notes)
+* 981 automated tests passing
 * Architecture review completed
 * Code review completed
 * Lifecycle review completed for Species Statistics (MFS-021) and Fishing Spot Statistics (MFS-022)
@@ -743,27 +773,31 @@ No other iOS configuration changes were required, including for the Lure Catalog
 * A catch may reference at most one lure (MFS-017); assigning more than one lure to a catch, showing the assigned lure in the catch list, and lure-based statistics are all explicitly out of scope for MFS-017 (see its Out of Scope section).
 * Variant filtering within a single model's Color Variants list, favorite variants, stock/availability status, and quick-add shortcuts that skip Lure Model Details are all explicitly out of scope for MFS-018 (see its Out of Scope section).
 * Graphs/charts, filters, percentages, averages, biggest fish, seasonal/time-based/water/weather statistics, export, and comparison features are all explicitly out of scope for MFS-019 (see its Out of Scope section); the lure list only shows lures with at least one recorded catch (zero-catch lures are a documented future extension, not a bug).
-* Selectable MML Base Maps (MFS-026) is the first feature in this project requiring live network access — MML base-map imagery does not work offline (a clear, non-technical message is shown instead; every other application feature, including fishing spots/catches/statistics/lure catalog, remains fully usable). Offline map support remains explicitly out of scope (ADR-0008, MFS-026), consistent with this project's existing offline-first-for-*data* (not necessarily base-map-imagery) architecture. Coverage is also Finland-only (MML's own data extent); a global base-map fallback is a not-yet-scoped future consideration (see Next Planned Task).
+* Selectable MML Base Maps (MFS-026) is the first feature in this project requiring live network access — MML base-map imagery does not work offline (a clear, non-technical message is shown instead; every other application feature, including fishing spots/catches/statistics/lure catalog, remains fully usable). Offline map support remains explicitly out of scope (ADR-0008, MFS-026), consistent with this project's existing offline-first-for-*data* (not necessarily base-map-imagery) architecture.
+* Worldwide Base-Map Coverage (MFS-027 / TD-027, Revision 8, implemented and physically validated) gives both base maps real worldwide coverage — MapTiler Outdoor/Satellite Hybrid everywhere, with MML's own official v21 **vector** tiles (not raster) for Maastokartta's Finnish cartography, fetched through a local, on-device loopback proxy that strips the API key before anything reaches MapLibre. The earlier raster-WMTS-plus-pixel-masking architecture (Revisions 1–6) was fully retired, not merely superseded — vector tiles have no opaque out-of-coverage fill to mask in the first place, eliminating that entire defect class. Ilmakuva does not use MML Ortokuva at all in this milestone (MapTiler Satellite Hybrid only, worldwide) — a deliberate product decision (ADR-0009), not a defect. A SYKE lake/river bathymetry overlay (contour lines, unsimplified, plus depth labels) ships above the base map for both selections — see the SYKE Bathymetry Overlay section above; `EL.SpotElevation` sounding-point labels remain deferred/out of scope.
 
 ---
 
 ## Next Planned Task
 
-MFS-026 (Selectable MML Base Maps) is complete — implemented, architecture-reviewed, all automated tests passing (878/878), `flutter analyze` clean, and physically verified on Android across three rounds. The next milestone has not yet been selected. A global base-map fallback/world-coverage milestone was investigated as the natural follow-up (MML's cartography covers Finland only; a global base map — the leading candidate being a MapTiler vector style — would fill the gap outside that coverage while MML remains primary within it), but this investigation did not produce an approved MFS/TD, so no identifier is assigned yet; see `docs/roadmap.md`'s Near-Term Roadmap for other candidates.
+MFS-026 (Selectable MML Base Maps) is complete — implemented, architecture-reviewed, all automated tests passing, `flutter analyze` clean, and physically verified on Android across three rounds.
+
+**Worldwide Base-Map Coverage (MFS-027 / TD-027) is complete through Revision 8** — MML v21 vector for Maastokartta, MapTiler Outdoor/Satellite Hybrid worldwide, and the SYKE bathymetry overlay with depth labels are all implemented, `flutter analyze`-clean, covered by the full automated test suite, and physically validated on Android (contour geometry fidelity, continuous zoom-range rendering, close-zoom/overzoom rendering, and depth-label rendering all accepted as shipped). See `docs/technical-designs/TD-027-worldwide-base-map-coverage.md` §27 and `docs/specifications/MFS-027-worldwide-base-map-coverage.md` for full detail. **Remaining: a git commit** — not yet performed.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 26
+Current Feature Specifications: 27
 
-Current Technical Designs: 24
+Current Technical Designs: 25
 
-Architecture Decision Records: 8
+Architecture Decision Records: 9
 
 Implemented Core Features:
 * Map
-* Base Maps (selectable MML Maastokartta/Ilmakuva)
+* Base Maps (selectable Maastokartta/Ilmakuva, worldwide coverage — MML v21 vector + MapTiler)
+* SYKE Bathymetry Overlay (contour lines, depth labels)
 * User Location
 * Fishing Spot Management (including Water Bodies)
 * Catch Management (including Catch Notes)
@@ -777,10 +811,10 @@ Implemented Core Features:
 
 Offline-first: Yes (base-map imagery is the sole exception — see Known Limitations)
 
-Physical Android Validation: Completed for all currently implemented features
+Physical Android Validation: Completed for all shipped features, including Worldwide Base-Map Coverage (MFS-027 / TD-027) and its SYKE bathymetry overlay/depth labels
 
-flutter analyze: Passing with 8 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
+flutter analyze: Passing with 11 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
 
-Automated Tests: 878 Passing
+Automated Tests: 981 Passing
 
 Database schema version: 8

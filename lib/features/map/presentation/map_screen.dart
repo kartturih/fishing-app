@@ -12,9 +12,13 @@ import 'package:fishing_app/core/database/app_database.dart';
 import 'package:fishing_app/core/location/location_service.dart';
 import 'package:fishing_app/core/map/base_map.dart';
 import 'package:fishing_app/core/map/base_map_preference_store.dart';
+import 'package:fishing_app/core/map/maptiler_config.dart';
+import 'package:fishing_app/core/map/maptiler_style_factory.dart';
 import 'package:fishing_app/core/map/mml_config.dart';
-import 'package:fishing_app/core/map/mml_style_factory.dart';
+import 'package:fishing_app/core/map/mml_vector_proxy_service.dart';
 import 'package:fishing_app/core/map/style_restoration_tracker.dart';
+import 'package:fishing_app/core/map/syke_bathymetry_tile_source.dart';
+import 'package:fishing_app/core/map/worldwide_style_factory.dart';
 import 'package:fishing_app/features/catch_photos/data/catch_photo_repository.dart';
 import 'package:fishing_app/features/catch_photos/data/storage/catch_photo_storage.dart';
 import 'package:fishing_app/features/catches/data/catch_repository.dart';
@@ -35,6 +39,7 @@ import 'package:fishing_app/features/map/presentation/widgets/base_map_selector_
 import 'package:fishing_app/features/map/presentation/widgets/lure_tools_page.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_attribution.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart';
+import 'package:fishing_app/features/map/presentation/widgets/maptiler_attribution.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
 import 'package:fishing_app/features/personal_tackle_box/presentation/widgets/add_to_tackle_box_action.dart';
@@ -49,6 +54,8 @@ class MapScreen extends StatefulWidget {
     super.key,
     this.temporaryDirectoryProvider = getTemporaryDirectory,
     this.baseMapPreferenceStore = const BaseMapPreferenceStore(),
+    this.mmlVectorProxyService,
+    this.sykeBathymetryTileSource,
   });
 
   /// Supplies the directory MML base-map style documents are written to
@@ -67,6 +74,19 @@ class MapScreen extends StatefulWidget {
   /// exercise the out-of-order-completion race this class's `_persistBaseMapSelection`
   /// guards against.
   final BaseMapPreferenceStore baseMapPreferenceStore;
+
+  /// The local, on-device loopback proxy for MML's real v21 vector base map
+  /// and the bundled SYKE bathymetry overlay (TD-027 §3F/§20). Overridable
+  /// only so tests can inject one built with a fake `httpGetBytes`/
+  /// `httpGetString` (no real network call, no real key) instead of the
+  /// real one `_MapScreenState` otherwise builds from `MmlConfig.apiKey`.
+  final MmlVectorProxyService? mmlVectorProxyService;
+
+  /// Reads tile blobs from the bundled SYKE bathymetry MBTiles asset
+  /// (TD-027 §20/§22). Overridable so tests can inject one backed by a
+  /// small synthetic MBTiles fixture (or a fake `loadAsset`) instead of the
+  /// real, ~49 MB bundled national asset.
+  final SykeBathymetryTileSource? sykeBathymetryTileSource;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -117,9 +137,63 @@ class _MapScreenState extends State<MapScreen> {
       WaterBodyStatisticsRepository(_database);
   late final CatchSearchRepository _catchSearchRepository =
       CatchSearchRepository(_database);
-  late final MmlStyleFactory _mmlStyleFactory = MmlStyleFactory(
-    apiKey: MmlConfig.apiKey,
+  late final MapTilerStyleFactory _mapTilerStyleFactory = MapTilerStyleFactory(
+    apiKey: MapTilerConfig.apiKey,
   );
+
+  /// Builds the correct locally-authored style document per selected
+  /// `BaseMap` (TD-027 §3/§3F): Maastokartta composes MapTiler Outdoor
+  /// beneath MML's real v21 vector cartography; Ilmakuva is MapTiler
+  /// Satellite Hybrid only. The SYKE bathymetry overlay (TD-027 §20–§22) is
+  /// added for both selections.
+  late final WorldwideStyleFactory _worldwideStyleFactory =
+      WorldwideStyleFactory(mapTilerStyleFactory: _mapTilerStyleFactory);
+
+  /// The local, on-device loopback proxy for MML's real v21 vector base map
+  /// and the bundled SYKE bathymetry overlay (TD-027 §3F/§20) — "one
+  /// loopback HTTP listener, multiple route prefixes." Constructed
+  /// unconditionally (cheap — the constructor does no networking); started
+  /// in [_initializeBaseMap] regardless of `MmlConfig`'s state, since the
+  /// SYKE bathymetry route has no dependency on the MML credential at all —
+  /// only [MmlVectorProxyService.fetchMmlStyleFragment] itself is gated on
+  /// `MmlConfig` being configured.
+  late final MmlVectorProxyService _mmlVectorProxyService =
+      widget.mmlVectorProxyService ??
+      MmlVectorProxyService(
+        apiKey: MmlConfig.apiKey,
+        sykeBathymetryTileSource: _sykeBathymetryTileSource,
+      );
+
+  /// Reads tile blobs from the bundled SYKE bathymetry MBTiles asset
+  /// (TD-027 §20/§22) — fully offline, no network, no credential. Extracted
+  /// once (best-effort; a failure simply omits the overlay, never a crash)
+  /// in [_initializeBaseMap].
+  late final SykeBathymetryTileSource _sykeBathymetryTileSource =
+      widget.sykeBathymetryTileSource ?? SykeBathymetryTileSource();
+
+  /// Whether the *currently applied* style actually includes MML's real
+  /// v21 vector fragment — distinct from `_selectedBaseMap ==
+  /// BaseMap.maastokartta`, since MML may be unconfigured or its fragment
+  /// fetch may have failed (TD-027 §3F Failure behavior), in which case
+  /// Maastokartta still renders (MapTiler Outdoor alone) but without MML's
+  /// own glyph host. Drives the fishing-spot symbol layer's `textFont`
+  /// choice below — MML's v21 style uses its own glyph host with its own
+  /// font names (verified live: "Liberation Sans NLSFI"), not this
+  /// project's usual `fonts.openmaptiles.org` "Open Sans Regular"
+  /// (`WorldwideStyleFactory.defaultGlyphsUrl`); a style document only ever
+  /// declares one `glyphs` URL, so the label must request a font that
+  /// actually exists on whichever host the *current* style points at.
+  bool _mmlFragmentIncludedInCurrentStyle = false;
+
+  /// Whether the bundled SYKE bathymetry asset was successfully extracted
+  /// and is being served for the *currently applied* style — drives the
+  /// SYKE line in the shared attribution panel (TD-027 §24) and whether
+  /// `WorldwideStyleFactory` is given a non-null
+  /// `sykeBathymetryLocalBaseUrl`.
+  bool _sykeBathymetryAvailable = false;
+
+  static const _mmlVectorGlyphFont = 'Liberation Sans NLSFI';
+  static const _defaultGlyphFont = 'Open Sans Regular';
 
   final Map<String, FishingSpot> _fishingSpotsById = {};
 
@@ -179,6 +253,8 @@ class _MapScreenState extends State<MapScreen> {
   void dispose() {
     _styleLoadTimeoutTimer?.cancel();
     _mapController?.onFeatureTapped.remove(_onFishingSpotFeatureTapped);
+    unawaited(_mmlVectorProxyService.stop());
+    _sykeBathymetryTileSource.close();
     unawaited(_database.close());
     super.dispose();
   }
@@ -191,9 +267,33 @@ class _MapScreenState extends State<MapScreen> {
   /// Loads the persisted base-map preference (defaulting to Maastokartta —
   /// MFS-026 FR-2/FR-3) and prepares its style file before revealing the
   /// map for the first time.
+  ///
+  /// Starts [_mmlVectorProxyService] and extracts the bundled SYKE
+  /// bathymetry asset ([SykeBathymetryTileSource.ensureExtracted]) before
+  /// building the very first style — extending this same existing loading
+  /// gate rather than introducing a second one (TD-027 §3C precedent,
+  /// carried forward for §3F/§20). The proxy service is started
+  /// unconditionally (not gated on `MmlConfig`): the bundled SYKE route it
+  /// also serves has no dependency on the MML credential at all. Both steps
+  /// are best-effort — a failure in either simply omits the corresponding
+  /// content from the generated style exactly as if it were unconfigured
+  /// (TD-027 §3F/§20 Failure behavior) — no separate error state is needed,
+  /// and neither failure blocks the other.
   Future<void> _initializeBaseMap() async {
+    try {
+      await _mmlVectorProxyService.start();
+    } catch (error) {
+      debugPrint('Failed to start the MML vector proxy service: $error');
+    }
+
+    try {
+      await _sykeBathymetryTileSource.ensureExtracted();
+    } catch (error) {
+      debugPrint('Failed to extract the SYKE bathymetry asset: $error');
+    }
+
     final loaded = await widget.baseMapPreferenceStore.load();
-    final path = await _stylePathFor(loaded);
+    final prepared = await _prepareStyleFor(loaded);
     if (!mounted) {
       return;
     }
@@ -201,18 +301,35 @@ class _MapScreenState extends State<MapScreen> {
     _latestRequestedBaseMap = loaded;
     setState(() {
       _selectedBaseMap = loaded;
-      _currentStylePath = path;
+      _currentStylePath = prepared.path;
+      _mmlFragmentIncludedInCurrentStyle = prepared.mmlFragmentIncluded;
+      _sykeBathymetryAvailable = prepared.sykeBathymetryAvailable;
       // Deliberately not calling `_styleRestoration.recordStyleApplied()`
       // here: the tracker already starts at generation 0, which *is* the
       // initial style — calling it here would skip straight to generation
       // 1 for the very first load, for no benefit.
     });
 
-    if (MmlConfig.isMissing) {
+    if (_isConfigurationMissing(loaded)) {
       _showMapImageryUnavailableBanner('Karttapohjan asetukset puuttuvat.');
     } else {
       _startStyleLoadTimeout(_styleGeneration);
     }
+  }
+
+  /// Whether [baseMap] has no usable provider configured at all, per
+  /// TD-027 §9's per-selection banner condition:
+  ///
+  /// * Maastokartta has two independent providers (MML, MapTiler Outdoor);
+  ///   either one alone still leaves a usable base map, so the banner is
+  ///   reserved for the case where neither is configured.
+  /// * Ilmakuva has only MapTiler Satellite Hybrid — a missing MapTiler key
+  ///   alone already means there is nothing to show for this selection.
+  bool _isConfigurationMissing(BaseMap baseMap) {
+    return switch (baseMap) {
+      BaseMap.maastokartta => MmlConfig.isMissing && MapTilerConfig.isMissing,
+      BaseMap.ilmakuva => MapTilerConfig.isMissing,
+    };
   }
 
   /// Switches the active base map immediately (MFS-026: no separate
@@ -236,21 +353,23 @@ class _MapScreenState extends State<MapScreen> {
     _latestRequestedBaseMap = newBaseMap;
     unawaited(_persistBaseMapSelection(newBaseMap));
 
-    if (MmlConfig.isMissing) {
+    if (_isConfigurationMissing(newBaseMap)) {
       _showMapImageryUnavailableBanner('Karttapohjan asetukset puuttuvat.');
     } else {
       _hideImageryBanner();
       _startStyleLoadTimeout(generation);
     }
 
-    final path = await _stylePathFor(newBaseMap);
+    final prepared = await _prepareStyleFor(newBaseMap);
     if (!mounted || _styleGeneration != generation) {
       return; // a newer switch has since occurred; discard this stale result
     }
 
     setState(() {
       _selectedBaseMap = newBaseMap;
-      _currentStylePath = path;
+      _currentStylePath = prepared.path;
+      _mmlFragmentIncludedInCurrentStyle = prepared.mmlFragmentIncluded;
+      _sykeBathymetryAvailable = prepared.sykeBathymetryAvailable;
       // The style is only actually being applied to MapLibreMap now — see
       // `StyleRestorationTracker`'s doc comment for why this must be
       // tracked separately from `_styleGeneration` above.
@@ -286,8 +405,13 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /// Returns a local file path containing the MapLibre style document for
-  /// [baseMap], writing it to the application's temporary directory first.
+  /// Prepares the MapLibre style document for [baseMap] — fetching MML's
+  /// real v21 vector fragment first when applicable (TD-027 §3F), then
+  /// writing the composed style to the application's temporary directory —
+  /// and reports, alongside the resulting file path, whether MML's
+  /// fragment and the SYKE bathymetry overlay actually ended up part of it
+  /// (`_PreparedStyle`), since `build()`/the fishing-spot symbol layer need
+  /// to know that to choose the correct glyph font and attribution content.
   ///
   /// `maplibre_gl`'s native Android implementation supports passing a raw
   /// JSON style string directly, but the package's own documentation states
@@ -297,10 +421,13 @@ class _MapScreenState extends State<MapScreen> {
   /// so the map works correctly if this application is ever built for iOS
   /// (TD-026 §3's documented fallback).
   ///
-  /// When the MML API key is missing ([MmlConfig.isMissing]), no MML tile
-  /// request is attempted at all — a minimal blank style is used instead,
-  /// so the native map surface still exists and can still host the
-  /// fishing-spot GeoJSON source/layers, even with no base-map imagery.
+  /// MML's fragment is only fetched for `BaseMap.maastokartta` when
+  /// `MmlConfig` is configured — `fetchMmlStyleFragment()` itself returns
+  /// `null` (never throws) if the proxy service has not started or the
+  /// real fetch fails, which `WorldwideStyleFactory` already treats
+  /// identically to "MML unavailable" (TD-027 §3F Failure behavior). The
+  /// SYKE bathymetry overlay is included whenever the bundled asset was
+  /// successfully extracted, for **either** selection, independent of MML.
   ///
   /// If writing the style file itself fails (e.g. no free disk space), one
   /// more attempt writes the minimal blank style to the same location — a
@@ -319,19 +446,40 @@ class _MapScreenState extends State<MapScreen> {
   /// this specific, doubly-failed scenario; the rest of the screen (app
   /// bar, fishing-spot layer once its own add succeeds, other entry
   /// points) remains reachable regardless.
-  Future<String> _stylePathFor(BaseMap baseMap) async {
+  Future<_PreparedStyle> _prepareStyleFor(BaseMap baseMap) async {
+    String? mmlFragment;
+    if (baseMap == BaseMap.maastokartta && !MmlConfig.isMissing) {
+      mmlFragment = await _mmlVectorProxyService.fetchMmlStyleFragment();
+    }
+
+    final sykeAvailable =
+        _sykeBathymetryTileSource.extractedPath != null &&
+        _mmlVectorProxyService.baseUrl != null;
+
     try {
-      if (MmlConfig.isMissing) {
-        return await _writeStyleFile('blank', _blankStyle);
-      }
-      return await _writeStyleFile(
-        baseMap.name,
-        _mmlStyleFactory.styleFor(baseMap),
+      final style = _worldwideStyleFactory.buildStyle(
+        baseMap,
+        mapTilerAvailable: !MapTilerConfig.isMissing,
+        mmlStyleFragmentJson: mmlFragment,
+        sykeBathymetryLocalBaseUrl: sykeAvailable
+            ? _mmlVectorProxyService.baseUrl
+            : null,
+      );
+      final path = await _writeStyleFile(baseMap.name, style);
+      return _PreparedStyle(
+        path: path,
+        mmlFragmentIncluded: mmlFragment != null,
+        sykeBathymetryAvailable: sykeAvailable,
       );
     } catch (error) {
       debugPrint('Failed to prepare base-map style file: $error');
       try {
-        return await _writeStyleFile('blank', _blankStyle);
+        final path = await _writeStyleFile('blank', _blankStyle);
+        return _PreparedStyle(
+          path: path,
+          mmlFragmentIncluded: false,
+          sykeBathymetryAvailable: false,
+        );
       } catch (fallbackError) {
         debugPrint(
           'Failed to write the blank-style fallback file too: '
@@ -339,15 +487,20 @@ class _MapScreenState extends State<MapScreen> {
         );
         // Last resort; Android-only (see doc comment above), not a
         // cross-platform guarantee.
-        return _blankStyle;
+        return const _PreparedStyle(
+          path: _blankStyle,
+          mmlFragmentIncluded: false,
+          sykeBathymetryAvailable: false,
+        );
       }
     }
   }
 
-  // Includes the same `glyphs` URL as `MmlStyleFactory` — the blank
-  // fallback style (missing API key, or a disk-write failure) still needs
-  // to host the fishing-spot symbol layer's text labels, which require a
-  // `glyphs` source to rasterize regardless of which base style is active.
+  // Includes the same default `glyphs` URL as
+  // `WorldwideStyleFactory.defaultGlyphsUrl` — the blank fallback style
+  // (missing API key, or a disk-write failure) still needs to host the
+  // fishing-spot symbol layer's text labels, which require a `glyphs`
+  // source to rasterize regardless of which base style is active.
   static const _blankStyle =
       '{"version":8,"glyphs":"https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",'
       '"sources":{},"layers":[]}';
@@ -441,12 +594,13 @@ class _MapScreenState extends State<MapScreen> {
   /// `_fishingSpotMarkersAdded` boolean, which incorrectly assumed a style
   /// loads exactly once for the widget's lifetime.
   Future<void> _addFishingSpotMarkers() async {
-    if (!MmlConfig.isMissing) {
+    final selectedBaseMap = _selectedBaseMap;
+    if (selectedBaseMap != null && !_isConfigurationMissing(selectedBaseMap)) {
       // A style just finished loading, so any pending "imagery unavailable"
-      // signal for it no longer applies. Left untouched when the API key is
-      // missing, since that banner reflects a persistent configuration
-      // problem, not a transient load — the blank fallback style "loading
-      // successfully" must not dismiss it.
+      // signal for it no longer applies. Left untouched when the current
+      // selection's configuration is missing, since that banner reflects a
+      // persistent configuration problem, not a transient load — the blank
+      // fallback style "loading successfully" must not dismiss it.
       _cancelStyleLoadTimeout();
       _hideImageryBanner();
     }
@@ -640,7 +794,7 @@ class _MapScreenState extends State<MapScreen> {
                 textField: [Expressions.get, 'name'],
                 textOffset: [0, 1.2],
                 // 'Open Sans Regular' alone — verified live against the
-                // configured glyph host (fonts.openmaptiles.org) by
+                // default glyph host (fonts.openmaptiles.org) by
                 // requesting its actual PBF ranges directly: it returns
                 // real glyph data (HTTP 200, application/octet-stream)
                 // across ranges including Latin-1 Supplement (needed for
@@ -655,7 +809,22 @@ class _MapScreenState extends State<MapScreen> {
                 // another font here without first verifying it actually
                 // exists on this glyph host; an unverifiable font name
                 // silently breaks every font in the same textFont list.
-                textFont: kIsWeb ? null : const ['Open Sans Regular'],
+                //
+                // MML's own real v21 style declares a different `glyphs`
+                // host entirely (its own, with its own font names) —
+                // 'Open Sans Regular' does not exist there, so whenever
+                // MML's fragment is actually part of the current style
+                // (`_mmlFragmentIncludedInCurrentStyle`), the one font this
+                // project has verified does exist there is used instead
+                // ('Liberation Sans NLSFI', read directly off MML's own
+                // real style layers — TD-027 §3F).
+                textFont: kIsWeb
+                    ? null
+                    : [
+                        _mmlFragmentIncludedInCurrentStyle
+                            ? _mmlVectorGlyphFont
+                            : _defaultGlyphFont,
+                      ],
               ),
             );
           }
@@ -1142,7 +1311,22 @@ class _MapScreenState extends State<MapScreen> {
             const IgnorePointer(
               child: Center(child: Icon(Icons.add, size: 32)),
             ),
-          MapAttribution(baseMap: selectedBaseMap),
+          // MML attribution is shown whenever Maastokartta is selected and
+          // MML is actually configured (TD-027 §3F/§11) — with no viewport
+          // or zoom condition: MML's real v21 vector cartography is
+          // unconditionally part of the composition whenever configured,
+          // regardless of where the current viewport happens to be.
+          // Ilmakuva never uses MML data in this milestone (ADR-0009,
+          // MFS-027).
+          if (selectedBaseMap == BaseMap.maastokartta && !MmlConfig.isMissing)
+            MapAttribution(baseMap: selectedBaseMap),
+          // Shown for both selections whenever MapTiler is configured, and
+          // includes SYKE's own required CC BY 4.0 notice whenever the
+          // bathymetry overlay is actually being served (TD-027 §24) — the
+          // widget itself decides MapTiler's own visibility
+          // (MapTilerConfig.isMissing); `sykeAttributionRequired` only adds
+          // or omits the extra SYKE line inside the same shared panel.
+          MapTilerAttribution(sykeAttributionRequired: _sykeBathymetryAvailable),
           MapControls(
             isSelectionMode: _isSelectionMode,
             onLocationPressed: _onLocationPressed,
@@ -1180,4 +1364,23 @@ class _MapScreenState extends State<MapScreen> {
       ),
     );
   }
+}
+
+/// The result of preparing a base map's style document (`_prepareStyleFor`):
+/// the local file path `MapLibreMap.styleString` should be pointed at,
+/// alongside whether MML's real v21 vector fragment and the SYKE bathymetry
+/// overlay actually ended up part of it — both routinely `false` even for
+/// `BaseMap.maastokartta` (missing/invalid configuration, a failed fetch, or
+/// the bundled SYKE asset failing to extract are all non-crashing, silently
+/// degraded outcomes, never an exception this class needs to catch).
+class _PreparedStyle {
+  const _PreparedStyle({
+    required this.path,
+    required this.mmlFragmentIncluded,
+    required this.sykeBathymetryAvailable,
+  });
+
+  final String path;
+  final bool mmlFragmentIncluded;
+  final bool sykeBathymetryAvailable;
 }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permits cleartext (HTTP) traffic only to the device's own loopback
+  address — nowhere else. Android blocks all cleartext traffic by default
+  for apps targeting API 28+; every other network endpoint in this app
+  (MapTiler, MML's real WMTS upstream, MapLibre's glyph CDN) is HTTPS and
+  is unaffected by this exception.
+
+  Required by MmlVectorProxyService (TD-027 §3F/§20, Revision 7 — this
+  exception itself is unchanged from the retired raster-era
+  MmlTileMaskService that originally introduced it; only the on-device
+  service class using it was rewritten from raster masking to vector/SYKE
+  proxying). MapLibre's Maastokartta MML vector source, glyphs, and the
+  bundled SYKE bathymetry overlay are all pointed at this one on-device
+  service's own http://127.0.0.1:<ephemeral-port> address rather than at
+  any real upstream endpoint directly, so the MML API key never appears in
+  an on-device style document (FR-27) and the bundled SYKE MBTiles asset
+  can be served without a live network request. Without this exception,
+  MapLibre's native Android networking layer (OkHttp) refuses the
+  connection outright ("CLEARTEXT communication ... not permitted"), and
+  neither MML imagery nor the SYKE overlay loads at all, anywhere — the
+  request never leaves the device, so this is not a coverage/proxying
+  defect.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

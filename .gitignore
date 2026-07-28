@@ -21,3 +21,17 @@ Thumbs.db
 
 # Backup files
 *.bak
+
+# Python (tools/syke_bathymetry) — .cache/ holds paginated raw WFS response
+# dumps for resumable re-fetches (national-scale, ~1 GB); never a build
+# input or artifact, must never be committed
+__pycache__/
+*.pyc
+tools/**/.cache/
+
+# Ad-hoc investigation output (MML v21 PoC, SYKE coverage research, border-
+# crossing screenshots). Several of these files embed a real, working MML
+# API key directly in saved tile-URL templates (MML's own TileJSON/style
+# response format does this) — per the fetch scripts' own explicit "do not
+# commit" instructions. Never a build input; safe to delete/regenerate.
+/investigation/

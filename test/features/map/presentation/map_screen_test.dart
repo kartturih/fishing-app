@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fishing_app/core/map/base_map.dart';
 import 'package:fishing_app/core/map/base_map_preference_store.dart';
+import 'package:fishing_app/core/map/mml_vector_proxy_service.dart';
+import 'package:fishing_app/core/map/syke_bathymetry_tile_source.dart';
 import 'package:fishing_app/features/catches/data/catch_search_repository.dart';
 import 'package:fishing_app/features/catches/presentation/widgets/catch_search_page.dart';
 import 'package:fishing_app/features/map/presentation/map_screen.dart';
@@ -15,6 +19,7 @@ import 'package:fishing_app/features/map/presentation/widgets/base_map_selector_
 import 'package:fishing_app/features/map/presentation/widgets/lure_tools_page.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_attribution.dart';
 import 'package:fishing_app/features/map/presentation/widgets/map_controls.dart';
+import 'package:fishing_app/features/map/presentation/widgets/maptiler_attribution.dart';
 import 'package:fishing_app/features/statistics/presentation/widgets/statistics_page.dart';
 
 /// Covers `MapScreen`'s AppBar entry points (MFS-025 / TD-025 §7) and the
@@ -58,7 +63,25 @@ import 'package:fishing_app/features/statistics/presentation/widgets/statistics_
 /// the persisted preference, itself backed by a pure in-memory
 /// `SharedPreferences` mock with no real I/O) — the style-file-write
 /// mechanism itself is already covered by the initial-load tests below and
-/// by `mml_style_factory_test.dart`.
+/// by `worldwide_style_factory_test.dart`.
+///
+/// **TD-027 §3F/§25 (Revision 7):** `MmlConfig.isMissing` is a compile-time
+/// constant (`String.fromEnvironment('MML_API_KEY')`) that is always true
+/// under plain `flutter test` (no `--dart-define` is supplied here), so
+/// `_prepareStyleFor` never calls `fetchMmlStyleFragment()` by default in
+/// this file — `MmlVectorProxyService.start()` itself still runs
+/// unconditionally (it has no dependency on `MmlConfig`, since it also
+/// serves the SYKE bathymetry route), binding a real, ordinary loopback
+/// socket, which is safe and supported in this VM-based test environment.
+/// The proxy service's own request-handling/caching/coalescing logic is
+/// instead covered directly, independent of any real key or real network,
+/// by `mml_vector_proxy_service_test.dart`. `SykeBathymetryTileSource`'s
+/// own extraction/read logic is covered by
+/// `syke_bathymetry_tile_source_test.dart`; by default in this file (no
+/// injected fake), its real `getApplicationSupportDirectory` call throws
+/// `MissingPluginException`, which `_initializeBaseMap` already catches —
+/// the SYKE overlay is simply absent, never a crash, exactly like a missing
+/// MML key.
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -70,12 +93,16 @@ void main() {
     WidgetTester tester, {
     BaseMapPreferenceStore baseMapPreferenceStore =
         const BaseMapPreferenceStore(),
+    MmlVectorProxyService? mmlVectorProxyService,
+    SykeBathymetryTileSource? sykeBathymetryTileSource,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         home: MapScreen(
           temporaryDirectoryProvider: fakeTemporaryDirectory,
           baseMapPreferenceStore: baseMapPreferenceStore,
+          mmlVectorProxyService: mmlVectorProxyService,
+          sykeBathymetryTileSource: sykeBathymetryTileSource,
         ),
       ),
     );
@@ -195,18 +222,22 @@ void main() {
       (tester) async {
         await pumpMapScreen(tester);
 
-        // Asserting via `MapAttribution.baseMap` rather than the style
-        // file's content: this test suite supplies no `MML_API_KEY`
+        // Asserted via the selector panel's own `selected` value rather
+        // than `MapAttribution`: this test suite supplies no `MML_API_KEY`
         // `--dart-define` (the correct, intentional default per TD-026 §8),
-        // so `MmlConfig.isMissing` is true and every base map falls back to
-        // the same blank style file (by design — see FR-16/§9) — the style
-        // file therefore cannot distinguish which `BaseMap` is selected in
-        // this environment, but `MapAttribution` reflects the real
-        // selection regardless of whether real MML imagery loads.
-        final attribution = tester.widget<MapAttribution>(
-          find.byType(MapAttribution),
+        // so `MmlConfig.isMissing` is true — and as of TD-027 §3A/§11,
+        // `MapAttribution` requires MML to be *configured* in addition to
+        // Maastokartta being selected and region-active, so it is never
+        // present at all in this environment (see the "worldwide base-map
+        // coverage" group below for that behavior's own dedicated tests) —
+        // `MapAttribution.baseMap` is therefore no longer a usable proxy
+        // for "which BaseMap is currently selected."
+        await tester.tap(find.byKey(const Key('baseMapLayersButton')));
+        await tester.pump();
+        final panel = tester.widget<BaseMapSelectorPanel>(
+          find.byType(BaseMapSelectorPanel),
         );
-        expect(attribution.baseMap, BaseMap.maastokartta);
+        expect(panel.selected, BaseMap.maastokartta);
       },
     );
 
@@ -217,10 +248,19 @@ void main() {
 
       await pumpMapScreen(tester);
 
-      final attribution = tester.widget<MapAttribution>(
-        find.byType(MapAttribution),
+      // Asserted via the selector panel's own `selected` value (opened
+      // here purely to read it) rather than `MapAttribution`, which is no
+      // longer in the tree at all for Ilmakuva as of TD-027 (MML is not
+      // part of the Ilmakuva composition in this milestone — see the
+      // "worldwide base-map coverage" group below for that behavior's own
+      // dedicated tests) — `MapAttribution.baseMap` is therefore no longer
+      // a usable proxy for "which BaseMap is currently selected."
+      await tester.tap(find.byKey(const Key('baseMapLayersButton')));
+      await tester.pump();
+      final panel = tester.widget<BaseMapSelectorPanel>(
+        find.byType(BaseMapSelectorPanel),
       );
-      expect(attribution.baseMap, BaseMap.ilmakuva);
+      expect(panel.selected, BaseMap.ilmakuva);
     });
 
     testWidgets(
@@ -290,7 +330,7 @@ void main() {
       // write settling: the selector's closing is a synchronous setState,
       // and the preference store is a pure in-memory mock with no real
       // I/O. The style-file mechanism itself is covered separately by
-      // the initial-load tests above and by `mml_style_factory_test.dart`.
+      // the initial-load tests above and by `worldwide_style_factory_test.dart`.
       for (var i = 0; i < 5; i++) {
         await tester.pump();
       }
@@ -369,6 +409,204 @@ void main() {
       },
     );
   });
+
+  group('worldwide base-map coverage (MFS-027 / TD-027)', () {
+    testWidgets('MML attribution (MapAttribution) is absent for the default '
+        'Maastokartta selection when MML is not configured (TD-027 §3C/§11: '
+        'attribution is now unconditional whenever MML is configured, with '
+        'no viewport or zoom condition — this only exercises the "not '
+        'configured" half, since this test suite supplies no '
+        '`MML_API_KEY` `--dart-define` and `MmlConfig.isMissing` is a '
+        'compile-time constant that is always true here; the "configured" '
+        'half is exercised at the pure-logic level instead, in '
+        '`worldwide_style_factory_test.dart`)', (tester) async {
+      await pumpMapScreen(tester);
+
+      expect(find.byType(MapAttribution), findsNothing);
+    });
+
+    testWidgets('MML attribution (MapAttribution) is absent when a persisted '
+        'Ilmakuva selection loads, since MML Ortokuva is not part of the '
+        'Ilmakuva composition in this milestone (ADR-0009, MFS-027, TD-027 '
+        '§11) — showing it would misattribute content that is not actually '
+        'present', (tester) async {
+      await const BaseMapPreferenceStore().save(BaseMap.ilmakuva);
+
+      await pumpMapScreen(tester);
+
+      expect(find.byType(MapAttribution), findsNothing);
+    });
+
+    testWidgets(
+      'MapTilerAttribution is present in the widget tree regardless of '
+      'the active selection — its own visibility is independently gated '
+      'on MapTilerConfig, not on which BaseMap is active (TD-027 §11)',
+      (tester) async {
+        await pumpMapScreen(tester);
+
+        expect(find.byType(MapTilerAttribution), findsOneWidget);
+      },
+    );
+
+    testWidgets('MapTilerAttribution remains present in the widget tree for a '
+        'persisted Ilmakuva selection too', (tester) async {
+      await const BaseMapPreferenceStore().save(BaseMap.ilmakuva);
+
+      await pumpMapScreen(tester);
+
+      expect(find.byType(MapTilerAttribution), findsOneWidget);
+    });
+
+    testWidgets(
+      'no viewport- or zoom-driven STYLE REGENERATION trigger exists '
+      '(TD-027 §3C Revision 4): MML coverage correctness is enforced per '
+      'pixel/tile, not by reloading the style when the camera crosses a '
+      'region boundary — `onCameraIdle` is simply never wired up, so it '
+      'is unconditionally null, in every build mode',
+      (tester) async {
+        await pumpMapScreen(tester);
+
+        final map = tester.widget<MapLibreMap>(find.byType(MapLibreMap));
+        expect(map.onCameraIdle, isNull);
+      },
+    );
+
+    testWidgets('the temporary debug camera-zoom overlay (added during the '
+        'Revision 3 zoom-threshold investigation, superseded before it was '
+        'ever used) is gone — Revision 4 removes it entirely', (tester) async {
+      await pumpMapScreen(tester);
+
+      expect(find.byKey(const Key('debugCameraZoomLabel')), findsNothing);
+    });
+  });
+
+  group('MML v21 vector productionization (TD-027 §3F, Revision 7)', () {
+    testWidgets(
+      'the temporary vector PoC debug toggle is gone entirely — vector is '
+      'now the real Maastokartta path, not a debug-only alternative to it',
+      (tester) async {
+        await pumpMapScreen(tester);
+
+        expect(find.byKey(const Key('vectorPocToggleButton')), findsNothing);
+        expect(find.byIcon(Icons.science), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'MmlVectorProxyService is started unconditionally (even with no '
+      '`MML_API_KEY`, since it also serves the SYKE bathymetry route) — '
+      'the injected instance\'s baseUrl becomes non-null once the map has '
+      'mounted',
+      (tester) async {
+        final service = MmlVectorProxyService(apiKey: 'unused-in-this-test');
+        addTearDown(service.stop);
+
+        await pumpMapScreen(tester, mmlVectorProxyService: service);
+
+        expect(service.baseUrl, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'when MmlConfig is unconfigured (the default under plain `flutter '
+      'test`), fetchMmlStyleFragment is never called, so the injected '
+      'httpGetString is never invoked — Maastokartta still renders '
+      '(MapTiler Outdoor alone)',
+      (tester) async {
+        var fetchCount = 0;
+        final service = MmlVectorProxyService(
+          apiKey: 'unused',
+          httpGetString: (_) async {
+            fetchCount++;
+            return '{"sources":{},"layers":[],"glyphs":""}';
+          },
+        );
+        addTearDown(service.stop);
+
+        await pumpMapScreen(tester, mmlVectorProxyService: service);
+
+        expect(fetchCount, 0);
+        expect(find.byType(MapLibreMap), findsOneWidget);
+      },
+    );
+  });
+
+  group('SYKE bathymetry overlay (TD-027 §20–§22, Revision 7)', () {
+    testWidgets(
+      'the SYKE attribution line is not requested from MapTilerAttribution '
+      'when the bundled asset was not extracted (the default in this test '
+      'file — no fake SykeBathymetryTileSource is injected)',
+      (tester) async {
+        await pumpMapScreen(tester);
+
+        final attribution = tester.widget<MapTilerAttribution>(
+          find.byType(MapTilerAttribution),
+        );
+        expect(attribution.sykeAttributionRequired, isFalse);
+      },
+    );
+
+    testWidgets(
+      'once a fake SykeBathymetryTileSource successfully "extracts", the '
+      'SYKE attribution line is requested from MapTilerAttribution, for '
+      'the default Maastokartta selection',
+      (tester) async {
+        final source = _FakeSykeBathymetryTileSource();
+        await pumpMapScreen(tester, sykeBathymetryTileSource: source);
+
+        final attribution = tester.widget<MapTilerAttribution>(
+          find.byType(MapTilerAttribution),
+        );
+        expect(attribution.sykeAttributionRequired, isTrue);
+      },
+    );
+
+    testWidgets(
+      'the SYKE attribution line is also requested for a persisted '
+      'Ilmakuva selection — the overlay is base-map-agnostic',
+      (tester) async {
+        await const BaseMapPreferenceStore().save(BaseMap.ilmakuva);
+        final source = _FakeSykeBathymetryTileSource();
+
+        await pumpMapScreen(tester, sykeBathymetryTileSource: source);
+
+        final attribution = tester.widget<MapTilerAttribution>(
+          find.byType(MapTilerAttribution),
+        );
+        expect(attribution.sykeAttributionRequired, isTrue);
+      },
+    );
+  });
+}
+
+/// A `SykeBathymetryTileSource` test double whose `ensureExtracted()`
+/// always "succeeds" without touching `path_provider` or the real asset
+/// bundle, so `MapScreen`-level tests can exercise the "bathymetry
+/// available" branch without a real, ~49 MB bundled asset.
+class _FakeSykeBathymetryTileSource implements SykeBathymetryTileSource {
+  @override
+  Future<void> ensureExtracted() async {}
+
+  @override
+  String? get extractedPath => '/fake/syke_bathymetry_v1.mbtiles';
+
+  @override
+  int? get extractedByteSize => 2048;
+
+  @override
+  String? get bundledVersion => 'fake-version';
+
+  @override
+  bool? get lastExtractionWasReplace => false;
+
+  @override
+  Uint8List? tileFor(int z, int x, int y) => null;
+
+  @override
+  void close() {}
+
+  @override
+  String get assetFileName => SykeBathymetryTileSource.defaultAssetFileName;
 }
 
 /// A `BaseMapPreferenceStore` test double that lets a test control exactly

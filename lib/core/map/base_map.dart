@@ -48,9 +48,13 @@ enum BaseMap {
 
   /// MML's WMTS tile file extension for this base map — verified from live
   /// GetCapabilities (TD-026 §0): Maastokartta's tiles are `image/png`
-  /// (`.png`), Ortokuva's are `image/jpeg` (`.jpg`). Used by
-  /// `MmlStyleFactory` to build the correct tile URL per base map; the two
-  /// layers do not share one hardcoded extension.
+  /// (`.png`), Ortokuva's are `image/jpeg` (`.jpg`). Dates from the raster
+  /// WMTS delivery path (the now-retired `MmlStyleFactory`, TD-027 §25);
+  /// unused by the current MML v21 vector delivery path, which has no
+  /// per-file-extension raster tile URL to build. Retained, not removed —
+  /// see this codebase's own precedent (`WorldwideStyleFactory.sykeDepthAreasLayerId`)
+  /// for keeping a no-longer-called identifier rather than deleting real,
+  /// previously load-bearing detail.
   String get tileFileExtension => switch (this) {
     BaseMap.maastokartta => '.png',
     BaseMap.ilmakuva => '.jpg',

@@ -45,7 +45,7 @@ Introducing user-selectable base maps therefore does not merely add a second sty
 
 2. **Finland's National Land Survey (Maanmittauslaitos / MML) is the provider for the initial Finnish base maps.**
 
-3. **MML raster WMTS is used for the initial base maps, not MML vector tiles.** The reason is primarily cartographic: the goal is to present MML's own rendered Maastokartta cartography as MML designed it, rather than build and maintain an equivalent vector style in-house.
+3. **MML raster WMTS is used for the initial base maps, not MML vector tiles.** The reason is primarily cartographic: the goal is to present MML's own rendered Maastokartta cartography as MML designed it, rather than build and maintain an equivalent vector style in-house. **Revised for Maastokartta by TD-027 Revision 7 (see [Revision Note: Maastokartta moves to MML v21 vector](#revision-note-maastokartta-moves-to-mml-v21-vector-td-027-revision-7) below) — kept here as the original decision and its reasoning, not silently rewritten.**
 
 4. **Two initial selectable base maps:**
    - MML Maastokartta (topographic map)
@@ -100,7 +100,7 @@ None of the following are permanently rejected. They remain available for recons
 
 **Cons:** Would require building and maintaining a MapLibre GL style compatible with MML's vector tile schema to reproduce (or deliberately diverge from) MML's own Maastokartta appearance — meaningful ongoing styling effort with no such style existing today.
 
-**Decision:** Not selected for the initial base maps. The project wants MML's rendering as-is; building a vector style is a larger, separate effort that this decision does not take on now. May be revisited once there is a reason to invest in a custom style (e.g. the "richer maps"/custom-layer direction in `docs/roadmap.md` §4).
+**Decision:** Not selected for the initial base maps. The project wants MML's rendering as-is; building a vector style is a larger, separate effort that this decision does not take on now. May be revisited once there is a reason to invest in a custom style (e.g. the "richer maps"/custom-layer direction in `docs/roadmap.md` §4). **Revisited, not via a self-authored style: see [Revision Note: Maastokartta moves to MML v21 vector](#revision-note-maastokartta-moves-to-mml-v21-vector-td-027-revision-7) below** — MFS-027/TD-027 Revision 7 adopts MML's own official v21 vector style directly for Maastokartta, which is a different thing from "building a vector style" in-house; this alternative's original concern (an in-house styling effort) is why that adoption was possible without contradicting it.
 
 ### 3. MapTiler
 
@@ -153,6 +153,26 @@ This ADR records the following as a hard requirement on the eventual implementat
 
 - Every application-owned layer (fishing-spot markers today; any future application-owned layer) must be restorable after **every** base-style reload, not only the first style load.
 - The exact mechanism (resetting the guard, restructuring how/when markers are (re-)added, or another approach entirely) is left to TD-026. This ADR deliberately does not solve it here, to avoid designing an unnecessarily large abstraction before the actual base-map-selection feature (a future MFS/TD) defines the full set of requirements the mechanism needs to satisfy.
+
+---
+
+## Revision Note: Maastokartta moves to MML v21 vector (TD-027 Revision 7)
+
+This ADR's Decision item 3 selected MML raster WMTS specifically to avoid building and maintaining an in-house vector style — Alternative 2 (MML vector tiles) was explicitly not selected for exactly that reason, "not... because the project wants MML's rendering as-is; building a vector style is a larger, separate effort."
+
+**That reasoning is superseded for Maastokartta, not overturned.** MFS-027/TD-027 Revision 7 moved Maastokartta's Finnish cartographic layer to MML's own official v21 vector tile *style* — fetched and used directly (with one narrow content edit, removing MML's own unconditional `background` layer), not a self-authored vector style this project designs or maintains. This is exactly the "MML's rendering as-is" goal this ADR's Decision item 3 already required, delivered through a different, now-available mechanism: MML did not offer a ready-to-use, complete official vector style document at the time this ADR was written; it does now, and physical testing (per this milestone's own investigation) found it visually acceptable. The original concern this ADR raised against vector tiles — "meaningful ongoing styling effort with no such style existing today" — no longer applies, because that style now exists, is MML's own, and this project consumes it as delivered rather than authoring an equivalent from scratch.
+
+A second, independent motivation drove this change alongside the above: MML's **raster** WMTS tiles were found (via ADR-0009's own Revision Notes 2–4) to render out-of-coverage areas as opaque pixels rather than transparency, requiring substantial on-device pixel-masking machinery (TD-027 §3A–§3E) to produce a clean worldwide-fallback border. Vector tiles do not have this defect by construction (no features to draw outside coverage, rather than a baked-in "no data" fill) — see TD-027 §3F for the full technical reasoning and its own pre-implementation verification of this expectation.
+
+**Ilmakuva is unaffected** — it already moved away from any MML dependency under ADR-0009 (MapTiler Satellite Hybrid, worldwide) and remains so.
+
+This note does not reopen or restate ADR-0008's other decisions (MML as provider, direct-to-MML delivery, no proxy solely to hide the key, the base-map/overlay/application-layer conceptual model) — all unchanged. See TD-027 §3F for the full technical design and MFS-027 Revision 7 for the product-level requirements.
+
+---
+
+## Revision Note: SYKE bathymetry occupies the "External overlays" band (TD-027 §20–§27)
+
+Decision item 5 named "depth contours" only as a possible future overlay, not designed by this ADR. **That slot is now filled**: MFS-027/TD-027 Revision 7 added SYKE lake/river bathymetry (contour lines, plus depth labels reading each contour's own depth attribute) as the first real occupant of the "External overlays" band in the conceptual layering model above — implemented and physically validated on Android (TD-027 §27, Revision 8). The conceptual model itself (base map / overlays / application-owned layers, exactly one base map active, overlays independent of it) is unchanged and is exactly what made this additive rather than requiring any redesign. Hillshade remains unbuilt and unscoped, as originally recorded.
 
 ---
 
