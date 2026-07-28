@@ -8,8 +8,9 @@
 
 The current version supports:
 
-- Interactive MapLibre map
-- Selectable MML base maps: Maastokartta (topographic) and Ilmakuva/Ortokuva (aerial imagery), switchable from a compact map-layer selector with the choice persisted across restarts
+- Interactive MapLibre map with real worldwide coverage
+- Selectable base maps: Maastokartta (MML's official v21 vector topographic cartography for Finland, with MapTiler Outdoor as a worldwide underlay) and Ilmakuva (MapTiler Satellite Hybrid aerial imagery, worldwide), switchable from a compact map-layer selector with the choice persisted across restarts
+- An offline, bundled SYKE lake/river bathymetry overlay — depth contour lines and depth labels — shown over either base map, requiring no network access
 - User location
 - Offline Fishing Spot CRUD
 - Offline Catch CRUD
@@ -26,7 +27,7 @@ The current version supports:
 - Catch search and filtering: a global catch-browsing page with an always-visible, debounced text search (species, water body, fishing spot, lure) and a filter bottom sheet (water body, species, lure, date range)
 - Persistent Drift/SQLite storage
 
-878 automated tests are passing. Physical Android testing has been completed for all currently implemented features. iOS physical testing has not yet been performed.
+981 automated tests are passing. Physical Android testing has been completed for all currently implemented features, including worldwide base-map coverage and the SYKE bathymetry overlay. iOS physical testing has not yet been performed.
 
 ## Vision
 
