@@ -1,0 +1,4 @@
+# No third-party packages required. This tool uses only the Python
+# standard library (json, uuid, unicodedata, re, argparse, pathlib,
+# datetime). This file exists for consistency with the sibling
+# tools/syke_bathymetry/requirements.txt convention.

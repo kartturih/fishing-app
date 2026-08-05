@@ -17,7 +17,7 @@ The current version supports:
 - Catch photo attachments
 - Dedicated Catch Details view
 - Full-screen photo viewing and zoom
-- Lure Catalog with search and filtering, browsed by lure model with a per-model color-variant view
+- Lure Catalog with search and filtering, browsed by lure model with a per-model color-variant view — content is sourced from a bundled, generated JSON catalog asset, built from manufacturer-specific authoring files by a developer-run tool (`tools/lure_catalog/`), reconciled into the local database fully offline
 - Personal Tackle Box for tracking owned lures, with optional personal photos
 - Assigning an owned lure to a catch, shown in Catch Details
 - Lure-based catch statistics (most successful lure and lure type, per-lure and per-lure-type catch counts), computed live with no stored aggregate
@@ -27,7 +27,7 @@ The current version supports:
 - Catch search and filtering: a global catch-browsing page with an always-visible, debounced text search (species, water body, fishing spot, lure) and a filter bottom sheet (water body, species, lure, date range)
 - Persistent Drift/SQLite storage
 
-981 automated tests are passing. Physical Android testing has been completed for all currently implemented features, including worldwide base-map coverage and the SYKE bathymetry overlay. iOS physical testing has not yet been performed.
+996 automated tests are passing. Physical Android testing has been completed for all currently implemented features, including worldwide base-map coverage, the SYKE bathymetry overlay, and the Lure Catalog's new JSON-driven content pipeline (MFS-028 / TD-028). MFS-028 / TD-028 is implemented, architecture-reviewed, physically validated on Android, and ready for commit — see [Project Status](docs/project-status.md). iOS physical testing has not yet been performed.
 
 ## Vision
 

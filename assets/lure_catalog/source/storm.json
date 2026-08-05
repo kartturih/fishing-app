@@ -1,0 +1,32 @@
+{
+  "manufacturer": "Storm",
+  "models": [
+    {
+      "id": "5d824c1b-1611-47f5-9724-982a846d5126",
+      "modelName": "Swim Shad",
+      "productFamily": "WildEye",
+      "lureType": "swimbait",
+      "defaultImageReference": "assets/lure_catalog/placeholder_swimbait.png",
+      "variants": [
+        {
+          "id": "e3c58f5b-f165-4399-b9f4-b6edcff4809d",
+          "colorName": "Emerald Shiner",
+          "lengthMillimeters": 130,
+          "weightGrams": 20,
+          "buoyancy": "sinking"
+        },
+        {
+          "id": "0f5052f8-4a46-4fdc-af9c-a1eed353a98a",
+          "colorName": "Bluegill",
+          "lengthMillimeters": 130,
+          "weightGrams": 20,
+          "buoyancy": "sinking"
+        },
+        {
+          "id": "3369ff41-4786-4c07-9eed-c37193a8f2e0",
+          "colorName": "Golden Shiner"
+        }
+      ]
+    }
+  ]
+}

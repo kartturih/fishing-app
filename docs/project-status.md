@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-07-29
+2026-08-05 (Lure Catalog Expansion & Data Management: implementation + architecture review + review fixes)
 
 ---
 
@@ -12,7 +12,7 @@ Fishing Spot management is complete. Catch management foundation is complete. Ca
 
 The application now supports full offline CRUD operations for both Fishing Spots and Catches, photo attachments on Catches, a dedicated read-only Catch Details view with a swipeable photo gallery, a shared Lure Catalog with search and filtering browsed by lure model (with a per-model Color Variants view), a Personal Tackle Box that lets an angler track which catalog lures they actually own with an optional personal photo per owned lure, the ability to assign one of those owned lures to a Catch shown in Catch Details, an optional free-form note per Catch, and a Statistics feature with two tabs: Catches (general catch statistics — a Top 3 Largest Catches "Hall of Fame," total catches, most caught species, a full per-species catch-count list, and a full per-fishing-spot catch-count list, computed live across the angler's entire catch history) and Lure Statistics (most successful lure, most successful lure type, a per-lure catch-count list, and a per-lure-type breakdown, computed live from existing catch and lure catalog data) — neither tab persists any new aggregate. Tapping a species in the Catches tab's Species List opens a pushed Species Statistics page (MFS-021) for that species, and tapping a fishing spot in the Catches tab's Fishing Spot List opens a pushed Fishing Spot Statistics page (MFS-022) for that spot: each shows its own total catch count, a Record Catch card, and its full Catch List (reusing the existing Catch list row) — Fishing Spot Statistics additionally shows a Species Breakdown and a Last Catch Date. Each entry opens the existing Catch Details view; returning refreshes both the page itself and the Catches tab it was opened from automatically. Catch Notes (MFS-023) lets an angler attach one optional, multiline, plain-text note (up to 1000 characters) to a Catch, editable during Add Catch and Edit Catch and shown as the final, selectable section of Catch Details when present. Water Bodies and Fishing Spot Hierarchy (MFS-024) introduces `WaterBody` as a new parent concept above `FishingSpot`: every fishing spot now belongs to exactly one water body, selected or created while adding the spot (with locally computed nearby-water-body suggestions), changeable afterward from Fishing Spot Details, and manageable from a minimal Water Body management surface (view, rename, member fishing spots, empty-only deletion). Every fishing spot that existed before this milestone was automatically migrated into its own correctly named water body (schema version 7 to 8), with all existing data intact. Species Statistics' Record Catch card now shows the water body instead of the exact fishing spot name; every other exact-fishing-spot-scoped view is unchanged. Catch Search & Filtering (MFS-025) adds a global catch-browsing page, reached from a new `MapScreen` AppBar entry, with an always-visible debounced text search (species, water body, fishing spot, lure brand/model) and a filter bottom sheet (water body, species, lure, date range); each result reuses the existing `CatchListItem` (additively extended) and opens the existing, unmodified Catch Details view. No new database table, column, or schema version. Selectable MML Base Maps (MFS-026) replaces the map's placeholder demo style with two real, switchable Finnish base maps from Maanmittauslaitos — Maastokartta (topographic) and Ilmakuva (aerial imagery) — reachable from a new compact upper-right layers control, with the selection persisted across restarts and every existing map capability (fishing-spot markers, labels, tap interaction, adding spots, location controls, other entry points) surviving a base-map switch with no need to leave and reopen the Map screen.
 
-**MFS-026 (Selectable MML Base Maps) is implemented, architecture-reviewed, and validated.** **Worldwide Base-Map Coverage (MFS-027 / TD-027), including the SYKE bathymetry overlay and its depth labels, is implemented, `flutter analyze`-clean, fully covered by the automated test suite, and physically validated on Android — see the Base Maps and SYKE Bathymetry Overlay sections below. Not yet committed; see Next Planned Task.**
+**MFS-026 (Selectable MML Base Maps) is implemented, architecture-reviewed, and validated.** **Worldwide Base-Map Coverage (MFS-027 / TD-027), including the SYKE bathymetry overlay and its depth labels, is implemented, `flutter analyze`-clean, fully covered by the automated test suite, and physically validated on Android — see the Base Maps and SYKE Bathymetry Overlay sections below. Committed and pushed (`0673b61`, `6a6cca4`).** **Lure Catalog Expansion & Data Management (MFS-028 / TD-028) is implemented, architecture-reviewed (verdict: Ready after small fixes — all required fixes and small findings have since been applied), `flutter analyze`-clean, fully covered by the automated test suite, and physically validated on Android. Ready for commit; see Next Planned Task.**
 
 ---
 
@@ -274,7 +274,19 @@ The application now supports full offline CRUD operations for both Fishing Spots
 * Opening a model's details always shows its complete, unfiltered variant set — regardless of what search/filter was active on the browsing list — via a dedicated `LureCatalogRepository.getVariantsForModel()` query, unaffected by search/filter state
 * Full single-variant detail (including running depth, buoyancy, manufacturer color code) remains reachable by tapping a Color Variant row
 * Lure Catalog list and details pages, with loading/empty/error states and image-load fallback to a placeholder
-* A small, hand-authored local seed dataset (4 models, 14 variants) — local-seed-only in this milestone; no network access, cloud sync, or user-created entries
+* A small, hand-authored local seed dataset (4 models, 14 variants) — local-seed-only in this milestone; no network access, cloud sync, or user-created entries. **Superseded by Lure Catalog Expansion & Data Management (MFS-028) below**: the catalog's content source and import mechanism have since changed; every other bullet above (domain models, schema, repository query methods, browsing/search/filter/details UX) is unchanged.
+
+### Lure Catalog Expansion & Data Management
+
+* Replaces the hand-written Dart seed literals with a structured, offline authoring pipeline (MFS-028 / TD-028): per-manufacturer JSON source files under `assets/lure_catalog/source/` (not bundled with the app), validated and merged by a new developer-run Python tool (`tools/lure_catalog/build_catalog.py`, following the existing `tools/syke_bathymetry/` precedent) into one bundled, deterministic, versioned asset, `assets/lure_catalog/catalog_v1.json`
+* `LureCatalogRepository.ensureSeeded()` generalized to reconcile against the bundled asset instead of Dart literals: loads it via a new `LureCatalogAssetLoader`, short-circuits via a new `shared_preferences`-backed `LureCatalogVersionStore` fast-path cache (modeled on the existing `BaseMapPreferenceStore`) when nothing has changed, and otherwise reconciles inside one atomic transaction using two batched full-table reads and a single batched write — insert new / correct catalog-owned rows in place / retire (never delete) removed variants / never touch a row whose `seedVersion` is `null`, exactly the same rules as before, generalized rather than replaced
+* `lure_catalog_seed_data.dart` deleted; the one-time transition to the new asset was verified to be a lossless, zero-write no-op against an already-seeded database (same manufacturers, models, variants, and ids as the original 4-model/14-variant seed — catalog content itself is unchanged in this milestone, only its authoring/import mechanism)
+* No database schema or migration change: `LureModels`/`LureVariants` are untouched; schema remains at version 8
+* Existing `TackleBoxEntry`/`Catch` references to a catalog variant, and existing search/filter/browse behavior and Lure Statistics, verified unaffected by a catalog content update
+* Architecture-reviewed (verdict: Ready after small fixes); every required fix and small finding from that review has been applied: `ensureSeeded()` decomposed into small, named planning/apply helpers; three independently-duplicated test-double classes consolidated into one shared `test/support/lure_catalog_test_doubles.dart`; a new automated test keeps `tools/lure_catalog/known_lure_types.json` and `lure_type_labels.dart`'s known codes in sync; stale "seed data" wording corrected in `lure_catalog_mapper.dart`
+* Fully offline; no new external dependencies (the Python tooling uses only the standard library)
+* `flutter analyze` clean; full automated test suite passing
+* Physical Android testing completed: catalog loading, search and filtering, model/variant browsing, adding/removing an owned lure, owned status persisting across a restart, assigning a lure to a catch, Catch Details lure resolution, lure statistics resolution, airplane-mode operation, and no row duplication across repeated app launches were all verified on a physical device. **Ready for commit.**
 
 ### Personal Tackle Box
 
@@ -600,7 +612,7 @@ Verified on physical Android devices.
 * path_provider
 * path
 * image
-* uuid (used for CatchPhoto and TackleBoxEntry runtime UUID v4 identifiers, and for hand-authored, compile-time Lure Catalog seed identifiers; other domain IDs in the project use a separate, pre-existing timestamp-based scheme)
+* uuid (used for CatchPhoto and TackleBoxEntry runtime UUID v4 identifiers, and for hand-authored Lure Catalog identifiers — originally compile-time Dart literals, now authored directly into the JSON source files read by `tools/lure_catalog/build_catalog.py`, MFS-028 / TD-028 — never generated at runtime; other domain IDs in the project use a separate, pre-existing timestamp-based scheme)
 
 ### UI
 
@@ -767,7 +779,7 @@ No other iOS configuration changes were required, including for the Lure Catalog
 ## Known Limitations
 
 * iOS has not been physically tested for any feature in this project.
-* The Lure Catalog is local-seed data only: no network access, no cloud sync, and no user-created catalog entries.
+* The Lure Catalog remains local, bundled content only (now generated from JSON authoring files rather than hand-written Dart literals, MFS-028 / TD-028): no network access, no cloud sync, no server-managed synchronization, and no user-created catalog entries.
 * The Personal Tackle Box intentionally does not support search/filtering within a user's own tackle box, editing/replacing an existing personal photo, multiple photos per entry, notes, condition, or purchase information — all explicitly out of scope for MFS-016 (see its Future Extensions section).
 * A small number of UI/UX refinements were consciously deferred rather than built speculatively, and are candidates for a later, separate polish task (not a change to MFS-016/TD-016 scope): the empty Personal Tackle Box state relies on standard back navigation to reach the Lure Catalog rather than a dedicated shortcut button, and the grouped browsing list shows the catalog image only — the personal photo is shown on the Owned Entry Detail screen.
 * A catch may reference at most one lure (MFS-017); assigning more than one lure to a catch, showing the assigned lure in the catch list, and lure-based statistics are all explicitly out of scope for MFS-017 (see its Out of Scope section).
@@ -782,15 +794,21 @@ No other iOS configuration changes were required, including for the Lure Catalog
 
 MFS-026 (Selectable MML Base Maps) is complete — implemented, architecture-reviewed, all automated tests passing, `flutter analyze` clean, and physically verified on Android across three rounds.
 
-**Worldwide Base-Map Coverage (MFS-027 / TD-027) is complete through Revision 8** — MML v21 vector for Maastokartta, MapTiler Outdoor/Satellite Hybrid worldwide, and the SYKE bathymetry overlay with depth labels are all implemented, `flutter analyze`-clean, covered by the full automated test suite, and physically validated on Android (contour geometry fidelity, continuous zoom-range rendering, close-zoom/overzoom rendering, and depth-label rendering all accepted as shipped). See `docs/technical-designs/TD-027-worldwide-base-map-coverage.md` §27 and `docs/specifications/MFS-027-worldwide-base-map-coverage.md` for full detail. **Remaining: a git commit** — not yet performed.
+**Worldwide Base-Map Coverage (MFS-027 / TD-027) is complete through Revision 8** — MML v21 vector for Maastokartta, MapTiler Outdoor/Satellite Hybrid worldwide, and the SYKE bathymetry overlay with depth labels are all implemented, `flutter analyze`-clean, covered by the full automated test suite, and physically validated on Android (contour geometry fidelity, continuous zoom-range rendering, close-zoom/overzoom rendering, and depth-label rendering all accepted as shipped). See `docs/technical-designs/TD-027-worldwide-base-map-coverage.md` §27 and `docs/specifications/MFS-027-worldwide-base-map-coverage.md` for full detail. Committed and pushed (`0673b61`, `6a6cca4`).
+
+**The current milestone is Lure Catalog Expansion & Data Management (MFS-028 / TD-028).** Its feature specification (`docs/specifications/MFS-028-lure-catalog-expansion-and-data-management.md`) and Technical Design (`docs/technical-designs/TD-028-lure-catalog-expansion-and-data-management.md`, Revision 2) are both written, and **implementation is now complete**: the hand-written Dart seed literals are replaced by per-manufacturer JSON authoring files, a developer-run Python build/validation tool (`tools/lure_catalog/`), and one generated, bundled `catalog_v1.json` asset, reconciled at runtime by a generalized `LureCatalogRepository.ensureSeeded()` — see the Lure Catalog Expansion & Data Management section above for full detail. `lure_catalog_seed_data.dart` has been deleted; the transition preserves every existing manufacturer/model/variant id, and no database schema or migration change was required (schema remains at version 8).
+
+**Architecture review completed with verdict "Ready after small fixes."** All required fixes and small findings have since been applied: `ensureSeeded()` decomposed into small, named, independently-reasoned-about planning/apply helpers (previously one ~130-line method); the three test-double classes independently duplicated across `lure_catalog_repository_test.dart`, `lure_catalog_list_page_test.dart`, and `lure_tools_page_test.dart` consolidated into one shared `test/support/lure_catalog_test_doubles.dart`; the large-scale (1,000-model/10,000-variant) performance test strengthened (a documented, evidence-based timing threshold instead of an unverified loose one, and an `updatedAt`-stability check for its second-pass idempotency claim instead of a row-count-only check); a new automated test keeps `tools/lure_catalog/known_lure_types.json` and `lure_type_labels.dart`'s known lure-type codes from silently drifting apart; and stale "seed data" wording corrected in `lure_catalog_mapper.dart`.
+
+**`flutter analyze` is clean (only the 11 pre-existing/accepted info-level lints below) and the full automated test suite (996 tests) is passing.** **Physical Android testing has now been completed**: catalog loading, search and filtering, model/variant browsing, adding/removing an owned lure, owned status persisting across a restart, assigning a lure to a catch, Catch Details lure resolution, lure statistics resolution, airplane-mode operation, and no row duplication across repeated app launches were all verified on a physical device. Every step of this project's own Development Workflow (README.md) through "Physical Android testing" is now complete for this milestone — **ready for commit**. See `docs/roadmap.md` §3.5.
 
 ---
 
 ## Project Metrics
 
-Current Feature Specifications: 27
+Current Feature Specifications: 28
 
-Current Technical Designs: 25
+Current Technical Designs: 26
 
 Architecture Decision Records: 9
 
@@ -811,10 +829,10 @@ Implemented Core Features:
 
 Offline-first: Yes (base-map imagery is the sole exception — see Known Limitations)
 
-Physical Android Validation: Completed for all shipped features, including Worldwide Base-Map Coverage (MFS-027 / TD-027) and its SYKE bathymetry overlay/depth labels
+Physical Android Validation: Completed for all shipped features, including Worldwide Base-Map Coverage (MFS-027 / TD-027) and its SYKE bathymetry overlay/depth labels, and Lure Catalog Expansion & Data Management (MFS-028 / TD-028) — implemented, architecture-reviewed, fully automated-test-covered, and now physically verified on Android; ready for commit. See Next Planned Task.
 
 flutter analyze: Passing with 11 pre-existing/accepted info-level lints (`prefer_initializing_formals`)
 
-Automated Tests: 981 Passing
+Automated Tests: 996 Passing
 
-Database schema version: 8
+Database schema version: 8 (unchanged by MFS-028 / TD-028)

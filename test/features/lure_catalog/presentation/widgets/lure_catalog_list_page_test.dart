@@ -4,13 +4,18 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fishing_app/core/database/app_database.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_asset_loader.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_version_store.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_variant.dart';
 import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_catalog_list_page.dart';
 import 'package:fishing_app/features/lure_catalog/presentation/widgets/lure_model_details_page.dart';
+
+import '../../../../support/lure_catalog_test_doubles.dart';
 
 /// Never completes `ensureSeeded`, so the loading state can be observed
 /// deterministically. Mirrors `_PendingCatchRepository` in
@@ -21,25 +26,47 @@ class _PendingLureCatalogRepository extends LureCatalogRepository {
   final Completer<void> pendingSeed = Completer<void>();
 
   @override
-  Future<void> ensureSeeded() => pendingSeed.future;
+  Future<void> ensureSeeded({
+    LureCatalogAssetLoader assetLoader = const LureCatalogAssetLoader(),
+    LureCatalogVersionStore versionStore = const LureCatalogVersionStore(),
+  }) => pendingSeed.future;
 }
 
 class _FailingLureCatalogRepository extends LureCatalogRepository {
   _FailingLureCatalogRepository(super.database);
 
   @override
-  Future<void> ensureSeeded() async {
+  Future<void> ensureSeeded({
+    LureCatalogAssetLoader assetLoader = const LureCatalogAssetLoader(),
+    LureCatalogVersionStore versionStore = const LureCatalogVersionStore(),
+  }) async {
     throw StateError('simulated seeding failure');
   }
 }
 
 /// Lets a test control exactly when each `browse()` call completes and with
 /// what result, so an older request can be made to resolve after a newer
-/// one — proving the page discards stale, out-of-order results.
+/// one — proving the page discards stale, out-of-order results. Reuses the
+/// shared [FakeLureCatalogAssetLoader]/[InMemoryLureCatalogVersionStore]
+/// for its own `ensureSeeded()` override (this class's own value is the
+/// controllable `browse()` below, not another copy of the fixed-content
+/// seeding pattern already provided by [FakeContentLureCatalogRepository]).
 class _ControllableBrowseLureCatalogRepository extends LureCatalogRepository {
-  _ControllableBrowseLureCatalogRepository(super.database);
+  _ControllableBrowseLureCatalogRepository(super.database, this._catalog);
 
+  final ParsedLureCatalog _catalog;
   final List<Completer<List<LureCatalogEntry>>> _pendingBrowseCalls = [];
+
+  @override
+  Future<void> ensureSeeded({
+    LureCatalogAssetLoader assetLoader = const LureCatalogAssetLoader(),
+    LureCatalogVersionStore versionStore = const LureCatalogVersionStore(),
+  }) {
+    return super.ensureSeeded(
+      assetLoader: FakeLureCatalogAssetLoader(_catalog),
+      versionStore: InMemoryLureCatalogVersionStore(),
+    );
+  }
 
   @override
   Future<List<LureCatalogEntry>> browse({
@@ -96,10 +123,21 @@ const _abuGarciaTobyAllVariantIds = {
 void main() {
   late AppDatabase database;
   late LureCatalogRepository repository;
+  late ParsedLureCatalog cachedCatalog;
+
+  setUpAll(() async {
+    // Loaded once for the whole file via the real asset loader (so this
+    // file's tests reference the same ids/content as the real bundled
+    // catalog), then reused as fixed, injected content for every test --
+    // never a repeated real rootBundle load per test. See
+    // FakeContentLureCatalogRepository (test/support).
+    cachedCatalog = await const LureCatalogAssetLoader().load();
+  });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     database = AppDatabase(NativeDatabase.memory());
-    repository = LureCatalogRepository(database);
+    repository = FakeContentLureCatalogRepository(database, cachedCatalog);
   });
 
   tearDown(() async {
@@ -317,6 +355,7 @@ void main() {
     (tester) async {
       final controllableRepository = _ControllableBrowseLureCatalogRepository(
         database,
+        cachedCatalog,
       );
 
       await pumpListPage(tester, controllableRepository);

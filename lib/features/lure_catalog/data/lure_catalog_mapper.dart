@@ -46,7 +46,8 @@ class LureCatalogMapper {
     );
   }
 
-  /// Builds the companion used to insert/correct a seed [LureModel] row.
+  /// Builds the companion used to insert/correct a catalog-owned [LureModel]
+  /// row (from the bundled `catalog_v1.json` asset, MFS-028/TD-028).
   /// [searchText] is computed by the caller (see
   /// `lure_catalog_search_text.dart`), not by this mapper.
   LureModelsCompanion modelToCompanion(
@@ -68,10 +69,11 @@ class LureCatalogMapper {
     );
   }
 
-  /// Builds the companion used to insert/correct a seed [LureVariant] row.
-  /// [searchText] is computed by the caller. Reconciling from seed data
-  /// always clears `retiredAt`: a variant present in the current seed
-  /// source is, by definition, not retired.
+  /// Builds the companion used to insert/correct a catalog-owned
+  /// [LureVariant] row (from the bundled `catalog_v1.json` asset,
+  /// MFS-028/TD-028). [searchText] is computed by the caller. Reconciling
+  /// from catalog content always clears `retiredAt`: a variant present in
+  /// the current catalog content is, by definition, not retired.
   LureVariantsCompanion variantToCompanion(
     LureVariant variant, {
     required int seedVersion,

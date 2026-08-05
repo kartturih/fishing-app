@@ -1,0 +1,80 @@
+{
+  "manufacturer": "Rapala",
+  "models": [
+    {
+      "id": "3149d765-a567-49ec-994b-74179d3171c1",
+      "modelName": "X-Rap Shad XRS08",
+      "productFamily": "X-Rap",
+      "lureType": "crankbait",
+      "defaultImageReference": "assets/lure_catalog/placeholder_crankbait.png",
+      "variants": [
+        {
+          "id": "442e3a0c-a3f2-49cf-9e8f-751adff94b02",
+          "colorName": "Hot Craw",
+          "manufacturerColorCode": "HCC",
+          "lengthMillimeters": 80,
+          "weightGrams": 12,
+          "minRunningDepthMillimeters": 1500,
+          "maxRunningDepthMillimeters": 2400,
+          "buoyancy": "suspending"
+        },
+        {
+          "id": "a12963ad-e94d-4585-835a-c2673cc0704c",
+          "colorName": "Silver Shad",
+          "manufacturerColorCode": "SSD",
+          "lengthMillimeters": 80,
+          "weightGrams": 12,
+          "minRunningDepthMillimeters": 1500,
+          "maxRunningDepthMillimeters": 2400,
+          "buoyancy": "suspending"
+        },
+        {
+          "id": "8befcbdf-0930-490e-840d-dd60af63f819",
+          "colorName": "Perch",
+          "manufacturerColorCode": "PER",
+          "lengthMillimeters": 80,
+          "weightGrams": 12,
+          "minRunningDepthMillimeters": 1500,
+          "maxRunningDepthMillimeters": 2400
+        },
+        {
+          "id": "e4be0987-2e2e-402d-85d9-955fc54f9c15",
+          "variantName": "Glow"
+        }
+      ]
+    },
+    {
+      "id": "c5a8db14-e9a0-4d85-ada3-79de1e09d3ad",
+      "modelName": "Jigging Rap W5",
+      "lureType": "jig",
+      "defaultImageReference": "assets/lure_catalog/placeholder_jig.png",
+      "variants": [
+        {
+          "id": "db8cbcfd-a5ac-41ab-ba1c-3c7429440d7e",
+          "colorName": "Glow Red",
+          "manufacturerColorCode": "GR",
+          "lengthMillimeters": 50,
+          "weightGrams": 7,
+          "buoyancy": "sinking"
+        },
+        {
+          "id": "319180d6-5773-461d-9e91-32c0b9f2cb9a",
+          "colorName": "Blue Silver",
+          "lengthMillimeters": 50,
+          "weightGrams": 7,
+          "buoyancy": "sinking"
+        },
+        {
+          "id": "d121d97c-d147-4996-8646-2a89384268df",
+          "colorName": "Perch",
+          "lengthMillimeters": 50,
+          "weightGrams": 7
+        },
+        {
+          "id": "67a1b1ab-ce08-4e30-9847-dd7dc6e34e60",
+          "colorName": "Gold"
+        }
+      ]
+    }
+  ]
+}

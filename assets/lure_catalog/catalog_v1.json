@@ -1,0 +1,222 @@
+{
+  "catalogVersion": 1,
+  "generatedAt": "2026-08-05T13:02:13.527505+00:00",
+  "models": [
+    {
+      "id": "7eb042d9-8826-4e12-bcb4-bc0079f03aee",
+      "manufacturer": "Abu Garcia",
+      "productFamily": null,
+      "modelName": "Toby",
+      "lureType": "spoon",
+      "defaultImageReference": "assets/lure_catalog/placeholder_spoon.png"
+    },
+    {
+      "id": "c5a8db14-e9a0-4d85-ada3-79de1e09d3ad",
+      "manufacturer": "Rapala",
+      "productFamily": null,
+      "modelName": "Jigging Rap W5",
+      "lureType": "jig",
+      "defaultImageReference": "assets/lure_catalog/placeholder_jig.png"
+    },
+    {
+      "id": "3149d765-a567-49ec-994b-74179d3171c1",
+      "manufacturer": "Rapala",
+      "productFamily": "X-Rap",
+      "modelName": "X-Rap Shad XRS08",
+      "lureType": "crankbait",
+      "defaultImageReference": "assets/lure_catalog/placeholder_crankbait.png"
+    },
+    {
+      "id": "5d824c1b-1611-47f5-9724-982a846d5126",
+      "manufacturer": "Storm",
+      "productFamily": "WildEye",
+      "modelName": "Swim Shad",
+      "lureType": "swimbait",
+      "defaultImageReference": "assets/lure_catalog/placeholder_swimbait.png"
+    }
+  ],
+  "variants": [
+    {
+      "id": "442e3a0c-a3f2-49cf-9e8f-751adff94b02",
+      "lureModelId": "3149d765-a567-49ec-994b-74179d3171c1",
+      "variantName": null,
+      "colorName": "Hot Craw",
+      "manufacturerColorCode": "HCC",
+      "lengthMillimeters": 80,
+      "weightGrams": 12,
+      "minRunningDepthMillimeters": 1500,
+      "maxRunningDepthMillimeters": 2400,
+      "buoyancy": "suspending",
+      "imageReference": null
+    },
+    {
+      "id": "8befcbdf-0930-490e-840d-dd60af63f819",
+      "lureModelId": "3149d765-a567-49ec-994b-74179d3171c1",
+      "variantName": null,
+      "colorName": "Perch",
+      "manufacturerColorCode": "PER",
+      "lengthMillimeters": 80,
+      "weightGrams": 12,
+      "minRunningDepthMillimeters": 1500,
+      "maxRunningDepthMillimeters": 2400,
+      "buoyancy": null,
+      "imageReference": null
+    },
+    {
+      "id": "a12963ad-e94d-4585-835a-c2673cc0704c",
+      "lureModelId": "3149d765-a567-49ec-994b-74179d3171c1",
+      "variantName": null,
+      "colorName": "Silver Shad",
+      "manufacturerColorCode": "SSD",
+      "lengthMillimeters": 80,
+      "weightGrams": 12,
+      "minRunningDepthMillimeters": 1500,
+      "maxRunningDepthMillimeters": 2400,
+      "buoyancy": "suspending",
+      "imageReference": null
+    },
+    {
+      "id": "e4be0987-2e2e-402d-85d9-955fc54f9c15",
+      "lureModelId": "3149d765-a567-49ec-994b-74179d3171c1",
+      "variantName": "Glow",
+      "colorName": null,
+      "manufacturerColorCode": null,
+      "lengthMillimeters": null,
+      "weightGrams": null,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": null,
+      "imageReference": null
+    },
+    {
+      "id": "0f5052f8-4a46-4fdc-af9c-a1eed353a98a",
+      "lureModelId": "5d824c1b-1611-47f5-9724-982a846d5126",
+      "variantName": null,
+      "colorName": "Bluegill",
+      "manufacturerColorCode": null,
+      "lengthMillimeters": 130,
+      "weightGrams": 20,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": "sinking",
+      "imageReference": null
+    },
+    {
+      "id": "3369ff41-4786-4c07-9eed-c37193a8f2e0",
+      "lureModelId": "5d824c1b-1611-47f5-9724-982a846d5126",
+      "variantName": null,
+      "colorName": "Golden Shiner",
+      "manufacturerColorCode": null,
+      "lengthMillimeters": null,
+      "weightGrams": null,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": null,
+      "imageReference": null
+    },
+    {
+      "id": "e3c58f5b-f165-4399-b9f4-b6edcff4809d",
+      "lureModelId": "5d824c1b-1611-47f5-9724-982a846d5126",
+      "variantName": null,
+      "colorName": "Emerald Shiner",
+      "manufacturerColorCode": null,
+      "lengthMillimeters": 130,
+      "weightGrams": 20,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": "sinking",
+      "imageReference": null
+    },
+    {
+      "id": "09fedc45-c024-4008-bcb1-ff1d4a398c66",
+      "lureModelId": "7eb042d9-8826-4e12-bcb4-bc0079f03aee",
+      "variantName": null,
+      "colorName": "Firetiger",
+      "manufacturerColorCode": null,
+      "lengthMillimeters": 50,
+      "weightGrams": 12,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": null,
+      "imageReference": null
+    },
+    {
+      "id": "20aa5fab-19d8-4163-85fd-e0fef63ea3c6",
+      "lureModelId": "7eb042d9-8826-4e12-bcb4-bc0079f03aee",
+      "variantName": null,
+      "colorName": "Copper",
+      "manufacturerColorCode": null,
+      "lengthMillimeters": 65,
+      "weightGrams": 24,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": "sinking",
+      "imageReference": null
+    },
+    {
+      "id": "2de7edb3-b772-40c9-a51c-75c5f20c233f",
+      "lureModelId": "7eb042d9-8826-4e12-bcb4-bc0079f03aee",
+      "variantName": null,
+      "colorName": "Silver",
+      "manufacturerColorCode": "S",
+      "lengthMillimeters": 60,
+      "weightGrams": 18,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": "sinking",
+      "imageReference": null
+    },
+    {
+      "id": "319180d6-5773-461d-9e91-32c0b9f2cb9a",
+      "lureModelId": "c5a8db14-e9a0-4d85-ada3-79de1e09d3ad",
+      "variantName": null,
+      "colorName": "Blue Silver",
+      "manufacturerColorCode": null,
+      "lengthMillimeters": 50,
+      "weightGrams": 7,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": "sinking",
+      "imageReference": null
+    },
+    {
+      "id": "67a1b1ab-ce08-4e30-9847-dd7dc6e34e60",
+      "lureModelId": "c5a8db14-e9a0-4d85-ada3-79de1e09d3ad",
+      "variantName": null,
+      "colorName": "Gold",
+      "manufacturerColorCode": null,
+      "lengthMillimeters": null,
+      "weightGrams": null,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": null,
+      "imageReference": null
+    },
+    {
+      "id": "d121d97c-d147-4996-8646-2a89384268df",
+      "lureModelId": "c5a8db14-e9a0-4d85-ada3-79de1e09d3ad",
+      "variantName": null,
+      "colorName": "Perch",
+      "manufacturerColorCode": null,
+      "lengthMillimeters": 50,
+      "weightGrams": 7,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": null,
+      "imageReference": null
+    },
+    {
+      "id": "db8cbcfd-a5ac-41ab-ba1c-3c7429440d7e",
+      "lureModelId": "c5a8db14-e9a0-4d85-ada3-79de1e09d3ad",
+      "variantName": null,
+      "colorName": "Glow Red",
+      "manufacturerColorCode": "GR",
+      "lengthMillimeters": 50,
+      "weightGrams": 7,
+      "minRunningDepthMillimeters": null,
+      "maxRunningDepthMillimeters": null,
+      "buoyancy": "sinking",
+      "imageReference": null
+    }
+  ]
+}

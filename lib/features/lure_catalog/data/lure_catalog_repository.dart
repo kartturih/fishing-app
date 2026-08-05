@@ -1,9 +1,10 @@
 import 'package:drift/drift.dart';
 
 import 'package:fishing_app/core/database/app_database.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_asset_loader.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_mapper.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_search_text.dart';
-import 'package:fishing_app/features/lure_catalog/data/local/lure_catalog_seed_data.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_version_store.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_catalog_entry.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_model.dart';
 import 'package:fishing_app/features/lure_catalog/domain/lure_variant.dart';
@@ -11,9 +12,9 @@ import 'package:fishing_app/features/lure_catalog/domain/lure_variant.dart';
 /// Concrete, read-only repository for the shared Lure Catalog.
 ///
 /// Owns the join between `LureModels`/`LureVariants`, search/filter/sort,
-/// and versioned seed reconciliation. Exposes no create/update/delete
-/// operation — the catalog is shared product data, not user-owned data.
-/// See MFS-015 / TD-015.
+/// and versioned catalog-content reconciliation. Exposes no create/update/
+/// delete operation — the catalog is shared product data, not user-owned
+/// data. See MFS-015 / TD-015, MFS-028 / TD-028.
 class LureCatalogRepository {
   LureCatalogRepository(
     this._database, [
@@ -23,122 +24,248 @@ class LureCatalogRepository {
   final AppDatabase _database;
   final LureCatalogMapper _mapper;
 
-  /// Reconciles the local catalog with the compiled-in seed data:
-  /// - inserts any seed id with no existing row
-  /// - corrects any still seed-owned row whose stored `seedVersion` is
-  ///   behind [currentLureCatalogSeedVersion]
+  /// Reconciles the local catalog with the bundled, generated catalog asset
+  /// (`assets/lure_catalog/catalog_v1.json`, loaded via [assetLoader] and
+  /// produced by `tools/lure_catalog/build_catalog.py` from the
+  /// manufacturer authoring files under `assets/lure_catalog/source/` — see
+  /// TD-028):
+  /// - inserts any catalog id with no existing row
+  /// - corrects any still catalog-owned row whose stored `seedVersion` is
+  ///   behind the asset's `catalogVersion`
   /// - never touches a row whose stored `seedVersion` is `null` (owned by
-  ///   something other than this seed process, e.g. a future server sync)
-  /// - retires (never deletes) a still seed-owned variant whose id is no
-  ///   longer present in the current seed source
+  ///   something other than this reconciliation process, e.g. a future
+  ///   server sync)
+  /// - retires (never deletes) a still catalog-owned variant whose id is no
+  ///   longer present in the current catalog asset
   /// - clears `retiredAt` for a variant that has reappeared in the current
-  ///   seed source
+  ///   catalog asset
   ///
-  /// Idempotent: after a successful reconciliation at a given seed version,
-  /// calling this again performs no writes. Must be called before the first
+  /// Idempotent: after a successful reconciliation at a given catalog
+  /// version, calling this again performs no writes — [versionStore]
+  /// short-circuits the common case entirely (a pure performance fast-path,
+  /// never a correctness dependency: the per-row `seedVersion` check inside
+  /// the transaction below is still what actually decides correctness, any
+  /// time a full pass does run). Must be called before the first
   /// [browse]/[getEntryById] call each time the catalog is opened; it is not
   /// called at application startup.
-  Future<void> ensureSeeded() async {
-    await _database.transaction(() async {
-      for (final model in lureCatalogSeedModels) {
-        await _reconcileModel(model);
-      }
-      for (final variant in lureCatalogSeedVariants) {
-        await _reconcileVariant(variant);
-      }
-      final stillPresentIds = {
-        for (final variant in lureCatalogSeedVariants) variant.id,
-      };
-      await _retireRemovedVariants(stillPresentIds: stillPresentIds);
-    });
-  }
-
-  Future<void> _reconcileModel(LureModel model) async {
-    final existing = await (_database.select(
-      _database.lureModels,
-    )..where((t) => t.id.equals(model.id))).getSingleOrNull();
-
-    final companion = _mapper.modelToCompanion(
-      model,
-      seedVersion: currentLureCatalogSeedVersion,
-      searchText: buildLureModelSearchText(model),
-    );
-
-    if (existing == null) {
-      await _database.into(_database.lureModels).insert(companion);
-      return;
-    }
-
-    // A null seedVersion means something other than this seed process now
-    // owns the row (e.g. a future server sync) — never touch it.
-    final storedSeedVersion = existing.seedVersion;
-    if (storedSeedVersion == null ||
-        storedSeedVersion >= currentLureCatalogSeedVersion) {
-      return;
-    }
-
-    await (_database.update(
-      _database.lureModels,
-    )..where((t) => t.id.equals(model.id))).write(
-      companion.copyWith(
-        createdAt: Value(existing.createdAt),
-        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
-      ),
-    );
-  }
-
-  Future<void> _reconcileVariant(LureVariant variant) async {
-    final existing = await (_database.select(
-      _database.lureVariants,
-    )..where((t) => t.id.equals(variant.id))).getSingleOrNull();
-
-    final companion = _mapper.variantToCompanion(
-      variant,
-      seedVersion: currentLureCatalogSeedVersion,
-      searchText: buildLureVariantSearchText(variant),
-    );
-
-    if (existing == null) {
-      await _database.into(_database.lureVariants).insert(companion);
-      return;
-    }
-
-    final storedSeedVersion = existing.seedVersion;
-    if (storedSeedVersion == null) {
-      return;
-    }
-    if (storedSeedVersion >= currentLureCatalogSeedVersion &&
-        existing.retiredAt == null) {
-      return;
-    }
-
-    // Reconciling a variant that is present in the current seed source
-    // always clears retiredAt: it is, by definition, no longer retired.
-    await (_database.update(
-      _database.lureVariants,
-    )..where((t) => t.id.equals(variant.id))).write(
-      companion.copyWith(
-        createdAt: Value(existing.createdAt),
-        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
-      ),
-    );
-  }
-
-  Future<void> _retireRemovedVariants({
-    required Set<String> stillPresentIds,
+  Future<void> ensureSeeded({
+    LureCatalogAssetLoader assetLoader = const LureCatalogAssetLoader(),
+    LureCatalogVersionStore versionStore = const LureCatalogVersionStore(),
   }) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final ownedRows = await (_database.select(
-      _database.lureVariants,
-    )..where((t) => t.seedVersion.isNotNull() & t.retiredAt.isNull())).get();
+    final parsed = await assetLoader.load();
 
-    for (final row in ownedRows) {
-      if (!stillPresentIds.contains(row.id)) {
-        await (_database.update(_database.lureVariants)
-              ..where((t) => t.id.equals(row.id)))
-            .write(LureVariantsCompanion(retiredAt: Value(now)));
-      }
+    final lastReconciled = await versionStore.loadLastReconciledVersion();
+    if (lastReconciled != null && lastReconciled >= parsed.catalogVersion) {
+      return;
     }
+
+    await _database.transaction(() async {
+      final existingModels = await _loadAllExistingModels();
+      final existingVariants = await _loadAllExistingVariants();
+
+      final modelPlan = _planModelWrites(
+        parsedModels: parsed.models,
+        existingModels: existingModels,
+        catalogVersion: parsed.catalogVersion,
+      );
+      final variantPlan = _planVariantWrites(
+        parsedVariants: parsed.variants,
+        existingVariants: existingVariants,
+        catalogVersion: parsed.catalogVersion,
+      );
+      final stillPresentIds = {
+        for (final variant in parsed.variants) variant.id,
+      };
+      final retirements = _planVariantRetirements(
+        existingVariants: existingVariants,
+        stillPresentIds: stillPresentIds,
+      );
+
+      await _applyReconciliationPlan(
+        modelInserts: modelPlan.inserts,
+        modelUpdates: modelPlan.updates,
+        variantInserts: variantPlan.inserts,
+        variantUpdates: variantPlan.updates,
+        variantRetirements: retirements,
+      );
+    });
+
+    await versionStore.saveLastReconciledVersion(parsed.catalogVersion);
+  }
+
+  /// Loads every existing `LureModels` row in one query, keyed by id, so
+  /// reconciliation never issues one `SELECT` per catalog entry. See
+  /// TD-028 Section 7/Section 10.
+  Future<Map<String, LureModelEntity>> _loadAllExistingModels() async {
+    final rows = await _database.select(_database.lureModels).get();
+    return {for (final row in rows) row.id: row};
+  }
+
+  /// Loads every existing `LureVariants` row in one query, keyed by id.
+  /// Unlike [_loadAllExistingModels], this deliberately loads *all* rows,
+  /// not only ones matching the new catalog content's ids: retirement
+  /// detection needs to see every existing catalog-owned row to notice
+  /// which ones are no longer present in the new content, not merely
+  /// resolve the ones that still are.
+  Future<Map<String, LureVariantEntity>> _loadAllExistingVariants() async {
+    final rows = await _database.select(_database.lureVariants).get();
+    return {for (final row in rows) row.id: row};
+  }
+
+  /// Pure planning, no I/O: decides, for every model in [parsedModels],
+  /// whether it needs to be inserted, corrected in place, or left
+  /// untouched — never touching a row whose stored `seedVersion` is `null`
+  /// (owned by something other than this reconciliation process). See
+  /// TD-028 Section 8.
+  ({List<LureModelsCompanion> inserts, List<(String, LureModelsCompanion)> updates})
+  _planModelWrites({
+    required List<LureModel> parsedModels,
+    required Map<String, LureModelEntity> existingModels,
+    required int catalogVersion,
+  }) {
+    final inserts = <LureModelsCompanion>[];
+    final updates = <(String, LureModelsCompanion)>[];
+
+    for (final model in parsedModels) {
+      final companion = _mapper.modelToCompanion(
+        model,
+        seedVersion: catalogVersion,
+        searchText: buildLureModelSearchText(model),
+      );
+      final existing = existingModels[model.id];
+      if (existing == null) {
+        inserts.add(companion);
+        continue;
+      }
+      final storedSeedVersion = existing.seedVersion;
+      if (storedSeedVersion == null || storedSeedVersion >= catalogVersion) {
+        continue;
+      }
+      updates.add((
+        model.id,
+        companion.copyWith(
+          createdAt: Value(existing.createdAt),
+          updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      ));
+    }
+
+    return (inserts: inserts, updates: updates);
+  }
+
+  /// Pure planning, no I/O: the variant equivalent of [_planModelWrites].
+  /// Also proceeds (rather than skipping) when a variant is already at the
+  /// current `catalogVersion` but still `retiredAt`-set, since reappearing
+  /// in the current catalog content always clears retirement — see
+  /// [LureCatalogMapper.variantToCompanion].
+  ({List<LureVariantsCompanion> inserts, List<(String, LureVariantsCompanion)> updates})
+  _planVariantWrites({
+    required List<LureVariant> parsedVariants,
+    required Map<String, LureVariantEntity> existingVariants,
+    required int catalogVersion,
+  }) {
+    final inserts = <LureVariantsCompanion>[];
+    final updates = <(String, LureVariantsCompanion)>[];
+
+    for (final variant in parsedVariants) {
+      final companion = _mapper.variantToCompanion(
+        variant,
+        seedVersion: catalogVersion,
+        searchText: buildLureVariantSearchText(variant),
+      );
+      final existing = existingVariants[variant.id];
+      if (existing == null) {
+        inserts.add(companion);
+        continue;
+      }
+      final storedSeedVersion = existing.seedVersion;
+      if (storedSeedVersion == null) {
+        continue;
+      }
+      if (storedSeedVersion >= catalogVersion && existing.retiredAt == null) {
+        continue;
+      }
+      updates.add((
+        variant.id,
+        companion.copyWith(
+          createdAt: Value(existing.createdAt),
+          updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      ));
+    }
+
+    return (inserts: inserts, updates: updates);
+  }
+
+  /// Pure planning, no I/O: every existing catalog-owned, currently-active
+  /// variant row whose id is no longer present in the parsed catalog —
+  /// retired (never deleted) by [_applyReconciliationPlan]. Materialized
+  /// eagerly to a `List` (not left as a lazy `Iterable`) so a caller can
+  /// check emptiness and then iterate without evaluating the filter twice.
+  List<LureVariantEntity> _planVariantRetirements({
+    required Map<String, LureVariantEntity> existingVariants,
+    required Set<String> stillPresentIds,
+  }) {
+    return existingVariants.values
+        .where(
+          (row) =>
+              row.seedVersion != null &&
+              row.retiredAt == null &&
+              !stillPresentIds.contains(row.id),
+        )
+        .toList(growable: false);
+  }
+
+  /// Applies a previously computed plan as one batch, inside the caller's
+  /// already-open transaction — the only place `ensureSeeded()` actually
+  /// writes. A plan with nothing to do performs zero database calls.
+  Future<void> _applyReconciliationPlan({
+    required List<LureModelsCompanion> modelInserts,
+    required List<(String, LureModelsCompanion)> modelUpdates,
+    required List<LureVariantsCompanion> variantInserts,
+    required List<(String, LureVariantsCompanion)> variantUpdates,
+    required List<LureVariantEntity> variantRetirements,
+  }) async {
+    final hasWrites =
+        modelInserts.isNotEmpty ||
+        modelUpdates.isNotEmpty ||
+        variantInserts.isNotEmpty ||
+        variantUpdates.isNotEmpty ||
+        variantRetirements.isNotEmpty;
+    if (!hasWrites) {
+      return;
+    }
+
+    final retireNow = DateTime.now().millisecondsSinceEpoch;
+    await _database.batch((batch) {
+      if (modelInserts.isNotEmpty) {
+        batch.insertAll(_database.lureModels, modelInserts);
+      }
+      for (final (id, companion) in modelUpdates) {
+        batch.update(
+          _database.lureModels,
+          companion,
+          where: (t) => t.id.equals(id),
+        );
+      }
+      if (variantInserts.isNotEmpty) {
+        batch.insertAll(_database.lureVariants, variantInserts);
+      }
+      for (final (id, companion) in variantUpdates) {
+        batch.update(
+          _database.lureVariants,
+          companion,
+          where: (t) => t.id.equals(id),
+        );
+      }
+      for (final row in variantRetirements) {
+        batch.update(
+          _database.lureVariants,
+          LureVariantsCompanion(retiredAt: Value(retireNow)),
+          where: (t) => t.id.equals(row.id),
+        );
+      }
+    });
   }
 
   /// Browses the catalog, optionally narrowed by [searchText] (matched

@@ -4,12 +4,16 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fishing_app/core/database/app_database.dart';
+import 'package:fishing_app/features/lure_catalog/data/lure_catalog_asset_loader.dart';
 import 'package:fishing_app/features/lure_catalog/data/lure_catalog_repository.dart';
 import 'package:fishing_app/features/map/presentation/widgets/lure_tools_page.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/personal_tackle_box_repository.dart';
 import 'package:fishing_app/features/personal_tackle_box/data/storage/tackle_box_photo_storage.dart';
+
+import '../../../../support/lure_catalog_test_doubles.dart';
 
 void main() {
   late AppDatabase database;
@@ -17,6 +21,11 @@ void main() {
   late LureCatalogRepository lureCatalogRepository;
   late TackleBoxPhotoStorage storage;
   late PersonalTackleBoxRepository personalTackleBoxRepository;
+  late ParsedLureCatalog cachedCatalog;
+
+  setUpAll(() async {
+    cachedCatalog = await const LureCatalogAssetLoader().load();
+  });
 
   Future<void> pumpPage(WidgetTester tester) async {
     // Tall enough that the Lure Catalog seed list renders without
@@ -38,8 +47,12 @@ void main() {
   }
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     database = AppDatabase(NativeDatabase.memory());
-    lureCatalogRepository = LureCatalogRepository(database);
+    lureCatalogRepository = FakeContentLureCatalogRepository(
+      database,
+      cachedCatalog,
+    );
     tempDir = Directory.systemTemp.createTempSync('lure_tools_page_test');
     storage = TackleBoxPhotoStorage(rootDirectoryProvider: () async => tempDir);
     personalTackleBoxRepository = PersonalTackleBoxRepository(

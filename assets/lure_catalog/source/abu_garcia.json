@@ -1,0 +1,34 @@
+{
+  "manufacturer": "Abu Garcia",
+  "models": [
+    {
+      "id": "7eb042d9-8826-4e12-bcb4-bc0079f03aee",
+      "modelName": "Toby",
+      "lureType": "spoon",
+      "defaultImageReference": "assets/lure_catalog/placeholder_spoon.png",
+      "variants": [
+        {
+          "id": "2de7edb3-b772-40c9-a51c-75c5f20c233f",
+          "colorName": "Silver",
+          "manufacturerColorCode": "S",
+          "lengthMillimeters": 60,
+          "weightGrams": 18,
+          "buoyancy": "sinking"
+        },
+        {
+          "id": "20aa5fab-19d8-4163-85fd-e0fef63ea3c6",
+          "colorName": "Copper",
+          "lengthMillimeters": 65,
+          "weightGrams": 24,
+          "buoyancy": "sinking"
+        },
+        {
+          "id": "09fedc45-c024-4008-bcb1-ff1d4a398c66",
+          "colorName": "Firetiger",
+          "lengthMillimeters": 50,
+          "weightGrams": 12
+        }
+      ]
+    }
+  ]
+}

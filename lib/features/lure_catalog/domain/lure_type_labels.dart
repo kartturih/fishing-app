@@ -28,6 +28,15 @@ String lureTypeDisplayLabel(String code) {
   return _knownLureTypeLabels[code] ?? _humanizeUnknownCode(code);
 }
 
+/// The full set of `lureType` codes this file has a Finnish display label
+/// for. Exposed only so a test can verify this stays in sync with
+/// `tools/lure_catalog/known_lure_types.json` (the authoring-time
+/// validation allowlist, TD-028 Section 5) — the runtime itself never
+/// restricts `lureType` to this set; an unrecognized code still renders via
+/// [_humanizeUnknownCode] exactly as before. This does not turn `lureType`
+/// into a closed enum.
+Set<String> get knownLureTypeCodes => _knownLureTypeLabels.keys.toSet();
+
 const Map<String, String> _knownBuoyancyLabels = {
   'floating': 'Uiva',
   'suspending': 'Neutraali',
